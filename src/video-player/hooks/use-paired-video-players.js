@@ -11,30 +11,28 @@ export const usePairedVideosPlayers = () => {
     setCurrentVideoPositionAsPercentage,
   ] = useState(null);
 
-  const [filePath, setFilePath] = useState(null);
-
   const primaryVideo = useRef(null);
   const secondaryVideo = useRef(null);
 
   const play = useCallback(async () => {
-    if (filePath) {
+    if (isLoaded) {
       await Promise.all([
         primaryVideo.current.playAsync(),
         secondaryVideo.current.playAsync(),
       ]);
     }
-  }, [filePath, primaryVideo?.current, secondaryVideo?.current]);
+  }, [isLoaded, primaryVideo?.current, secondaryVideo?.current]);
 
   const setPosition = useCallback(
     async (position) => {
-      if (filePath) {
+      if (isLoaded) {
         await Promise.all([
           primaryVideo?.current?.setPositionAsync(position),
           secondaryVideo?.current?.setPositionAsync(position),
         ]);
       }
     },
-    [filePath, primaryVideo?.current, secondaryVideo?.current]
+    [isLoaded, primaryVideo?.current, secondaryVideo?.current]
   );
 
   useEffect(() => {
@@ -45,19 +43,24 @@ export const usePairedVideosPlayers = () => {
           setIsPlaying(isPlaying);
           setCurrentVideoPositionInMillis(positionMillis);
           setCurrentVideoPositionAsPercentage(positionMillis / durationMillis);
+          return;
         }
+
+        setIsPlaying(false);
+        setCurrentVideoPositionInMillis(0);
+        setCurrentVideoPositionAsPercentage(0);
       }
     );
   }, [primaryVideo?.current]);
 
   useEffect(() => {
     // Start playing video from beginning when one is selected
-    if (filePath) {
+    if (isLoaded) {
       setPosition(0).then(() => {
         play();
       });
     }
-  }, [filePath]);
+  }, [isLoaded]);
 
   return {
     isLoaded,
@@ -69,7 +72,7 @@ export const usePairedVideosPlayers = () => {
     play,
     setPosition,
     pause: async () => {
-      if (filePath) {
+      if (isLoaded) {
         await Promise.all([
           primaryVideo.current.pauseAsync(),
           secondaryVideo.current.pauseAsync(),
@@ -89,13 +92,11 @@ export const usePairedVideosPlayers = () => {
       } catch (error) {
         // TODO display error message on screen on load failure
         console.error("Unable to load select file");
-        setFilePath(null);
         setIsLoaded(false);
       }
 
       const { isLoaded } = await primaryVideo?.current?.getStatusAsync();
       setIsLoaded(isLoaded);
-      if (isLoaded) return setFilePath(newFilePath);
     },
   };
 };

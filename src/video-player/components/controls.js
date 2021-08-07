@@ -76,16 +76,15 @@ export const Controls = ({
             padding: 10,
           }}
         >
-          <TouchableOpacity
-            onPress={onPressPlay}
-            style={{ flexDirection: "row", alignItems: "center" }}
-          >
-            <Icon
-              name={isPlaying ? "pause" : "play"}
-              size={26}
-              color="white"
-              style={{ marginHorizontal: 10 }}
-            />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity onPress={onPressPlay}>
+              <Icon
+                name={isPlaying ? "pause" : "play"}
+                size={26}
+                color="white"
+                style={{ marginHorizontal: 10 }}
+              />
+            </TouchableOpacity>
             <Text style={{ color: "white", fontWeight: "bold", fontSize: 17 }}>
               {millisecondsToTime(currentVideoPositionInMillis)}
             </Text>
@@ -98,7 +97,7 @@ export const Controls = ({
               value={currentVideoPositionAsPercentage * 10000}
               step={1}
             />
-          </TouchableOpacity>
+          </View>
         </View>
       </Animated.View>
     </TouchableWithoutFeedback>
