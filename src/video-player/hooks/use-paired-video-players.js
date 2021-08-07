@@ -107,6 +107,8 @@ export const usePairedVideosPlayers = () => {
           );
           setIsLoaded(false);
           setVideoDuration(0);
+          setIsPlaying(false);
+          setCurrentVideoPositionInMillis(0);
           return;
         }
 

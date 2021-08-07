@@ -13,7 +13,7 @@ import { MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
   const [shouldResume, setShouldResume] = useState(false);
-  const { fadeAnim, showControls } = useShowControls();
+  const { fadeAnim, showControls } = useShowControls(videoPlayer);
 
   return (
     <TouchableWithoutFeedback
@@ -194,12 +194,17 @@ const ControlBarIconButton = ({ onPress, name }) => (
   </TouchableOpacity>
 );
 
-const useShowControls = () => {
+const useShowControls = (videoPlayer) => {
   const [areControlsVisible, setAreControlsVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const showControls = useCallback(() => {
+    fadeAnim.setValue(1);
+    setAreControlsVisible(true);
+  }, [fadeAnim?.current]);
+
   useEffect(() => {
-    if (areControlsVisible) {
+    if (areControlsVisible && videoPlayer.isPlaying) {
       const timeout = setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -211,14 +216,15 @@ const useShowControls = () => {
       }, 7000);
       return () => clearTimeout(timeout);
     }
-  }, [areControlsVisible]);
+  }, [areControlsVisible, videoPlayer.isPlaying]);
+
+  useEffect(() => {
+    if (!videoPlayer.isPlaying) showControls();
+  }, [showControls, videoPlayer.isPlaying]);
 
   return {
     fadeAnim,
-    showControls: useCallback(() => {
-      fadeAnim.setValue(1);
-      setAreControlsVisible(true);
-    }, [fadeAnim?.current]),
+    showControls,
   };
 };
 
