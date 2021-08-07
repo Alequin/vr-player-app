@@ -22,7 +22,6 @@ export const usePairedVideosPlayers = () => {
         primaryVideo.current.playAsync(),
         secondaryVideo.current.playAsync(),
       ]);
-      setIsPlaying(true);
     }
   }, [filePath, primaryVideo?.current, secondaryVideo?.current]);
 
@@ -41,8 +40,9 @@ export const usePairedVideosPlayers = () => {
   useEffect(() => {
     // Update known video player positions
     primaryVideo?.current?.setOnPlaybackStatusUpdate(
-      ({ isLoaded, positionMillis, durationMillis }) => {
+      ({ isLoaded, positionMillis, durationMillis, isPlaying }) => {
         if (isLoaded) {
+          setIsPlaying(isPlaying);
           setCurrentVideoPositionInMillis(positionMillis);
           setCurrentVideoPositionAsPercentage(positionMillis / durationMillis);
         }
@@ -74,7 +74,6 @@ export const usePairedVideosPlayers = () => {
           primaryVideo.current.pauseAsync(),
           secondaryVideo.current.pauseAsync(),
         ]);
-        setIsPlaying(false);
       }
     },
     loadVideoSource: async (newFilePath) => {
