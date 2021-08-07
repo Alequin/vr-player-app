@@ -92,9 +92,12 @@ export const usePairedVideosPlayers = () => {
           await Promise.all([
             primaryVideo?.current?.loadAsync(newFilePath, {
               progressUpdateIntervalMillis: 25,
+              isLooping: true,
             }),
             secondaryVideo?.current?.loadAsync(newFilePath, {
               progressUpdateIntervalMillis: 25,
+              isLooping: true,
+              isMuted: true,
             }),
           ]);
         } catch (error) {

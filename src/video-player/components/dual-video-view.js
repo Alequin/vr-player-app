@@ -52,8 +52,6 @@ const VideoView = ({
         uri: videoSource,
       }}
       resizeMode={videoResizeMode}
-      isLooping
-      isMuted={isMuted}
     />
   );
 };

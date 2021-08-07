@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { StyleSheet, TouchableOpacity, View, Text } from "react-native";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Controls } from "./components/controls";
 import { DualVideoView } from "./components/dual-video-view";
 import { VideoPlayerMask as ScreenMask } from "./components/screen-mask";

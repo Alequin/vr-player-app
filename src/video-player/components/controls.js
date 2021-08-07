@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { Icon } from "../../icon";
 import { MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
-import { VideoPlayer } from "../video-player";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
   const [shouldResume, setShouldResume] = useState(false);
