@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Button,
@@ -14,27 +14,13 @@ export const Controls = ({
   isPlaying,
   onPressSelectVideo,
   onPressPlay,
+  onSliderChange,
+  onSlidingComplete,
   currentVideoPositionInMillis,
-  currentVideoPositionAsPercentage,
+  videoDuration,
   zIndex,
 }) => {
-  const [areControlsVisible, setAreControlsVisible] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (areControlsVisible) {
-      const timeout = setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start(() => {
-          setAreControlsVisible(false);
-        });
-      }, 7000);
-      return () => clearTimeout(timeout);
-    }
-  }, [areControlsVisible]);
+  const { fadeAnim, showControls } = useShowControls();
 
   return (
     <TouchableWithoutFeedback
@@ -44,12 +30,7 @@ export const Controls = ({
         width: "100%",
         zIndex,
       }}
-      onPress={() => {
-        if (!areControlsVisible) {
-          fadeAnim.setValue(1);
-          setAreControlsVisible(true);
-        }
-      }}
+      onPress={showControls}
     >
       <Animated.View
         style={{
@@ -77,7 +58,12 @@ export const Controls = ({
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <TouchableOpacity onPress={onPressPlay}>
+            <TouchableOpacity
+              onPress={() => {
+                onPressPlay();
+                showControls();
+              }}
+            >
               <Icon
                 name={isPlaying ? "pause" : "play"}
                 size={26}
@@ -89,19 +75,52 @@ export const Controls = ({
               {millisecondsToTime(currentVideoPositionInMillis)}
             </Text>
             <Slider
-              style={{ width: "80%", height: 40 }}
+              value={currentVideoPositionInMillis}
+              maximumValue={videoDuration}
               minimumValue={0}
-              maximumValue={10000}
+              step={1}
+              style={{ width: "80%", height: 40 }}
               minimumTrackTintColor="#FFFFFF"
               maximumTrackTintColor="#000000"
-              value={currentVideoPositionAsPercentage * 10000}
-              step={1}
+              onValueChange={(newValue) => {
+                onSliderChange(newValue);
+                showControls();
+              }}
+              onSlidingComplete={onSlidingComplete}
             />
           </View>
         </View>
       </Animated.View>
     </TouchableWithoutFeedback>
   );
+};
+
+const useShowControls = () => {
+  const [areControlsVisible, setAreControlsVisible] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (areControlsVisible) {
+      const timeout = setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }).start(() => {
+          setAreControlsVisible(false);
+        });
+      }, 7000);
+      return () => clearTimeout(timeout);
+    }
+  }, [areControlsVisible]);
+
+  return {
+    fadeAnim,
+    showControls: useCallback(() => {
+      fadeAnim.setValue(1);
+      setAreControlsVisible(true);
+    }, [fadeAnim?.current]),
+  };
 };
 
 const millisecondsToTime = (milliseconds) => {

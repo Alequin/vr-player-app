@@ -1,35 +1,65 @@
 import * as DocumentPicker from "expo-document-picker";
-import React from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useState } from "react";
+import { StyleSheet, TouchableOpacity, View, Text } from "react-native";
 import { Controls } from "./components/controls";
 import { DualVideoView } from "./components/dual-video-view";
 import { VideoPlayerMask as ScreenMask } from "./components/screen-mask";
 import { usePairedVideosPlayers } from "./hooks/use-paired-video-players";
 
 export const VideoPlayer = () => {
+  const [shouldResume, setShouldResume] = useState(false);
   const videoPlayer = usePairedVideosPlayers();
 
   return (
     <View style={styles.container}>
-      <DualVideoView
-        videoLeft={videoPlayer.leftPlayer}
-        videoRight={videoPlayer.rightPlayer}
-        zIndex={-1}
-      />
+      {!videoPlayer.errorLoadingVideo ? (
+        <DualVideoView
+          videoLeft={videoPlayer.leftPlayer}
+          videoRight={videoPlayer.rightPlayer}
+          zIndex={-1}
+        />
+      ) : (
+        <TouchableOpacity
+          style={{
+            position: "absolute",
+            flexDirection: "row",
+            height: "100%",
+            width: "100%",
+            backgroundColor: "red",
+            zIndex: 2,
+          }}
+          onPress={() => {
+            videoPlayer.clearError();
+          }}
+        >
+          <Text>{videoPlayer.errorLoadingVideo}</Text>
+        </TouchableOpacity>
+      )}
+
       {/*z index has to be less than 1 to allow the user to press the custom controls */}
       <ScreenMask zIndex={0} shouldMakeMaskTransparent={videoPlayer.isLoaded} />
       <Controls
         isPlaying={videoPlayer.isPlaying}
-        currentVideoPositionAsPercentage={
-          videoPlayer.currentVideoPositionAsPercentage
-        }
         currentVideoPositionInMillis={videoPlayer.currentVideoPositionInMillis}
+        videoDuration={videoPlayer.videoDuration}
         onPressSelectVideo={() => {
           DocumentPicker.getDocumentAsync({
             copyToCacheDirectory: false,
           }).then((selectedVideo) =>
             videoPlayer.loadVideoSource(selectedVideo)
           );
+        }}
+        onSliderChange={(newPosition) => {
+          videoPlayer.setDisplayPosition(newPosition);
+          if (videoPlayer.isPlaying) {
+            videoPlayer.pause();
+            setShouldResume(true);
+          }
+        }}
+        onSlidingComplete={async (newPosition) => {
+          await videoPlayer.setPosition(newPosition);
+          if (shouldResume) videoPlayer.play();
+          setShouldResume(false);
         }}
         onPressPlay={() =>
           videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
