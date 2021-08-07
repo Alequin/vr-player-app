@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import React from "react";
 import "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { VideoPlayer } from "./screens/video-player";
+import { VideoPlayer } from "./src/video-player/video-player";
 
 const Stack = createStackNavigator();
 
