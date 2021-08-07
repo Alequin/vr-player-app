@@ -1,4 +1,5 @@
 import {
+  Entypo,
   FontAwesome5,
   MaterialCommunityIcons,
   MaterialIcons,
@@ -47,6 +48,7 @@ const ICON_OPTIONS = {
   stretchToPage: customIcon(MaterialCommunityIcons, "stretch-to-page"),
   fitScreen: customIcon(MaterialIcons, "fit-screen"),
   screenNormal: customIcon(Octicons, "screen-normal"),
+  folderVideo: customIcon(Entypo, "folder-video"),
 };
 
 const TestIdElement = (props) => <View {...props} />;

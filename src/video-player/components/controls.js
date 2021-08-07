@@ -3,7 +3,6 @@ import * as DocumentPicker from "expo-document-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
-  Button,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -34,7 +33,11 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           justifyContent: "space-between",
         }}
       >
-        <ControlBar>
+        <ControlBar
+          style={{
+            justifyContent: "flex-end",
+          }}
+        >
           <UpperControlBar
             videoPlayerMode={videoPlayer.videoPlayerMode}
             videoResizeMode={videoPlayer.videoResizeMode}
@@ -90,7 +93,13 @@ const UpperControlBar = ({
 }) => {
   return (
     <>
-      <Button onPress={onPressSelectVideo} title="Pick video" />
+      <ControlBarIconButton
+        name="folderVideo"
+        onPress={() => {
+          onPressSelectVideo();
+          onPressAnyControls();
+        }}
+      />
       <ControlBarIconButton
         name={togglePlayerModeButtonIconName(videoPlayerMode)}
         onPress={() => {
@@ -163,20 +172,27 @@ const LowerControlBar = ({
 
 const ControlBar = (props) => (
   <View
+    {...props}
     style={{
       flexDirection: "row",
       width: "100%",
       backgroundColor: "#00000080",
       padding: 10,
       alignItems: "center",
+      paddingHorizontal: 15,
+      ...props.style,
     }}
-    {...props}
   />
 );
 
 const ControlBarIconButton = ({ onPress, name }) => (
   <TouchableOpacity onPress={onPress}>
-    <Icon name={name} size={26} color="white" style={{ padding: 10 }} />
+    <Icon
+      name={name}
+      size={26}
+      color="white"
+      style={{ paddingHorizontal: 15 }}
+    />
   </TouchableOpacity>
 );
 
