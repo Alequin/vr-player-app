@@ -1,3 +1,4 @@
+import { ResizeMode, Video } from "expo-av";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const MODES = {
@@ -5,8 +6,24 @@ export const MODES = {
   NORMAL_VIDEO: "normal-video",
 };
 
+export const RESIZE_MODES = {
+  RESIZE_MODE_COVER: Video.RESIZE_MODE_COVER,
+  RESIZE_MODE_CONTAIN: Video.RESIZE_MODE_CONTAIN,
+  RESIZE_MODE_STRETCH: Video.RESIZE_MODE_STRETCH,
+};
+
+const resizeModesToggleOrder = [
+  RESIZE_MODES.RESIZE_MODE_COVER,
+  RESIZE_MODES.RESIZE_MODE_CONTAIN,
+  RESIZE_MODES.RESIZE_MODE_STRETCH,
+];
+
 export const usePairedVideosPlayers = () => {
   const [videoPlayerMode, setVideoPlayerMode] = useState(MODES.VR_VIDEO);
+  const [videoResizeMode, setResizeMode] = useState(
+    RESIZE_MODES.RESIZE_MODE_COVER
+  );
+
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [errorLoadingVideo, setErrorLoadingVideo] = useState(false);
@@ -55,58 +72,81 @@ export const usePairedVideosPlayers = () => {
     rightPlayer: secondaryVideo,
     errorLoadingVideo,
     videoPlayerMode,
-    clearError: () => setErrorLoadingVideo(false),
+    videoResizeMode,
     play,
     setPosition,
     setDisplayPosition: setCurrentVideoPositionInMillis,
-    pause: async () => {
+    clearError: useCallback(() => setErrorLoadingVideo(false), []),
+    pause: useCallback(async () => {
       if (isLoaded) {
         await Promise.all([
-          primaryVideo.current.pauseAsync(),
-          secondaryVideo.current.pauseAsync(),
+          primaryVideo?.current?.pauseAsync(),
+          secondaryVideo?.current?.pauseAsync(),
         ]);
       }
-    },
-    loadVideoSource: async (newFilePath) => {
-      try {
-        // Load video
-        await Promise.all([
-          primaryVideo?.current?.loadAsync(newFilePath, {
-            progressUpdateIntervalMillis: 25,
-          }),
-          secondaryVideo?.current?.loadAsync(newFilePath, {
-            progressUpdateIntervalMillis: 25,
-          }),
-        ]);
-      } catch (error) {
-        // TODO display error message on screen on load failure
-        setErrorLoadingVideo(
-          `Unable to load file ${newFilePath.name} as a video`
-        );
-        setIsLoaded(false);
-        setVideoDuration(0);
-        return;
-      }
-
-      // Update state to indicate the video is available
-      const { isLoaded, durationMillis } =
-        await primaryVideo?.current?.getStatusAsync();
-
-      setIsLoaded(isLoaded);
-      setVideoDuration(durationMillis);
-
-      // Manage state updates
-      primaryVideo?.current?.setOnPlaybackStatusUpdate(
-        ({ isLoaded, positionMillis, isPlaying }) => {
-          setIsPlaying(isPlaying);
-          setCurrentVideoPositionInMillis(isLoaded ? positionMillis : 0);
+    }, [primaryVideo?.current, secondaryVideo?.current, isLoaded]),
+    loadVideoSource: useCallback(
+      async (newFilePath) => {
+        try {
+          // Load video
+          await Promise.all([
+            primaryVideo?.current?.loadAsync(newFilePath, {
+              progressUpdateIntervalMillis: 25,
+            }),
+            secondaryVideo?.current?.loadAsync(newFilePath, {
+              progressUpdateIntervalMillis: 25,
+            }),
+          ]);
+        } catch (error) {
+          // TODO display error message on screen on load failure
+          setErrorLoadingVideo(
+            `Unable to load file ${newFilePath.name} as a video`
+          );
+          setIsLoaded(false);
+          setVideoDuration(0);
+          return;
         }
-      );
-    },
-    toggleVideoMode: () => {
-      setVideoPlayerMode(
-        videoPlayerMode === MODES.VR_VIDEO ? MODES.NORMAL_VIDEO : MODES.VR_VIDEO
-      );
-    },
+
+        // Update state to indicate the video is available
+        const { isLoaded, durationMillis } =
+          await primaryVideo?.current?.getStatusAsync();
+
+        setIsLoaded(isLoaded);
+        setVideoDuration(durationMillis);
+
+        // Manage state updates
+        primaryVideo?.current?.setOnPlaybackStatusUpdate(
+          ({ isLoaded, positionMillis, isPlaying }) => {
+            setIsPlaying(isPlaying);
+            setCurrentVideoPositionInMillis(isLoaded ? positionMillis : 0);
+          }
+        );
+      },
+      [primaryVideo?.current, secondaryVideo?.current]
+    ),
+    toggleVideoMode: useCallback(
+      () =>
+        setVideoPlayerMode((currentVideoPlayerMode) =>
+          currentVideoPlayerMode === MODES.VR_VIDEO
+            ? MODES.NORMAL_VIDEO
+            : MODES.VR_VIDEO
+        ),
+      []
+    ),
+    toggleResizeMode: useCallback(
+      () =>
+        setResizeMode((currentResizeMode) => {
+          const currentIndex = resizeModesToggleOrder.findIndex(
+            (mode) => mode === currentResizeMode
+          );
+
+          const nextIndex = currentIndex + 1;
+
+          return resizeModesToggleOrder[
+            nextIndex >= resizeModesToggleOrder.length ? 0 : nextIndex
+          ];
+        }),
+      []
+    ),
   };
 };

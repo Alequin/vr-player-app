@@ -14,6 +14,7 @@ export const VideoPlayer = () => {
         <DualVideoView
           videoLeft={videoPlayer.leftPlayer}
           videoRight={videoPlayer.rightPlayer}
+          videoResizeMode={videoPlayer.videoResizeMode}
           videoPlayerMode={videoPlayer.videoPlayerMode}
           zIndex={-1}
         />

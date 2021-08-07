@@ -10,7 +10,8 @@ import {
   View,
 } from "react-native";
 import { Icon } from "../../icon";
-import { MODES } from "../hooks/use-paired-video-players";
+import { MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
+import { VideoPlayer } from "../video-player";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
   const [shouldResume, setShouldResume] = useState(false);
@@ -36,7 +37,9 @@ export const Controls = ({ videoPlayer, zIndex }) => {
       >
         <ControlBar>
           <UpperControlBar
-            showControls={showControls}
+            videoPlayerMode={videoPlayer.videoPlayerMode}
+            videoResizeMode={videoPlayer.videoResizeMode}
+            onPressAnyControls={showControls}
             onPressSelectVideo={() => {
               DocumentPicker.getDocumentAsync({
                 copyToCacheDirectory: false,
@@ -44,13 +47,13 @@ export const Controls = ({ videoPlayer, zIndex }) => {
                 videoPlayer.loadVideoSource(selectedVideo)
               );
             }}
-            videoPlayerMode={videoPlayer.videoPlayerMode}
             togglePlayerMode={() => videoPlayer.toggleVideoMode()}
+            togglePlayerResizeMode={() => videoPlayer.toggleResizeMode()}
           />
         </ControlBar>
         <ControlBar>
           <LowerControlBar
-            showControls={showControls}
+            onPressAnyControls={showControls}
             isPlaying={videoPlayer.isPlaying}
             videoDuration={videoPlayer.videoDuration}
             currentVideoPositionInMillis={
@@ -59,17 +62,17 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             onPressPlay={() =>
               videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
             }
-            onSeekVideoPositionComplete={async (newPosition) => {
-              await videoPlayer.setPosition(newPosition);
-              if (shouldResume) videoPlayer.play();
-              setShouldResume(false);
-            }}
             onSeekVideoPosition={(newPosition) => {
               videoPlayer.setDisplayPosition(newPosition);
               if (videoPlayer.isPlaying) {
                 videoPlayer.pause();
                 setShouldResume(true);
               }
+            }}
+            onSeekVideoPositionComplete={async (newPosition) => {
+              await videoPlayer.setPosition(newPosition);
+              if (shouldResume) videoPlayer.play();
+              setShouldResume(false);
             }}
           />
         </ControlBar>
@@ -79,10 +82,12 @@ export const Controls = ({ videoPlayer, zIndex }) => {
 };
 
 const UpperControlBar = ({
-  showControls,
+  onPressAnyControls,
   onPressSelectVideo,
   togglePlayerMode,
   videoPlayerMode,
+  videoResizeMode,
+  togglePlayerResizeMode,
 }) => {
   return (
     <>
@@ -91,7 +96,14 @@ const UpperControlBar = ({
         name={togglePlayerModeButtonIconName(videoPlayerMode)}
         onPress={() => {
           togglePlayerMode();
-          showControls();
+          onPressAnyControls();
+        }}
+      />
+      <ControlBarIconButton
+        name={toggleResizeModeButtonIconName(videoResizeMode)}
+        onPress={() => {
+          togglePlayerResizeMode();
+          onPressAnyControls();
         }}
       />
     </>
@@ -103,10 +115,18 @@ const togglePlayerModeButtonIconName = (videoPlayerMode) => {
   if (videoPlayerMode === MODES.NORMAL_VIDEO) return "screenDesktop";
 };
 
+const toggleResizeModeButtonIconName = (videoResizeMode) => {
+  if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_COVER)
+    return "stretchToPage";
+  if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_CONTAIN)
+    return "screenNormal";
+  if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_STRETCH) return "fitScreen";
+};
+
 const LowerControlBar = ({
   isPlaying,
   onPressPlay,
-  showControls,
+  onPressAnyControls,
   videoDuration,
   onSeekVideoPositionComplete,
   onSeekVideoPosition,
@@ -118,7 +138,7 @@ const LowerControlBar = ({
         name={isPlaying ? "pause" : "play"}
         onPress={() => {
           onPressPlay();
-          showControls();
+          onPressAnyControls();
         }}
       />
       <Text style={{ color: "white", fontWeight: "bold", fontSize: 17 }}>
@@ -134,7 +154,7 @@ const LowerControlBar = ({
         maximumTrackTintColor="#FFF"
         onValueChange={(newValue) => {
           onSeekVideoPosition(newValue);
-          showControls();
+          onPressAnyControls();
         }}
         onSlidingComplete={onSeekVideoPositionComplete}
       />

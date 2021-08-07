@@ -1,4 +1,10 @@
-import { FontAwesome5, SimpleLineIcons } from "@expo/vector-icons";
+import {
+  FontAwesome5,
+  MaterialCommunityIcons,
+  MaterialIcons,
+  Octicons,
+  SimpleLineIcons,
+} from "@expo/vector-icons";
 import camelCase from "lodash/camelCase";
 import React from "react";
 import { View } from "react-native";
@@ -38,6 +44,9 @@ const ICON_OPTIONS = {
     testIdOverride: "vrHeadset",
   }),
   screenDesktop: customIcon(SimpleLineIcons, "screen-desktop"),
+  stretchToPage: customIcon(MaterialCommunityIcons, "stretch-to-page"),
+  fitScreen: customIcon(MaterialIcons, "fit-screen"),
+  screenNormal: customIcon(Octicons, "screen-normal"),
 };
 
 const TestIdElement = (props) => <View {...props} />;

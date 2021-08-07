@@ -8,6 +8,7 @@ export const DualVideoView = ({
   videoRight,
   zIndex,
   videoPlayerMode,
+  videoResizeMode,
 }) => {
   return (
     <View
@@ -16,24 +17,33 @@ export const DualVideoView = ({
         flexDirection: "row",
         height: "100%",
         width: "100%",
-        backgroundColor: "red",
+        backgroundColor: "black",
         zIndex,
       }}
     >
       <VideoView
         videoRef={videoLeft}
+        videoResizeMode={videoResizeMode}
         fullScreen={videoPlayerMode === MODES.NORMAL_VIDEO}
       />
       <VideoView
         videoRef={videoRight}
-        isMuted
+        videoResizeMode={videoResizeMode}
         hide={videoPlayerMode === MODES.NORMAL_VIDEO}
+        isMuted
       />
     </View>
   );
 };
 
-const VideoView = ({ videoRef, videoSource, isMuted, fullScreen, hide }) => {
+const VideoView = ({
+  videoRef,
+  videoSource,
+  isMuted,
+  fullScreen,
+  hide,
+  videoResizeMode,
+}) => {
   return (
     <Video
       ref={videoRef}
@@ -41,8 +51,7 @@ const VideoView = ({ videoRef, videoSource, isMuted, fullScreen, hide }) => {
       source={{
         uri: videoSource,
       }}
-      useNativeControls
-      resizeMode={Video.RESIZE_MODE_STRETCH}
+      resizeMode={videoResizeMode}
       isLooping
       isMuted={isMuted}
     />
