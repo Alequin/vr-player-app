@@ -3,7 +3,7 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Controls } from "./components/controls";
 import { DualVideoView } from "./components/dual-video-view";
-import { StopOnPressOverlay } from "./components/stop-on-press-overlay";
+import { VideoPlayerMask as ScreenMask } from "./components/screen-mask";
 import { usePairedVideosPlayers } from "./hooks/use-paired-video-players";
 
 export const VideoPlayer = () => {
@@ -17,10 +17,13 @@ export const VideoPlayer = () => {
         zIndex={-1}
       />
       {/*z index has to be less than 1 to allow the user to press the custom controls */}
-      <StopOnPressOverlay zIndex={0} />
+      <ScreenMask zIndex={0} shouldMakeMaskTransparent={videoPlayer.isLoaded} />
       <Controls
         isPlaying={videoPlayer.isPlaying}
-        currentVideoPosition={videoPlayer.currentVideoPosition}
+        currentVideoPositionAsPercentage={
+          videoPlayer.currentVideoPositionAsPercentage
+        }
+        currentVideoPositionInMillis={videoPlayer.currentVideoPositionInMillis}
         onPressSelectVideo={() => {
           DocumentPicker.getDocumentAsync({
             copyToCacheDirectory: false,

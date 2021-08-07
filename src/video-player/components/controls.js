@@ -8,12 +8,14 @@ import {
   View,
 } from "react-native";
 import { Icon } from "../../icon";
+import Slider from "@react-native-community/slider";
 
 export const Controls = ({
   isPlaying,
   onPressSelectVideo,
   onPressPlay,
-  currentVideoPosition,
+  currentVideoPositionInMillis,
+  currentVideoPositionAsPercentage,
   zIndex,
 }) => {
   const [areControlsVisible, setAreControlsVisible] = useState(false);
@@ -85,8 +87,17 @@ export const Controls = ({
               style={{ marginHorizontal: 10 }}
             />
             <Text style={{ color: "white", fontWeight: "bold", fontSize: 17 }}>
-              {millisecondsToTime(currentVideoPosition)}
+              {millisecondsToTime(currentVideoPositionInMillis)}
             </Text>
+            <Slider
+              style={{ width: "80%", height: 40 }}
+              minimumValue={0}
+              maximumValue={10000}
+              minimumTrackTintColor="#FFFFFF"
+              maximumTrackTintColor="#000000"
+              value={currentVideoPositionAsPercentage * 10000}
+              step={1}
+            />
           </TouchableOpacity>
         </View>
       </Animated.View>
