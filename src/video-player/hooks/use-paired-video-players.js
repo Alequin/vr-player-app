@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+export const MODES = {
+  VR_VIDEO: "vr",
+  NORMAL_VIDEO: "normal-video",
+};
+
 export const usePairedVideosPlayers = () => {
+  const [videoPlayerMode, setVideoPlayerMode] = useState(MODES.VR_VIDEO);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [errorLoadingVideo, setErrorLoadingVideo] = useState(false);
@@ -48,6 +54,7 @@ export const usePairedVideosPlayers = () => {
     leftPlayer: primaryVideo,
     rightPlayer: secondaryVideo,
     errorLoadingVideo,
+    videoPlayerMode,
     clearError: () => setErrorLoadingVideo(false),
     play,
     setPosition,
@@ -94,6 +101,11 @@ export const usePairedVideosPlayers = () => {
           setIsPlaying(isPlaying);
           setCurrentVideoPositionInMillis(isLoaded ? positionMillis : 0);
         }
+      );
+    },
+    toggleVideoMode: () => {
+      setVideoPlayerMode(
+        videoPlayerMode === MODES.VR_VIDEO ? MODES.NORMAL_VIDEO : MODES.VR_VIDEO
       );
     },
   };

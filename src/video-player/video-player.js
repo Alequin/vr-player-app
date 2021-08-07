@@ -16,6 +16,7 @@ export const VideoPlayer = () => {
         <DualVideoView
           videoLeft={videoPlayer.leftPlayer}
           videoRight={videoPlayer.rightPlayer}
+          videoPlayerMode={videoPlayer.videoPlayerMode}
           zIndex={-1}
         />
       ) : (
@@ -28,9 +29,7 @@ export const VideoPlayer = () => {
             backgroundColor: "red",
             zIndex: 2,
           }}
-          onPress={() => {
-            videoPlayer.clearError();
-          }}
+          onPress={videoPlayer.clearError}
         >
           <Text>{videoPlayer.errorLoadingVideo}</Text>
         </TouchableOpacity>
@@ -39,9 +38,8 @@ export const VideoPlayer = () => {
       {/*z index has to be less than 1 to allow the user to press the custom controls */}
       <ScreenMask zIndex={0} shouldMakeMaskTransparent={videoPlayer.isLoaded} />
       <Controls
-        isPlaying={videoPlayer.isPlaying}
-        currentVideoPositionInMillis={videoPlayer.currentVideoPositionInMillis}
-        videoDuration={videoPlayer.videoDuration}
+        videoPlayer={videoPlayer}
+        zIndex={1}
         onPressSelectVideo={() => {
           DocumentPicker.getDocumentAsync({
             copyToCacheDirectory: false,
@@ -49,14 +47,14 @@ export const VideoPlayer = () => {
             videoPlayer.loadVideoSource(selectedVideo)
           );
         }}
-        onSliderChange={(newPosition) => {
+        onSeekVideoPosition={(newPosition) => {
           videoPlayer.setDisplayPosition(newPosition);
           if (videoPlayer.isPlaying) {
             videoPlayer.pause();
             setShouldResume(true);
           }
         }}
-        onSlidingComplete={async (newPosition) => {
+        onSeekVideoPositionComplete={async (newPosition) => {
           await videoPlayer.setPosition(newPosition);
           if (shouldResume) videoPlayer.play();
           setShouldResume(false);
@@ -64,7 +62,7 @@ export const VideoPlayer = () => {
         onPressPlay={() =>
           videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
         }
-        zIndex={1}
+        togglePlayerMode={() => videoPlayer.toggleVideoMode()}
       />
     </View>
   );

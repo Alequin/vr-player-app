@@ -9,15 +9,20 @@ import {
 } from "react-native";
 import { Icon } from "../../icon";
 import Slider from "@react-native-community/slider";
+import { MODES } from "../hooks/use-paired-video-players";
 
 export const Controls = ({
-  isPlaying,
+  videoPlayer: {
+    isPlaying,
+    videoPlayerMode,
+    currentVideoPositionInMillis,
+    videoDuration,
+  },
   onPressSelectVideo,
   onPressPlay,
-  onSliderChange,
-  onSlidingComplete,
-  currentVideoPositionInMillis,
-  videoDuration,
+  onSeekVideoPosition,
+  onSeekVideoPositionComplete,
+  togglePlayerMode,
   zIndex,
 }) => {
   const { fadeAnim, showControls } = useShowControls();
@@ -40,60 +45,112 @@ export const Controls = ({
           justifyContent: "space-between",
         }}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            width: "100%",
-            backgroundColor: "#00000080",
-          }}
-        >
-          <Button onPress={onPressSelectVideo} title="Pick video" />
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            width: "100%",
-            backgroundColor: "#00000080",
-            padding: 10,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <TouchableOpacity
-              onPress={() => {
-                onPressPlay();
-                showControls();
-              }}
-            >
-              <Icon
-                name={isPlaying ? "pause" : "play"}
-                size={26}
-                color="white"
-                style={{ marginHorizontal: 10 }}
-              />
-            </TouchableOpacity>
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 17 }}>
-              {millisecondsToTime(currentVideoPositionInMillis)}
-            </Text>
-            <Slider
-              value={currentVideoPositionInMillis}
-              maximumValue={videoDuration}
-              minimumValue={0}
-              step={1}
-              style={{ width: "80%", height: 40 }}
-              minimumTrackTintColor="#FFFFFF"
-              maximumTrackTintColor="#000000"
-              onValueChange={(newValue) => {
-                onSliderChange(newValue);
-                showControls();
-              }}
-              onSlidingComplete={onSlidingComplete}
-            />
-          </View>
-        </View>
+        <ControlBar>
+          <UpperControlBar
+            onPressSelectVideo={onPressSelectVideo}
+            videoPlayerMode={videoPlayerMode}
+            togglePlayerMode={togglePlayerMode}
+          />
+        </ControlBar>
+        <ControlBar>
+          <LowerControlBar
+            isPlaying={isPlaying}
+            onPressPlay={onPressPlay}
+            showControls={showControls}
+            videoDuration={videoDuration}
+            onSeekVideoPositionComplete={onSeekVideoPositionComplete}
+            onSeekVideoPosition={onSeekVideoPosition}
+            currentVideoPositionInMillis={currentVideoPositionInMillis}
+          />
+        </ControlBar>
       </Animated.View>
     </TouchableWithoutFeedback>
   );
 };
+
+const UpperControlBar = ({
+  onPressSelectVideo,
+  togglePlayerMode,
+  videoPlayerMode,
+}) => {
+  return (
+    <>
+      <Button onPress={onPressSelectVideo} title="Pick video" />
+      <ControlBarIconButton
+        name={togglePlayerModeButtonIconName(videoPlayerMode)}
+        onPress={togglePlayerMode}
+      />
+    </>
+  );
+};
+
+const togglePlayerModeButtonIconName = (videoPlayerMode) => {
+  if (videoPlayerMode === MODES.VR_VIDEO) return "vrHeadset";
+  if (videoPlayerMode === MODES.NORMAL_VIDEO) return "screenDesktop";
+};
+
+const LowerControlBar = ({
+  isPlaying,
+  onPressPlay,
+  showControls,
+  videoDuration,
+  onSeekVideoPositionComplete,
+  onSeekVideoPosition,
+  currentVideoPositionInMillis,
+}) => {
+  return (
+    <>
+      <ControlBarIconButton
+        name={isPlaying ? "pause" : "play"}
+        onPress={() => {
+          onPressPlay();
+          showControls();
+        }}
+      />
+      <Text style={{ color: "white", fontWeight: "bold", fontSize: 17 }}>
+        {millisecondsToTime(currentVideoPositionInMillis)}
+      </Text>
+      <Slider
+        value={currentVideoPositionInMillis}
+        maximumValue={videoDuration}
+        minimumValue={0}
+        step={1}
+        style={{ width: "80%", height: 40 }}
+        minimumTrackTintColor="#FFF"
+        maximumTrackTintColor="#FFF"
+        onValueChange={(newValue) => {
+          onSeekVideoPosition(newValue);
+          showControls();
+        }}
+        onSlidingComplete={onSeekVideoPositionComplete}
+      />
+    </>
+  );
+};
+
+const ControlBar = (props) => (
+  <View
+    style={{
+      flexDirection: "row",
+      width: "100%",
+      backgroundColor: "#00000080",
+      padding: 10,
+      alignItems: "center",
+    }}
+    {...props}
+  />
+);
+
+const ControlBarIconButton = ({ onPress, name }) => (
+  <TouchableOpacity onPress={onPress}>
+    <Icon
+      name={name}
+      size={26}
+      color="white"
+      style={{ marginHorizontal: 10 }}
+    />
+  </TouchableOpacity>
+);
 
 const useShowControls = () => {
   const [areControlsVisible, setAreControlsVisible] = useState(false);

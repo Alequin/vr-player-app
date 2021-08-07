@@ -1,11 +1,4 @@
-import {
-  Feather,
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons,
-  SimpleLineIcons,
-} from "@expo/vector-icons";
+import { FontAwesome5, SimpleLineIcons } from "@expo/vector-icons";
 import camelCase from "lodash/camelCase";
 import React from "react";
 import { View } from "react-native";
@@ -18,10 +11,17 @@ export const Icon = ({ name, ...otherProps }) => {
 };
 
 const customIcon =
-  (IconSourceElement, iconName) =>
+  (IconSourceElement, iconName, { testIdOverride } = {}) =>
   ({ size, color, style, ...otherProps }) =>
     (
-      <TestIdElement testID={`${camelCase(iconName)}Icon`} style={style}>
+      <TestIdElement
+        testID={
+          testIdOverride
+            ? `${testIdOverride}Icon`
+            : `${camelCase(iconName)}Icon`
+        }
+        style={style}
+      >
         <IconSourceElement
           name={iconName}
           size={size}
@@ -34,6 +34,10 @@ const customIcon =
 const ICON_OPTIONS = {
   play: customIcon(FontAwesome5, "play"),
   pause: customIcon(FontAwesome5, "pause"),
+  vrHeadset: customIcon(FontAwesome5, "vr-cardboard", {
+    testIdOverride: "vrHeadset",
+  }),
+  screenDesktop: customIcon(SimpleLineIcons, "screen-desktop"),
 };
 
 const TestIdElement = (props) => <View {...props} />;
