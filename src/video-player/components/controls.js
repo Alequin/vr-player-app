@@ -33,66 +33,56 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           justifyContent: "space-between",
         }}
       >
-        <ControlBar
-          style={{
-            justifyContent: "flex-end",
+        <UpperControlBar
+          onPressAnyControls={showControls}
+          onPressSelectVideo={() => {
+            DocumentPicker.getDocumentAsync({
+              copyToCacheDirectory: false,
+            }).then((selectedVideo) =>
+              videoPlayer.loadVideoSource(selectedVideo)
+            );
           }}
-        >
-          <UpperControlBar
-            videoPlayerMode={videoPlayer.videoPlayerMode}
-            videoResizeMode={videoPlayer.videoResizeMode}
-            onPressAnyControls={showControls}
-            onPressSelectVideo={() => {
-              DocumentPicker.getDocumentAsync({
-                copyToCacheDirectory: false,
-              }).then((selectedVideo) =>
-                videoPlayer.loadVideoSource(selectedVideo)
-              );
-            }}
-            togglePlayerMode={() => videoPlayer.toggleVideoMode()}
-            togglePlayerResizeMode={() => videoPlayer.toggleResizeMode()}
-          />
-        </ControlBar>
-        <ControlBar>
-          <LowerControlBar
-            onPressAnyControls={showControls}
-            isPlaying={videoPlayer.isPlaying}
-            videoDuration={videoPlayer.videoDuration}
-            currentVideoPositionInMillis={
-              videoPlayer.currentVideoPositionInMillis
+        />
+        <LowerControlBar
+          onPressAnyControls={showControls}
+          isPlaying={videoPlayer.isPlaying}
+          videoDuration={videoPlayer.videoDuration}
+          currentVideoPositionInMillis={
+            videoPlayer.currentVideoPositionInMillis
+          }
+          videoPlayerMode={videoPlayer.videoPlayerMode}
+          videoResizeMode={videoPlayer.videoResizeMode}
+          onPressPlay={() =>
+            videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
+          }
+          onSeekVideoPosition={(newPosition) => {
+            videoPlayer.setDisplayPosition(newPosition);
+            if (videoPlayer.isPlaying) {
+              videoPlayer.pause();
+              setShouldResume(true);
             }
-            onPressPlay={() =>
-              videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
-            }
-            onSeekVideoPosition={(newPosition) => {
-              videoPlayer.setDisplayPosition(newPosition);
-              if (videoPlayer.isPlaying) {
-                videoPlayer.pause();
-                setShouldResume(true);
-              }
-            }}
-            onSeekVideoPositionComplete={async (newPosition) => {
-              await videoPlayer.setPosition(newPosition);
-              if (shouldResume) videoPlayer.play();
-              setShouldResume(false);
-            }}
-          />
-        </ControlBar>
+          }}
+          onSeekVideoPositionComplete={async (newPosition) => {
+            await videoPlayer.setPosition(newPosition);
+            if (shouldResume) videoPlayer.play();
+            setShouldResume(false);
+          }}
+          togglePlayerMode={() => videoPlayer.toggleVideoMode()}
+          togglePlayerResizeMode={() => videoPlayer.toggleResizeMode()}
+        />
       </Animated.View>
     </TouchableWithoutFeedback>
   );
 };
 
-const UpperControlBar = ({
-  onPressAnyControls,
-  onPressSelectVideo,
-  togglePlayerMode,
-  videoPlayerMode,
-  videoResizeMode,
-  togglePlayerResizeMode,
-}) => {
+const UpperControlBar = ({ onPressAnyControls, onPressSelectVideo }) => {
   return (
-    <>
+    <ControlBar
+      style={{
+        justifyContent: "space-between",
+      }}
+    >
+      <ControlBarIconButton name="backArrow" onPress={onPressAnyControls} />
       <ControlBarIconButton
         name="folderVideo"
         onPress={() => {
@@ -100,21 +90,7 @@ const UpperControlBar = ({
           onPressAnyControls();
         }}
       />
-      <ControlBarIconButton
-        name={togglePlayerModeButtonIconName(videoPlayerMode)}
-        onPress={() => {
-          togglePlayerMode();
-          onPressAnyControls();
-        }}
-      />
-      <ControlBarIconButton
-        name={toggleResizeModeButtonIconName(videoResizeMode)}
-        onPress={() => {
-          togglePlayerResizeMode();
-          onPressAnyControls();
-        }}
-      />
-    </>
+    </ControlBar>
   );
 };
 
@@ -139,9 +115,17 @@ const LowerControlBar = ({
   onSeekVideoPositionComplete,
   onSeekVideoPosition,
   currentVideoPositionInMillis,
+  togglePlayerMode,
+  videoPlayerMode,
+  videoResizeMode,
+  togglePlayerResizeMode,
 }) => {
   return (
-    <>
+    <ControlBar
+      style={{
+        justifyContent: "space-between",
+      }}
+    >
       <ControlBarIconButton
         name={isPlaying ? "pause" : "play"}
         onPress={() => {
@@ -157,7 +141,7 @@ const LowerControlBar = ({
         maximumValue={videoDuration}
         minimumValue={0}
         step={1}
-        style={{ width: "80%", height: 40 }}
+        style={{ flex: 1, height: 40 }}
         minimumTrackTintColor="#FFF"
         maximumTrackTintColor="#FFF"
         onValueChange={(newValue) => {
@@ -166,7 +150,21 @@ const LowerControlBar = ({
         }}
         onSlidingComplete={onSeekVideoPositionComplete}
       />
-    </>
+      <ControlBarIconButton
+        name={togglePlayerModeButtonIconName(videoPlayerMode)}
+        onPress={() => {
+          togglePlayerMode();
+          onPressAnyControls();
+        }}
+      />
+      <ControlBarIconButton
+        name={toggleResizeModeButtonIconName(videoResizeMode)}
+        onPress={() => {
+          togglePlayerResizeMode();
+          onPressAnyControls();
+        }}
+      />
+    </ControlBar>
   );
 };
 
