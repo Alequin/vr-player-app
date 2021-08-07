@@ -1,4 +1,3 @@
-import * as DocumentPicker from "expo-document-picker";
 import React, { useState } from "react";
 import { StyleSheet, TouchableOpacity, View, Text } from "react-native";
 import { Controls } from "./components/controls";
@@ -7,7 +6,6 @@ import { VideoPlayerMask as ScreenMask } from "./components/screen-mask";
 import { usePairedVideosPlayers } from "./hooks/use-paired-video-players";
 
 export const VideoPlayer = () => {
-  const [shouldResume, setShouldResume] = useState(false);
   const videoPlayer = usePairedVideosPlayers();
 
   return (
@@ -37,33 +35,7 @@ export const VideoPlayer = () => {
 
       {/*z index has to be less than 1 to allow the user to press the custom controls */}
       <ScreenMask zIndex={0} shouldMakeMaskTransparent={videoPlayer.isLoaded} />
-      <Controls
-        videoPlayer={videoPlayer}
-        zIndex={1}
-        onPressSelectVideo={() => {
-          DocumentPicker.getDocumentAsync({
-            copyToCacheDirectory: false,
-          }).then((selectedVideo) =>
-            videoPlayer.loadVideoSource(selectedVideo)
-          );
-        }}
-        onSeekVideoPosition={(newPosition) => {
-          videoPlayer.setDisplayPosition(newPosition);
-          if (videoPlayer.isPlaying) {
-            videoPlayer.pause();
-            setShouldResume(true);
-          }
-        }}
-        onSeekVideoPositionComplete={async (newPosition) => {
-          await videoPlayer.setPosition(newPosition);
-          if (shouldResume) videoPlayer.play();
-          setShouldResume(false);
-        }}
-        onPressPlay={() =>
-          videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
-        }
-        togglePlayerMode={() => videoPlayer.toggleVideoMode()}
-      />
+      <Controls videoPlayer={videoPlayer} zIndex={1} />
     </View>
   );
 };

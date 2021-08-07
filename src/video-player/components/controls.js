@@ -1,3 +1,5 @@
+import Slider from "@react-native-community/slider";
+import * as DocumentPicker from "expo-document-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -8,23 +10,10 @@ import {
   View,
 } from "react-native";
 import { Icon } from "../../icon";
-import Slider from "@react-native-community/slider";
 import { MODES } from "../hooks/use-paired-video-players";
 
-export const Controls = ({
-  videoPlayer: {
-    isPlaying,
-    videoPlayerMode,
-    currentVideoPositionInMillis,
-    videoDuration,
-  },
-  onPressSelectVideo,
-  onPressPlay,
-  onSeekVideoPosition,
-  onSeekVideoPositionComplete,
-  togglePlayerMode,
-  zIndex,
-}) => {
+export const Controls = ({ videoPlayer, zIndex }) => {
+  const [shouldResume, setShouldResume] = useState(false);
   const { fadeAnim, showControls } = useShowControls();
 
   return (
@@ -47,20 +36,41 @@ export const Controls = ({
       >
         <ControlBar>
           <UpperControlBar
-            onPressSelectVideo={onPressSelectVideo}
-            videoPlayerMode={videoPlayerMode}
-            togglePlayerMode={togglePlayerMode}
+            showControls={showControls}
+            onPressSelectVideo={() => {
+              DocumentPicker.getDocumentAsync({
+                copyToCacheDirectory: false,
+              }).then((selectedVideo) =>
+                videoPlayer.loadVideoSource(selectedVideo)
+              );
+            }}
+            videoPlayerMode={videoPlayer.videoPlayerMode}
+            togglePlayerMode={() => videoPlayer.toggleVideoMode()}
           />
         </ControlBar>
         <ControlBar>
           <LowerControlBar
-            isPlaying={isPlaying}
-            onPressPlay={onPressPlay}
             showControls={showControls}
-            videoDuration={videoDuration}
-            onSeekVideoPositionComplete={onSeekVideoPositionComplete}
-            onSeekVideoPosition={onSeekVideoPosition}
-            currentVideoPositionInMillis={currentVideoPositionInMillis}
+            isPlaying={videoPlayer.isPlaying}
+            videoDuration={videoPlayer.videoDuration}
+            currentVideoPositionInMillis={
+              videoPlayer.currentVideoPositionInMillis
+            }
+            onPressPlay={() =>
+              videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
+            }
+            onSeekVideoPositionComplete={async (newPosition) => {
+              await videoPlayer.setPosition(newPosition);
+              if (shouldResume) videoPlayer.play();
+              setShouldResume(false);
+            }}
+            onSeekVideoPosition={(newPosition) => {
+              videoPlayer.setDisplayPosition(newPosition);
+              if (videoPlayer.isPlaying) {
+                videoPlayer.pause();
+                setShouldResume(true);
+              }
+            }}
           />
         </ControlBar>
       </Animated.View>
@@ -69,6 +79,7 @@ export const Controls = ({
 };
 
 const UpperControlBar = ({
+  showControls,
   onPressSelectVideo,
   togglePlayerMode,
   videoPlayerMode,
@@ -78,7 +89,10 @@ const UpperControlBar = ({
       <Button onPress={onPressSelectVideo} title="Pick video" />
       <ControlBarIconButton
         name={togglePlayerModeButtonIconName(videoPlayerMode)}
-        onPress={togglePlayerMode}
+        onPress={() => {
+          togglePlayerMode();
+          showControls();
+        }}
       />
     </>
   );
@@ -143,12 +157,7 @@ const ControlBar = (props) => (
 
 const ControlBarIconButton = ({ onPress, name }) => (
   <TouchableOpacity onPress={onPress}>
-    <Icon
-      name={name}
-      size={26}
-      color="white"
-      style={{ marginHorizontal: 10 }}
-    />
+    <Icon name={name} size={26} color="white" style={{ padding: 10 }} />
   </TouchableOpacity>
 );
 
