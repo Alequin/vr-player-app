@@ -35,7 +35,7 @@ export const VideoPlayer = () => {
       )}
 
       {/*z index has to be less than 1 to allow the user to press the custom controls */}
-      <ScreenMask zIndex={0} shouldMakeMaskTransparent={videoPlayer.isLoaded} />
+      <ScreenMask zIndex={0} />
       <Controls videoPlayer={videoPlayer} zIndex={1} />
     </View>
   );
