@@ -25,7 +25,7 @@ export const usePairedVideosPlayers = () => {
     RESIZE_MODES.RESIZE_MODE_COVER
   );
 
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadedFilepath, setLoadedFilepath] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [errorLoadingVideo, setErrorLoadingVideo] = useState(false);
 
@@ -38,18 +38,18 @@ export const usePairedVideosPlayers = () => {
   const secondaryVideo = useRef(null);
 
   const play = useCallback(async () => {
-    if (isLoaded) {
+    if (loadedFilepath) {
       await Promise.all([
         primaryVideo.current.playAsync(),
         secondaryVideo.current.playAsync(),
       ]);
       setIsPlaying(true);
     }
-  }, [isLoaded, primaryVideo?.current, secondaryVideo?.current]);
+  }, [loadedFilepath, primaryVideo?.current, secondaryVideo?.current]);
 
   const setPosition = useCallback(
     async (position) => {
-      if (isLoaded && !isNil(position)) {
+      if (loadedFilepath && !isNil(position)) {
         await Promise.all([
           primaryVideo?.current?.setPositionAsync(position),
           secondaryVideo?.current?.setPositionAsync(position),
@@ -57,16 +57,16 @@ export const usePairedVideosPlayers = () => {
         setCurrentVideoPositionInMillis(position);
       }
     },
-    [isLoaded, primaryVideo?.current, secondaryVideo?.current]
+    [loadedFilepath, primaryVideo?.current, secondaryVideo?.current]
   );
 
   useEffect(() => {
-    // Start playing video from beginning when one is selected
-    if (isLoaded) setPosition(0).then(play);
-  }, [isLoaded]);
+    // Start playing video from beginning when a new one is selected
+    if (loadedFilepath) setPosition(0).then(play);
+  }, [loadedFilepath]);
 
   useEffect(() => {
-    if (primaryVideo?.current && isPlaying && isLoaded) {
+    if (primaryVideo?.current && isPlaying && loadedFilepath) {
       const interval = setInterval(() => {
         primaryVideo?.current
           ?.getStatusAsync()
@@ -77,10 +77,10 @@ export const usePairedVideosPlayers = () => {
       }, 25);
       return () => clearInterval(interval);
     }
-  }, [primaryVideo?.current, isPlaying, isLoaded]);
+  }, [primaryVideo?.current, isPlaying, loadedFilepath]);
 
   return {
-    isLoaded,
+    isLoaded: loadedFilepath,
     isPlaying,
     currentVideoPositionInMillis,
     videoDuration,
@@ -94,14 +94,14 @@ export const usePairedVideosPlayers = () => {
     setDisplayPosition: setCurrentVideoPositionInMillis,
     clearError: useCallback(() => setErrorLoadingVideo(false), []),
     pause: useCallback(async () => {
-      if (isLoaded) {
+      if (loadedFilepath) {
         await Promise.all([
           primaryVideo?.current?.pauseAsync(),
           secondaryVideo?.current?.pauseAsync(),
         ]);
         setIsPlaying(false);
       }
-    }, [primaryVideo?.current, secondaryVideo?.current, isLoaded]),
+    }, [primaryVideo?.current, secondaryVideo?.current, loadedFilepath]),
     loadVideoSource: useCallback(
       async (newFileObject) => {
         if (newFileObject.type === "cancel") return;
@@ -119,17 +119,17 @@ export const usePairedVideosPlayers = () => {
           ]);
 
           // Update state to indicate the video is available
-          const { isLoaded, durationMillis } =
+          const { durationMillis } =
             await primaryVideo?.current?.getStatusAsync();
 
-          setIsLoaded(isLoaded);
+          setLoadedFilepath(newFileObject.uri);
           setVideoDuration(durationMillis);
         } catch (error) {
           setErrorLoadingVideo(
             `Unable to play ${newFileObject.name} as a video`
           );
           setIsPlaying(false);
-          setIsLoaded(false);
+          setLoadedFilepath(null);
           setVideoDuration(0);
           return;
         } finally {
@@ -139,13 +139,12 @@ export const usePairedVideosPlayers = () => {
       [primaryVideo?.current, secondaryVideo?.current]
     ),
     unloadVideo: useCallback(async () => {
-      // Load video
       await Promise.all([
         primaryVideo?.current?.unloadAsync(),
         secondaryVideo?.current?.unloadAsync(),
       ]);
 
-      setIsLoaded(false);
+      setLoadedFilepath(null);
       setVideoDuration(0);
       setIsPlaying(false);
       setCurrentVideoPositionInMillis(0);
