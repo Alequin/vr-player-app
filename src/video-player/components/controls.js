@@ -5,6 +5,7 @@ import { Animated, Text, TouchableWithoutFeedback } from "react-native";
 import { ControlBar } from "./control-bar";
 import { ControlBarIconButton } from "./control-bar-icon-button";
 import { ErrorView } from "./error-view";
+import { TimeBar } from "./time-bar";
 import {
   millisecondsToTime,
   togglePlayerModeButtonIconName,
@@ -12,6 +13,8 @@ import {
 } from "./utils";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
+  const [manualPositionInMillis, setManualPositionInMillis] = useState(null);
+  const [shouldUseManualPosition, setShouldUseManualPosition] = useState(false);
   const [shouldResume, setShouldResume] = useState(false);
   const { fadeAnim, showControls } = useShowControls(videoPlayer);
 
@@ -57,22 +60,36 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           isPlaying={videoPlayer.isPlaying}
           videoDuration={videoPlayer.videoDuration}
           currentVideoPositionInMillis={
-            videoPlayer.currentVideoPositionInMillis
+            // Use manual position while user select a position with the time bar.
+            // It produces a smoother experience
+            shouldUseManualPosition
+              ? manualPositionInMillis
+              : videoPlayer.currentVideoPositionInMillis
           }
           videoPlayerMode={videoPlayer.videoPlayerMode}
           videoResizeMode={videoPlayer.videoResizeMode}
           onPressPlay={() =>
             videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
           }
-          onSeekVideoPosition={(newPosition) => {
-            videoPlayer.setDisplayPosition(newPosition);
+          onSeekVideoPositionStart={(newPosition) => {
+            setShouldUseManualPosition(true);
+
+            setManualPositionInMillis(newPosition);
+
             if (videoPlayer.isPlaying) {
               videoPlayer.pause();
               setShouldResume(true);
             }
           }}
+          onSeekVideoPosition={(newPosition) => {
+            setManualPositionInMillis(newPosition);
+          }}
           onSeekVideoPositionComplete={async (newPosition) => {
+            setManualPositionInMillis(newPosition);
             await videoPlayer.setPosition(newPosition);
+
+            setShouldUseManualPosition(false);
+
             if (shouldResume) videoPlayer.play();
             setShouldResume(false);
           }}
@@ -142,8 +159,9 @@ const LowerControlBar = ({
   onPressPlay,
   onPressAnyControls,
   videoDuration,
-  onSeekVideoPositionComplete,
+  onSeekVideoPositionStart,
   onSeekVideoPosition,
+  onSeekVideoPositionComplete,
   currentVideoPositionInMillis,
   togglePlayerMode,
   videoPlayerMode,
@@ -166,19 +184,18 @@ const LowerControlBar = ({
       <Text style={{ color: "white", fontWeight: "bold", fontSize: 17 }}>
         {millisecondsToTime(currentVideoPositionInMillis)}
       </Text>
-      <Slider
-        value={currentVideoPositionInMillis}
-        maximumValue={videoDuration}
-        minimumValue={0}
-        step={1}
-        style={{ flex: 1, height: 40 }}
-        minimumTrackTintColor="#FFF"
-        maximumTrackTintColor="#FFF"
-        onValueChange={(newValue) => {
+      <TimeBar
+        currentPosition={currentVideoPositionInMillis}
+        videoDuration={videoDuration}
+        onSeekVideoPositionStart={(newValue) => {
+          onSeekVideoPositionStart(newValue);
+          onPressAnyControls();
+        }}
+        onSeekVideoPosition={(newValue) => {
           onSeekVideoPosition(newValue);
           onPressAnyControls();
         }}
-        onSlidingComplete={onSeekVideoPositionComplete}
+        onSeekVideoPositionComplete={onSeekVideoPositionComplete}
       />
       <ControlBarIconButton
         name={togglePlayerModeButtonIconName(videoPlayerMode)}

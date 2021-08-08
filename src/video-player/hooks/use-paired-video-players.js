@@ -67,16 +67,15 @@ export const usePairedVideosPlayers = () => {
 
   useEffect(() => {
     if (primaryVideo?.current && isPlaying && isLoaded) {
-      const interval = setInterval(async () => {
-        const { positionMillis } =
-          await primaryVideo?.current?.getStatusAsync();
-        if (!isNil(positionMillis)) {
-          setCurrentVideoPositionInMillis(positionMillis);
-        }
+      const interval = setInterval(() => {
+        primaryVideo?.current
+          ?.getStatusAsync()
+          .then(({ positionMillis, isPlaying }) => {
+            if (!isNil(positionMillis) && isPlaying)
+              setCurrentVideoPositionInMillis(positionMillis);
+          });
       }, 25);
-      return () => {
-        clearInterval(interval);
-      };
+      return () => clearInterval(interval);
     }
   }, [primaryVideo?.current, isPlaying, isLoaded]);
 
