@@ -5,6 +5,7 @@ import {
   Text,
   TouchableWithoutFeedback,
 } from "react-native";
+import { useSelectVideoAndShowAds } from "../hooks/use-select-video-and-show-ads";
 import { ControlBar } from "./control-bar";
 import { ControlBarIconButton } from "./control-bar-icon-button";
 import { ErrorView } from "./control-views/error-view";
@@ -12,7 +13,6 @@ import { HomeView } from "./control-views/home-view";
 import { TimeBar } from "./time-bar";
 import {
   millisecondsToTime,
-  selectAFile,
   togglePlayerModeButtonIconName,
   toggleResizeModeButtonIconName,
 } from "./utils";
@@ -23,11 +23,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const [shouldResume, setShouldResume] = useState(false);
   const { fadeAnim, showControls } = useShowControls(videoPlayer);
 
-  const shouldShowErrorMessage = videoPlayer.errorLoadingVideo;
-  const shouldShowDefaultPage =
-    !shouldShowErrorMessage && !videoPlayer.isLoaded;
-  const shouldDisableLowerBarControls =
-    shouldShowErrorMessage || shouldShowDefaultPage;
+  const selectVideoAndShowAds = useSelectVideoAndShowAds(videoPlayer);
 
   useEffect(() => {
     const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -36,6 +32,12 @@ export const Controls = ({ videoPlayer, zIndex }) => {
     });
     return () => backhander.remove();
   }, [videoPlayer.isLoaded]);
+
+  const shouldShowErrorMessage = videoPlayer.errorLoadingVideo;
+  const shouldShowDefaultPage =
+    !shouldShowErrorMessage && !videoPlayer.hasVideo;
+  const shouldDisableLowerBarControls =
+    shouldShowErrorMessage || shouldShowDefaultPage || videoPlayer.isLoading;
 
   return (
     <TouchableWithoutFeedback
@@ -63,32 +65,15 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             videoPlayer.unloadVideo();
             videoPlayer.clearError();
           }}
-          onPressSelectVideo={() => {
-            videoPlayer.clearError();
-            selectAFile().then((selectedVideo) =>
-              videoPlayer.loadVideoSource(selectedVideo)
-            );
-          }}
+          onPressSelectVideo={selectVideoAndShowAds}
         />
         {shouldShowDefaultPage && (
-          <HomeView
-            onPressSelectVideo={() => {
-              videoPlayer.clearError();
-              selectAFile().then((selectedVideo) =>
-                videoPlayer.loadVideoSource(selectedVideo)
-              );
-            }}
-          />
+          <HomeView onPressSelectVideo={selectVideoAndShowAds} />
         )}
         {shouldShowErrorMessage && (
           <ErrorView
             errorMessage={videoPlayer.errorLoadingVideo}
-            onPressSelectAnotherVideo={() => {
-              selectAFile().then((selectedVideo) =>
-                videoPlayer.loadVideoSource(selectedVideo)
-              );
-              videoPlayer.clearError();
-            }}
+            onPressSelectAnotherVideo={selectVideoAndShowAds}
           />
         )}
         <LowerControlBar

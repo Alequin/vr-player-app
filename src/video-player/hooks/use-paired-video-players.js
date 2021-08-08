@@ -1,6 +1,6 @@
-import { ResizeMode, Video } from "expo-av";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Video } from "expo-av";
 import { isNil } from "lodash";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export const MODES = {
   VR_VIDEO: "vr",
@@ -25,7 +25,8 @@ export const usePairedVideosPlayers = () => {
     RESIZE_MODES.RESIZE_MODE_COVER
   );
 
-  const [loadedFilepath, setLoadedFilepath] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasVideo, setHasVideo] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [errorLoadingVideo, setErrorLoadingVideo] = useState(false);
 
@@ -38,18 +39,38 @@ export const usePairedVideosPlayers = () => {
   const secondaryVideo = useRef(null);
 
   const play = useCallback(async () => {
-    if (loadedFilepath) {
-      await Promise.all([
-        primaryVideo.current.playAsync(),
-        secondaryVideo.current.playAsync(),
-      ]);
-      setIsPlaying(true);
+    if (hasVideo) {
+      try {
+        await Promise.all([
+          primaryVideo.current.playAsync(),
+          secondaryVideo.current.playAsync(),
+        ]);
+        setIsPlaying(true);
+      } catch (error) {
+        console.error(error);
+        setErrorLoadingVideo("There was an issue trying to start the video");
+      }
     }
-  }, [loadedFilepath, primaryVideo?.current, secondaryVideo?.current]);
+  }, [hasVideo, primaryVideo?.current, secondaryVideo?.current]);
+
+  const pause = useCallback(async () => {
+    if (hasVideo) {
+      try {
+        await Promise.all([
+          primaryVideo?.current?.pauseAsync(),
+          secondaryVideo?.current?.pauseAsync(),
+        ]);
+        setIsPlaying(false);
+      } catch (error) {
+        console.error(error);
+        setErrorLoadingVideo("There was an issue trying to pause the video");
+      }
+    }
+  }, [primaryVideo?.current, secondaryVideo?.current, hasVideo]);
 
   const setPosition = useCallback(
     async (position) => {
-      if (loadedFilepath && !isNil(position)) {
+      if (hasVideo && !isNil(position)) {
         await Promise.all([
           primaryVideo?.current?.setPositionAsync(position),
           secondaryVideo?.current?.setPositionAsync(position),
@@ -57,16 +78,28 @@ export const usePairedVideosPlayers = () => {
         setCurrentVideoPositionInMillis(position);
       }
     },
-    [loadedFilepath, primaryVideo?.current, secondaryVideo?.current]
+    [hasVideo, primaryVideo?.current, secondaryVideo?.current]
   );
 
   useEffect(() => {
     // Start playing video from beginning when a new one is selected
-    if (loadedFilepath) setPosition(0).then(play);
-  }, [loadedFilepath]);
+    if (hasVideo) {
+      setIsLoading(true);
+      // Delay starting the video to stop issues with ads and video players becoming out of sync
+      let timeout = null;
+      setPosition(0).then(
+        () =>
+          (timeout = setTimeout(() => {
+            play();
+            setIsLoading(false);
+          }, 500))
+      );
+      return () => clearTimeout(timeout);
+    }
+  }, [hasVideo]);
 
   useEffect(() => {
-    if (primaryVideo?.current && isPlaying && loadedFilepath) {
+    if (primaryVideo?.current && isPlaying && hasVideo) {
       const interval = setInterval(() => {
         primaryVideo?.current
           ?.getStatusAsync()
@@ -77,10 +110,11 @@ export const usePairedVideosPlayers = () => {
       }, 25);
       return () => clearInterval(interval);
     }
-  }, [primaryVideo?.current, isPlaying, loadedFilepath]);
+  }, [primaryVideo?.current, isPlaying, hasVideo]);
 
   return {
-    isLoaded: loadedFilepath,
+    hasVideo: hasVideo,
+    isLoading,
     isPlaying,
     currentVideoPositionInMillis,
     videoDuration,
@@ -90,24 +124,19 @@ export const usePairedVideosPlayers = () => {
     videoPlayerMode,
     videoResizeMode,
     play,
+    pause,
     setPosition,
     setDisplayPosition: setCurrentVideoPositionInMillis,
     clearError: useCallback(() => setErrorLoadingVideo(false), []),
-    pause: useCallback(async () => {
-      if (loadedFilepath) {
-        await Promise.all([
-          primaryVideo?.current?.pauseAsync(),
-          secondaryVideo?.current?.pauseAsync(),
-        ]);
-        setIsPlaying(false);
-      }
-    }, [primaryVideo?.current, secondaryVideo?.current, loadedFilepath]),
     loadVideoSource: useCallback(
       async (newFileObject) => {
         if (newFileObject.type === "cancel") return;
 
         try {
           // Load video
+          // Set hasVideo early to ensure the correct pages are shown while the videos are loading
+          setHasVideo(true);
+
           await Promise.all([
             primaryVideo?.current?.loadAsync(newFileObject, {
               isLooping: true,
@@ -122,17 +151,15 @@ export const usePairedVideosPlayers = () => {
           const { durationMillis } =
             await primaryVideo?.current?.getStatusAsync();
 
-          setLoadedFilepath(newFileObject.uri);
           setVideoDuration(durationMillis);
         } catch (error) {
           setErrorLoadingVideo(
             `Unable to play ${newFileObject.name} as a video`
           );
-          setIsPlaying(false);
-          setLoadedFilepath(null);
+          setHasVideo(false);
           setVideoDuration(0);
-          return;
         } finally {
+          setIsPlaying(false);
           setCurrentVideoPositionInMillis(0);
         }
       },
@@ -144,7 +171,7 @@ export const usePairedVideosPlayers = () => {
         secondaryVideo?.current?.unloadAsync(),
       ]);
 
-      setLoadedFilepath(null);
+      setHasVideo(null);
       setVideoDuration(0);
       setIsPlaying(false);
       setCurrentVideoPositionInMillis(0);

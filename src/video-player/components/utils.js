@@ -1,4 +1,3 @@
-import * as DocumentPicker from "expo-document-picker";
 import { MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
 
 export const millisecondsToTime = (milliseconds) => {
@@ -34,8 +33,3 @@ export const toggleResizeModeButtonIconName = (videoResizeMode) => {
   if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_STRETCH)
     return "stretchToPage";
 };
-
-export const selectAFile = async () =>
-  DocumentPicker.getDocumentAsync({
-    copyToCacheDirectory: false,
-  });
