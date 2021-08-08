@@ -1,7 +1,9 @@
+import { AdMobBanner } from "expo-ads-admob";
 import React from "react";
 import { TouchableOpacity, View } from "react-native";
 import { ControlPageIcon } from "../control-page-icon";
 import { ControlViewText } from "./control-view-text";
+import { errorViewAdBannerId } from "../../../../secrets.json";
 
 export const ErrorView = ({
   onPressBack,
@@ -36,6 +38,10 @@ export const ErrorView = ({
           <ControlViewText>Open a different video</ControlViewText>
         </TouchableOpacity>
       </View>
+      <AdMobBanner
+        style={{ width: "100%" }}
+        adUnitID={errorViewAdBannerId} // Test ID, Replace with your-admob-unit-id
+      />
     </View>
   );
 };

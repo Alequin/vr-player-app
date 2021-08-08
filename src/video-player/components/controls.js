@@ -59,7 +59,10 @@ export const Controls = ({ videoPlayer, zIndex }) => {
       >
         <UpperControlBar
           onPressAnyControls={showControls}
-          onPressBack={() => videoPlayer.unloadVideo()}
+          onPressBack={() => {
+            videoPlayer.unloadVideo();
+            videoPlayer.clearError();
+          }}
           onPressSelectVideo={() => {
             videoPlayer.clearError();
             selectAFile().then((selectedVideo) =>
@@ -217,7 +220,7 @@ const LowerControlBar = ({
     <ControlBar
       style={{
         justifyContent: "space-between",
-        opacity: shouldDisableControls ? 0 : 1,
+        opacity: shouldDisableControls ? 0.25 : 1,
       }}
     >
       <ControlBarIconButton
