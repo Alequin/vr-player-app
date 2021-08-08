@@ -7,9 +7,11 @@ export const TimeBar = ({
   onSeekVideoPositionStart,
   onSeekVideoPosition,
   onSeekVideoPositionComplete,
+  disabled,
 }) => {
   return (
     <Slider
+      disabled={disabled}
       value={currentPosition}
       maximumValue={videoDuration}
       minimumValue={0}

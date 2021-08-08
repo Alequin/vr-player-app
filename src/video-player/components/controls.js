@@ -26,6 +26,8 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const shouldShowErrorMessage = videoPlayer.errorLoadingVideo;
   const shouldShowDefaultPage =
     !shouldShowErrorMessage && !videoPlayer.isLoaded;
+  const shouldDisableLowerBarControls =
+    shouldShowErrorMessage || shouldShowDefaultPage;
 
   useEffect(() => {
     const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -79,14 +81,15 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           <ErrorView
             errorMessage={videoPlayer.errorLoadingVideo}
             onPressSelectAnotherVideo={() => {
-              videoPlayer.clearError();
               selectAFile().then((selectedVideo) =>
                 videoPlayer.loadVideoSource(selectedVideo)
               );
+              videoPlayer.clearError();
             }}
           />
         )}
         <LowerControlBar
+          shouldDisableControls={shouldDisableLowerBarControls}
           onPressAnyControls={showControls}
           isPlaying={videoPlayer.isPlaying}
           videoDuration={videoPlayer.videoDuration}
@@ -196,6 +199,7 @@ const UpperControlBar = ({
 };
 
 const LowerControlBar = ({
+  shouldDisableControls,
   isPlaying,
   onPressPlay,
   onPressAnyControls,
@@ -213,9 +217,11 @@ const LowerControlBar = ({
     <ControlBar
       style={{
         justifyContent: "space-between",
+        opacity: shouldDisableControls ? 0 : 1,
       }}
     >
       <ControlBarIconButton
+        disabled={shouldDisableControls}
         name={isPlaying ? "pause" : "play"}
         onPress={() => {
           onPressPlay();
@@ -226,6 +232,7 @@ const LowerControlBar = ({
         {millisecondsToTime(currentVideoPositionInMillis)}
       </Text>
       <TimeBar
+        disabled={shouldDisableControls}
         currentPosition={currentVideoPositionInMillis}
         videoDuration={videoDuration}
         onSeekVideoPositionStart={(newValue) => {
@@ -239,6 +246,7 @@ const LowerControlBar = ({
         onSeekVideoPositionComplete={onSeekVideoPositionComplete}
       />
       <ControlBarIconButton
+        disabled={shouldDisableControls}
         name={togglePlayerModeButtonIconName(videoPlayerMode)}
         onPress={() => {
           togglePlayerMode();
@@ -246,6 +254,7 @@ const LowerControlBar = ({
         }}
       />
       <ControlBarIconButton
+        disabled={shouldDisableControls}
         name={toggleResizeModeButtonIconName(videoResizeMode)}
         onPress={() => {
           togglePlayerResizeMode();
