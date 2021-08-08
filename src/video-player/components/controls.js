@@ -5,7 +5,7 @@ import {
   Text,
   TouchableWithoutFeedback,
 } from "react-native";
-import { useSelectVideoAndShowAds } from "../hooks/use-select-video-and-show-ads";
+import { useSelectVideoAndShowInterstitialAds } from "../hooks/use-select-video-and-show-interstitial-ads";
 import { ControlBar } from "./control-bar";
 import { ControlBarIconButton } from "./control-bar-icon-button";
 import { ErrorView } from "./control-views/error-view";
@@ -23,7 +23,8 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const [shouldResume, setShouldResume] = useState(false);
   const { fadeAnim, showControls } = useShowControls(videoPlayer);
 
-  const selectVideoAndShowAds = useSelectVideoAndShowAds(videoPlayer);
+  const selectVideoAndShowAds =
+    useSelectVideoAndShowInterstitialAds(videoPlayer);
 
   useEffect(() => {
     const backhander = BackHandler.addEventListener("hardwareBackPress", () => {

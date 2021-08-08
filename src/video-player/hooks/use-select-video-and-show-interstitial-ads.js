@@ -1,8 +1,9 @@
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as DocumentPicker from "expo-document-picker";
 import { useCallback, useEffect } from "react";
+import { videoSelectAdId } from "../../../secrets.json";
 
-export const useSelectVideoAndShowAds = (videoPlayer) => {
+export const useSelectVideoAndShowInterstitialAds = (videoPlayer) => {
   useEffect(() => {
     prepareAds();
   }, []);
@@ -13,7 +14,11 @@ export const useSelectVideoAndShowAds = (videoPlayer) => {
       // Show ads
       const hasAdReadyToShow = await AdMobInterstitial.getIsReadyAsync();
       if (!hasAdReadyToShow) await AdMobInterstitial.requestAdAsync();
-      await AdMobInterstitial.showAdAsync();
+      const x = await AdMobInterstitial.showAdAsync();
+      console.log(
+        "🚀 ~ file: use-select-video-and-show-interstitial-ads.js ~ line 18 ~ returnuseCallback ~ x",
+        x
+      );
     } catch (error) {
       // Swallow error. A failure to show an ad should not interrupt the user
       console.error(error);
@@ -40,9 +45,7 @@ export const useSelectVideoAndShowAds = (videoPlayer) => {
 
 const prepareAds = async () => {
   try {
-    await AdMobInterstitial.setAdUnitID(
-      "ca-app-pub-3940256099942544/1033173712"
-    );
+    await AdMobInterstitial.setAdUnitID(videoSelectAdId);
     await AdMobInterstitial.requestAdAsync();
   } catch (error) {
     // Swallow error. A failure to show an ad should not interrupt the user
