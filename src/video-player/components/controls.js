@@ -1,6 +1,10 @@
-import * as DocumentPicker from "expo-document-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Text, TouchableWithoutFeedback } from "react-native";
+import {
+  Animated,
+  BackHandler,
+  Text,
+  TouchableWithoutFeedback,
+} from "react-native";
 import { ControlBar } from "./control-bar";
 import { ControlBarIconButton } from "./control-bar-icon-button";
 import { ErrorView } from "./control-views/error-view";
@@ -22,6 +26,14 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const shouldShowErrorMessage = videoPlayer.errorLoadingVideo;
   const shouldShowDefaultPage =
     !shouldShowErrorMessage && !videoPlayer.isLoaded;
+
+  useEffect(() => {
+    const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (videoPlayer.isLoaded) videoPlayer.unloadVideo();
+      return videoPlayer.isLoaded;
+    });
+    return () => backhander.remove();
+  }, [videoPlayer.isLoaded]);
 
   return (
     <TouchableWithoutFeedback
