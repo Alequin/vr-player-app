@@ -105,16 +105,15 @@ const UpperControlBar = ({ onPressAnyControls, onPressSelectVideo }) => {
 };
 
 const togglePlayerModeButtonIconName = (videoPlayerMode) => {
-  if (videoPlayerMode === MODES.VR_VIDEO) return "vrHeadset";
-  if (videoPlayerMode === MODES.NORMAL_VIDEO) return "screenDesktop";
+  if (videoPlayerMode === MODES.VR_VIDEO) return "screenDesktop";
+  if (videoPlayerMode === MODES.NORMAL_VIDEO) return "vrHeadset";
 };
 
 const toggleResizeModeButtonIconName = (videoResizeMode) => {
-  if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_COVER)
+  if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_COVER) return "screenNormal";
+  if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_CONTAIN) return "fitScreen";
+  if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_STRETCH)
     return "stretchToPage";
-  if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_CONTAIN)
-    return "screenNormal";
-  if (videoResizeMode === RESIZE_MODES.RESIZE_MODE_STRETCH) return "fitScreen";
 };
 
 const LowerControlBar = ({
@@ -185,7 +184,6 @@ const ControlBar = (props) => (
       flexDirection: "row",
       width: "100%",
       backgroundColor: "#00000080",
-      padding: 10,
       alignItems: "center",
       paddingHorizontal: 15,
       ...props.style,
