@@ -8,8 +8,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { Icon } from "../../icon";
 import { MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
+import { ControlPageIcon } from "./control-page-icon";
 import { ErrorView } from "./error-view";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
@@ -195,12 +195,7 @@ const ControlBar = (props) => (
 
 const ControlBarIconButton = ({ onPress, name }) => (
   <TouchableOpacity onPress={onPress}>
-    <Icon
-      name={name}
-      size={26}
-      color="white"
-      style={{ paddingHorizontal: 15 }}
-    />
+    <ControlPageIcon name={name} />
   </TouchableOpacity>
 );
 
