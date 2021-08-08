@@ -102,9 +102,7 @@ export const usePairedVideosPlayers = () => {
           ]);
         } catch (error) {
           // TODO display error message on screen on load failure
-          setErrorLoadingVideo(
-            `Unable to load file ${newFilePath.name} as a video`
-          );
+          setErrorLoadingVideo(`Unable to play ${newFilePath.name} as a video`);
           setIsLoaded(false);
           setVideoDuration(0);
           setIsPlaying(false);

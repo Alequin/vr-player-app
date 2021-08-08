@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Icon } from "../../icon";
 import { MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
+import { ErrorView } from "./error-view";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
   const [shouldResume, setShouldResume] = useState(false);
@@ -30,12 +31,15 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           opacity: fadeAnim,
           height: "100%",
           width: "100%",
-          justifyContent: "space-between",
+          justifyContent: videoPlayer.errorLoadingVideo
+            ? "flex-start"
+            : "space-between",
         }}
       >
         <UpperControlBar
           onPressAnyControls={showControls}
           onPressSelectVideo={() => {
+            videoPlayer.clearError();
             DocumentPicker.getDocumentAsync({
               copyToCacheDirectory: false,
             }).then((selectedVideo) =>
@@ -43,6 +47,12 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             );
           }}
         />
+        {videoPlayer.errorLoadingVideo && (
+          <ErrorView
+            onPressBack={videoPlayer.clearError}
+            errorMessage={videoPlayer.errorLoadingVideo}
+          />
+        )}
         <LowerControlBar
           onPressAnyControls={showControls}
           isPlaying={videoPlayer.isPlaying}
