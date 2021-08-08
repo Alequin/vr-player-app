@@ -51,7 +51,7 @@ const ICON_OPTIONS = {
   screenNormal: customIcon(Octicons, "screen-normal"),
   folderVideo: customIcon(Entypo, "folder-video"),
   backArrow: customIcon(Ionicons, "ios-arrow-back"),
-  warningOutline: customIcon(Ionicons, "warning-outline"),
+  cancel: customIcon(MaterialCommunityIcons, "cancel"),
 };
 
 const TestIdElement = (props) => <View {...props} />;

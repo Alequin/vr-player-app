@@ -1,13 +1,14 @@
-import Slider from "@react-native-community/slider";
 import * as DocumentPicker from "expo-document-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback } from "react-native";
 import { ControlBar } from "./control-bar";
 import { ControlBarIconButton } from "./control-bar-icon-button";
-import { ErrorView } from "./error-view";
+import { ErrorView } from "./control-views/error-view";
+import { HomeView } from "./control-views/home-view";
 import { TimeBar } from "./time-bar";
 import {
   millisecondsToTime,
+  selectAFile,
   togglePlayerModeButtonIconName,
   toggleResizeModeButtonIconName,
 } from "./utils";
@@ -17,6 +18,10 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const [shouldUseManualPosition, setShouldUseManualPosition] = useState(false);
   const [shouldResume, setShouldResume] = useState(false);
   const { fadeAnim, showControls } = useShowControls(videoPlayer);
+
+  const shouldShowErrorMessage = videoPlayer.errorLoadingVideo;
+  const shouldShowDefaultPage =
+    !shouldShowErrorMessage && !videoPlayer.isLoaded;
 
   return (
     <TouchableWithoutFeedback
@@ -40,19 +45,33 @@ export const Controls = ({ videoPlayer, zIndex }) => {
       >
         <UpperControlBar
           onPressAnyControls={showControls}
+          onPressBack={() => videoPlayer.unloadVideo()}
           onPressSelectVideo={() => {
             videoPlayer.clearError();
-            DocumentPicker.getDocumentAsync({
-              copyToCacheDirectory: false,
-            }).then((selectedVideo) =>
+            selectAFile().then((selectedVideo) =>
               videoPlayer.loadVideoSource(selectedVideo)
             );
           }}
         />
-        {videoPlayer.errorLoadingVideo && (
+        {shouldShowDefaultPage && (
+          <HomeView
+            onPressSelectVideo={() => {
+              videoPlayer.clearError();
+              selectAFile().then((selectedVideo) =>
+                videoPlayer.loadVideoSource(selectedVideo)
+              );
+            }}
+          />
+        )}
+        {shouldShowErrorMessage && (
           <ErrorView
-            onPressBack={videoPlayer.clearError}
             errorMessage={videoPlayer.errorLoadingVideo}
+            onPressSelectAnotherVideo={() => {
+              videoPlayer.clearError();
+              selectAFile().then((selectedVideo) =>
+                videoPlayer.loadVideoSource(selectedVideo)
+              );
+            }}
           />
         )}
         <LowerControlBar
@@ -135,14 +154,24 @@ const useShowControls = (videoPlayer) => {
   };
 };
 
-const UpperControlBar = ({ onPressAnyControls, onPressSelectVideo }) => {
+const UpperControlBar = ({
+  onPressBack,
+  onPressAnyControls,
+  onPressSelectVideo,
+}) => {
   return (
     <ControlBar
       style={{
         justifyContent: "space-between",
       }}
     >
-      <ControlBarIconButton name="backArrow" onPress={onPressAnyControls} />
+      <ControlBarIconButton
+        name="backArrow"
+        onPress={() => {
+          onPressBack();
+          onPressAnyControls();
+        }}
+      />
       <ControlBarIconButton
         name="folderVideo"
         onPress={() => {

@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Controls } from "./components/controls";
 import { DualVideoView } from "./components/dual-video-view";
-import { ErrorView } from "./components/error-view";
+import { ErrorView } from "./components/control-views/error-view";
 import { VideoPlayerMask as ScreenMask } from "./components/screen-mask";
 import { usePairedVideosPlayers } from "./hooks/use-paired-video-players";
 
@@ -30,7 +30,7 @@ export const VideoPlayer = () => {
         />
       )}
       {/*z index has to be less than 1 to allow the user to press the custom controls */}
-      <ScreenMask zIndex={0} />
+      <ScreenMask zIndex={0} isTransparent={videoPlayer.isLoaded} />
       <Controls zIndex={1} videoPlayer={videoPlayer} />
     </View>
   );

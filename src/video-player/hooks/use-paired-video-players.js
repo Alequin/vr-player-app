@@ -117,27 +117,39 @@ export const usePairedVideosPlayers = () => {
               isMuted: true,
             }),
           ]);
+
+          // Update state to indicate the video is available
+          const { isLoaded, durationMillis } =
+            await primaryVideo?.current?.getStatusAsync();
+
+          setIsLoaded(isLoaded);
+          setVideoDuration(durationMillis);
         } catch (error) {
-          // TODO display error message on screen on load failure
           setErrorLoadingVideo(
             `Unable to play ${newFileObject.name} as a video`
           );
+          setIsPlaying(false);
           setIsLoaded(false);
           setVideoDuration(0);
-          setIsPlaying(false);
-          setCurrentVideoPositionInMillis(0);
           return;
+        } finally {
+          setCurrentVideoPositionInMillis(0);
         }
-
-        // Update state to indicate the video is available
-        const { isLoaded, durationMillis } =
-          await primaryVideo?.current?.getStatusAsync();
-
-        setIsLoaded(isLoaded);
-        setVideoDuration(durationMillis);
       },
       [primaryVideo?.current, secondaryVideo?.current]
     ),
+    unloadVideo: useCallback(async () => {
+      // Load video
+      await Promise.all([
+        primaryVideo?.current?.unloadAsync(),
+        secondaryVideo?.current?.unloadAsync(),
+      ]);
+
+      setIsLoaded(false);
+      setVideoDuration(0);
+      setIsPlaying(false);
+      setCurrentVideoPositionInMillis(0);
+    }, [primaryVideo?.current, secondaryVideo?.current]),
     toggleVideoMode: useCallback(
       () =>
         setVideoPlayerMode((currentVideoPlayerMode) =>
