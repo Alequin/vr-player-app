@@ -1,5 +1,6 @@
 import { ResizeMode, Video } from "expo-av";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isNil } from "lodash";
 
 export const MODES = {
   VR_VIDEO: "vr",
@@ -42,12 +43,13 @@ export const usePairedVideosPlayers = () => {
         primaryVideo.current.playAsync(),
         secondaryVideo.current.playAsync(),
       ]);
+      setIsPlaying(true);
     }
   }, [isLoaded, primaryVideo?.current, secondaryVideo?.current]);
 
   const setPosition = useCallback(
     async (position) => {
-      if (isLoaded) {
+      if (isLoaded && !isNil(position)) {
         await Promise.all([
           primaryVideo?.current?.setPositionAsync(position),
           secondaryVideo?.current?.setPositionAsync(position),
@@ -62,6 +64,21 @@ export const usePairedVideosPlayers = () => {
     // Start playing video from beginning when one is selected
     if (isLoaded) setPosition(0).then(play);
   }, [isLoaded]);
+
+  useEffect(() => {
+    if (primaryVideo?.current && isPlaying && isLoaded) {
+      const interval = setInterval(async () => {
+        const { positionMillis } =
+          await primaryVideo?.current?.getStatusAsync();
+        if (!isNil(positionMillis)) {
+          setCurrentVideoPositionInMillis(positionMillis);
+        }
+      }, 25);
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, [primaryVideo?.current, isPlaying, isLoaded]);
 
   return {
     isLoaded,
@@ -83,26 +100,29 @@ export const usePairedVideosPlayers = () => {
           primaryVideo?.current?.pauseAsync(),
           secondaryVideo?.current?.pauseAsync(),
         ]);
+        setIsPlaying(false);
       }
     }, [primaryVideo?.current, secondaryVideo?.current, isLoaded]),
     loadVideoSource: useCallback(
-      async (newFilePath) => {
+      async (newFileObject) => {
+        if (newFileObject.type === "cancel") return;
+
         try {
           // Load video
           await Promise.all([
-            primaryVideo?.current?.loadAsync(newFilePath, {
-              progressUpdateIntervalMillis: 25,
+            primaryVideo?.current?.loadAsync(newFileObject, {
               isLooping: true,
             }),
-            secondaryVideo?.current?.loadAsync(newFilePath, {
-              progressUpdateIntervalMillis: 25,
+            secondaryVideo?.current?.loadAsync(newFileObject, {
               isLooping: true,
               isMuted: true,
             }),
           ]);
         } catch (error) {
           // TODO display error message on screen on load failure
-          setErrorLoadingVideo(`Unable to play ${newFilePath.name} as a video`);
+          setErrorLoadingVideo(
+            `Unable to play ${newFileObject.name} as a video`
+          );
           setIsLoaded(false);
           setVideoDuration(0);
           setIsPlaying(false);
@@ -116,14 +136,6 @@ export const usePairedVideosPlayers = () => {
 
         setIsLoaded(isLoaded);
         setVideoDuration(durationMillis);
-
-        // Manage state updates
-        primaryVideo?.current?.setOnPlaybackStatusUpdate(
-          ({ isLoaded, positionMillis, isPlaying }) => {
-            setIsPlaying(isPlaying);
-            setCurrentVideoPositionInMillis(isLoaded ? positionMillis : 0);
-          }
-        );
       },
       [primaryVideo?.current, secondaryVideo?.current]
     ),
