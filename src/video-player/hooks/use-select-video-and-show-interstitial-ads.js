@@ -14,11 +14,7 @@ export const useSelectVideoAndShowInterstitialAds = (videoPlayer) => {
       // Show ads
       const hasAdReadyToShow = await AdMobInterstitial.getIsReadyAsync();
       if (!hasAdReadyToShow) await AdMobInterstitial.requestAdAsync();
-      const x = await AdMobInterstitial.showAdAsync();
-      console.log(
-        "🚀 ~ file: use-select-video-and-show-interstitial-ads.js ~ line 18 ~ returnuseCallback ~ x",
-        x
-      );
+      await AdMobInterstitial.showAdAsync();
     } catch (error) {
       // Swallow error. A failure to show an ad should not interrupt the user
       console.error(error);
