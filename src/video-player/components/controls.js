@@ -19,6 +19,7 @@ import {
 } from "./utils";
 import { homeViewAdBannerId } from "../../../secrets.json";
 import { checkIfAdsDisabled, disableAds } from "../ads";
+import { DisableAdsView } from "./control-views/disable-ads-view";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
   const { areAdsDisabled, setAreAdsDisabled } = useCanShowAds();
@@ -32,19 +33,39 @@ export const Controls = ({ videoPlayer, zIndex }) => {
     areAdsDisabled
   );
 
+  const shouldShowErrorView = videoPlayer.errorLoadingVideo;
+
+  const [showDisableAdsView, setShowDisableAdsView] = useState(false);
+  const shouldShowDisableAdsView = !shouldShowErrorView && showDisableAdsView;
+
+  const shouldShowHomeView =
+    !shouldShowDisableAdsView && !shouldShowErrorView && !videoPlayer.hasVideo;
+
+  const shouldDisableLowerBarControls =
+    showDisableAdsView ||
+    shouldShowErrorView ||
+    shouldShowHomeView ||
+    videoPlayer.isLoading;
+
   useEffect(() => {
     const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (videoPlayer.isLoaded) videoPlayer.unloadVideo();
-      return videoPlayer.isLoaded;
+      if (videoPlayer.isLoaded) {
+        videoPlayer.unloadVideo();
+        return true;
+      }
+
+      if (shouldShowErrorView) {
+        videoPlayer.clearError();
+        return true;
+      }
+
+      if (showDisableAdsView) {
+        setShowDisableAdsView(false);
+        return true;
+      }
     });
     return () => backhander.remove();
   }, [videoPlayer.isLoaded]);
-
-  const shouldShowErrorMessage = videoPlayer.errorLoadingVideo;
-  const shouldShowDefaultPage =
-    !shouldShowErrorMessage && !videoPlayer.hasVideo;
-  const shouldDisableLowerBarControls =
-    shouldShowErrorMessage || shouldShowDefaultPage || videoPlayer.isLoading;
 
   return (
     <TouchableWithoutFeedback
@@ -71,22 +92,28 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           onPressBack={() => {
             videoPlayer.unloadVideo();
             videoPlayer.clearError();
+            setShowDisableAdsView(false);
           }}
           onPressSelectVideo={selectVideoAndShowAds}
         />
-        {shouldShowDefaultPage && (
+        {shouldShowHomeView && (
           <HomeView
             onPressSelectVideo={selectVideoAndShowAds}
-            onDisableAds={async () => {
-              setAreAdsDisabled(true);
-              await disableAds();
-            }}
+            onPressDisableAds={async () => setShowDisableAdsView(true)}
           />
         )}
-        {shouldShowErrorMessage && (
+        {shouldShowErrorView && (
           <ErrorView
             errorMessage={videoPlayer.errorLoadingVideo}
             onPressSelectAnotherVideo={selectVideoAndShowAds}
+          />
+        )}
+        {shouldShowDisableAdsView && (
+          <DisableAdsView
+            onDisableAds={async () => {
+              setShowDisableAdsView(false);
+              setAreAdsDisabled(true);
+            }}
           />
         )}
         {!areAdsDisabled && !videoPlayer.hasVideo && (

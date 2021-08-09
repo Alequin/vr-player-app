@@ -2,7 +2,7 @@ import * as asyncStorage from "./async-storage";
 
 const minutesToMilliseconds = (minutes) => minutes * 1000 * 60;
 
-const TOTAL_TIME_TO_DISABLE_ADS_FOR = minutesToMilliseconds(20);
+const TOTAL_TIME_TO_DISABLE_ADS_FOR = minutesToMilliseconds(0.5);
 
 export const checkIfAdsDisabled = async () => {
   const disableTime = await asyncStorage.adsDisabledTime.load();

@@ -1,27 +1,10 @@
 import { AdMobRewarded } from "expo-ads-admob";
-import React, { useEffect } from "react";
+import React from "react";
 import { TouchableOpacity, View } from "react-native";
-import { disableAdsRewardId } from "../../../../secrets.json";
 import { ControlPageIcon } from "../control-page-icon";
 import { ControlViewText } from "./control-view-text";
 
-export const HomeView = ({ onPressSelectVideo, onDisableAds }) => {
-  useEffect(() => {
-    AdMobRewarded.setAdUnitID(disableAdsRewardId).then(async () => {
-      await loadRewardAd();
-
-      AdMobRewarded.addEventListener("rewardedVideoUserDidEarnReward", () =>
-        onDisableAds()
-      );
-      AdMobRewarded.addEventListener("rewardedVideoDidDismiss", async () => {
-        await loadRewardAd();
-        console.log("reward ad dismissed");
-      });
-    });
-
-    return () => AdMobRewarded.removeAllListeners();
-  }, []);
-
+export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
   return (
     <View
       style={{
@@ -45,10 +28,7 @@ export const HomeView = ({ onPressSelectVideo, onDisableAds }) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={{ alignItems: "center", margin: 20, width: "30%" }}
-          onPress={async () => {
-            await loadRewardAd();
-            await AdMobRewarded.showAdAsync();
-          }}
+          onPress={onPressDisableAds}
         >
           <ControlPageIcon name="cancel" size={38} />
           <ControlViewText>Disable ads</ControlViewText>
