@@ -1,24 +1,17 @@
 import { AdMobRewarded } from "expo-ads-admob";
 import React, { useEffect } from "react";
 import { TouchableOpacity, View } from "react-native";
-import {
-  disableAdsRewardId,
-  homeViewAdBannerId,
-} from "../../../../secrets.json";
+import { disableAdsRewardId } from "../../../../secrets.json";
 import { ControlPageIcon } from "../control-page-icon";
-import { AdBanner } from "./ad-banner";
 import { ControlViewText } from "./control-view-text";
 
-export const HomeView = ({ onPressSelectVideo }) => {
+export const HomeView = ({ onPressSelectVideo, onDisableAds }) => {
   useEffect(() => {
     AdMobRewarded.setAdUnitID(disableAdsRewardId).then(async () => {
       await loadRewardAd();
 
-      AdMobRewarded.addEventListener(
-        "rewardedVideoUserDidEarnReward",
-        async () => {
-          console.log("ads are now disabled");
-        }
+      AdMobRewarded.addEventListener("rewardedVideoUserDidEarnReward", () =>
+        onDisableAds()
       );
       AdMobRewarded.addEventListener("rewardedVideoDidDismiss", async () => {
         await loadRewardAd();
@@ -61,7 +54,6 @@ export const HomeView = ({ onPressSelectVideo }) => {
           <ControlViewText>Disable ads</ControlViewText>
         </TouchableOpacity>
       </View>
-      <AdBanner adUnitID={homeViewAdBannerId} />
     </View>
   );
 };

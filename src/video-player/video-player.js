@@ -2,7 +2,6 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Controls } from "./components/controls";
 import { DualVideoView } from "./components/dual-video-view";
-import { ErrorView } from "./components/control-views/error-view";
 import { VideoPlayerMask as ScreenMask } from "./components/screen-mask";
 import { usePairedVideosPlayers } from "./hooks/use-paired-video-players";
 

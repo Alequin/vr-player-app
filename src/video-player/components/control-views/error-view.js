@@ -1,8 +1,6 @@
 import React from "react";
 import { TouchableOpacity, View } from "react-native";
-import { errorViewAdBannerId } from "../../../../secrets.json";
 import { ControlPageIcon } from "../control-page-icon";
-import { AdBanner } from "./ad-banner";
 import { ControlViewText } from "./control-view-text";
 
 export const ErrorView = ({
@@ -38,8 +36,6 @@ export const ErrorView = ({
           <ControlViewText>Open a different video</ControlViewText>
         </TouchableOpacity>
       </View>
-
-      <AdBanner adUnitID={errorViewAdBannerId} />
     </View>
   );
 };

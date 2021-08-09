@@ -3,7 +3,10 @@ import * as DocumentPicker from "expo-document-picker";
 import { useCallback, useEffect } from "react";
 import { videoSelectAdId } from "../../../secrets.json";
 
-export const useSelectVideoAndShowInterstitialAds = (videoPlayer) => {
+export const useSelectVideoAndShowInterstitialAds = (
+  videoPlayer,
+  areAdsDisabled
+) => {
   useEffect(() => {
     prepareAds();
   }, []);
@@ -11,10 +14,10 @@ export const useSelectVideoAndShowInterstitialAds = (videoPlayer) => {
   return useCallback(async () => {
     videoPlayer.clearError();
     try {
+      // Load ads if non are available
+      loadInterstitialAd();
       // Show ads
-      const hasAdReadyToShow = await AdMobInterstitial.getIsReadyAsync();
-      if (!hasAdReadyToShow) await AdMobInterstitial.requestAdAsync();
-      await AdMobInterstitial.showAdAsync();
+      if (!areAdsDisabled) await AdMobInterstitial.showAdAsync();
     } catch (error) {
       // Swallow error. A failure to show an ad should not interrupt the user
       console.error(error);
@@ -27,16 +30,16 @@ export const useSelectVideoAndShowInterstitialAds = (videoPlayer) => {
     if (selectedVideo.type !== "cancel") {
       await videoPlayer.unloadVideo();
       await videoPlayer.loadVideoSource(selectedVideo);
-    }
 
-    try {
-      // Prepare next ad to be shown
-      await AdMobInterstitial.requestAdAsync();
-    } catch (error) {
-      // Swallow error. A failure to show an ad should not interrupt the user
-      console.error(error);
+      try {
+        // Prepare next ad to be shown
+        await loadInterstitialAd();
+      } catch (error) {
+        // Swallow error. A failure to show an ad should not interrupt the user
+        console.error(error);
+      }
     }
-  }, [videoPlayer.isLoaded]);
+  }, [videoPlayer.isLoaded, areAdsDisabled]);
 };
 
 const prepareAds = async () => {
@@ -47,4 +50,9 @@ const prepareAds = async () => {
     // Swallow error. A failure to show an ad should not interrupt the user
     console.error(error);
   }
+};
+
+const loadInterstitialAd = async () => {
+  const hasAdReadyToShow = await AdMobInterstitial.getIsReadyAsync();
+  if (!hasAdReadyToShow) await AdMobInterstitial.requestAdAsync();
 };
