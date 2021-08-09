@@ -1,10 +1,13 @@
-import { AdMobBanner, AdMobInterstitial, AdMobRewarded } from "expo-ads-admob";
+import { AdMobRewarded } from "expo-ads-admob";
 import React, { useEffect } from "react";
 import { TouchableOpacity, View } from "react-native";
-import { homeViewAdBannerId } from "../../../../secrets.json";
+import {
+  disableAdsRewardId,
+  homeViewAdBannerId,
+} from "../../../../secrets.json";
 import { ControlPageIcon } from "../control-page-icon";
+import { AdBanner } from "./ad-banner";
 import { ControlViewText } from "./control-view-text";
-import { disableAdsRewardId } from "../../../../secrets.json";
 
 export const HomeView = ({ onPressSelectVideo }) => {
   useEffect(() => {
@@ -58,7 +61,7 @@ export const HomeView = ({ onPressSelectVideo }) => {
           <ControlViewText>Disable ads</ControlViewText>
         </TouchableOpacity>
       </View>
-      <AdMobBanner style={{ width: "100%" }} adUnitID={homeViewAdBannerId} />
+      <AdBanner adUnitID={homeViewAdBannerId} />
     </View>
   );
 };
