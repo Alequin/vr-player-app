@@ -3,8 +3,28 @@ import React from "react";
 import { TouchableOpacity, View } from "react-native";
 import { ControlPageIcon } from "../control-page-icon";
 import { ControlViewText } from "./control-view-text";
+import { disableAdsRewardId } from "../../../../secrets.json";
 
-export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
+export const HomeView = ({ onPressSelectVideo }) => {
+  useEffect(() => {
+    AdMobRewarded.setAdUnitID(disableAdsRewardId).then(async () => {
+      await loadRewardAd();
+
+      AdMobRewarded.addEventListener(
+        "rewardedVideoUserDidEarnReward",
+        async () => {
+          console.log("ads are now disabled");
+        }
+      );
+      AdMobRewarded.addEventListener("rewardedVideoDidDismiss", async () => {
+        await loadRewardAd();
+        console.log("reward ad dismissed");
+      });
+    });
+
+    return () => AdMobRewarded.removeAllListeners();
+  }, []);
+
   return (
     <View
       style={{
