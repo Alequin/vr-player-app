@@ -1,25 +1,22 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  BackHandler,
-  Text,
-  TouchableWithoutFeedback,
-} from "react-native";
-import { homeViewAdBannerId } from "../../../secrets.json";
-import { checkIfAdsAreDisabled } from "../ads-disable-time";
-import { useSelectVideoAndShowInterstitialAds } from "../hooks/use-select-video-and-show-interstitial-ads";
-import { ControlBar } from "./control-bar";
-import { ControlBarIconButton } from "./control-bar-icon-button";
-import { AdBanner } from "./control-views/ad-banner";
-import { DisableAdsView } from "./control-views/disable-ads-view";
-import { ErrorView } from "./control-views/error-view";
-import { HomeView } from "./control-views/home-view";
-import { TimeBar } from "./time-bar";
+import React, { useState } from "react";
+import { Animated, Text, TouchableWithoutFeedback } from "react-native";
+import { homeViewAdBannerId } from "../../../../secrets.json";
+import { useSelectVideoAndShowInterstitialAds } from "../../hooks/use-select-video-and-show-interstitial-ads";
+import { ControlBar } from "../control-bar";
+import { ControlBarIconButton } from "../control-bar-icon-button";
+import { TimeBar } from "../time-bar";
 import {
   millisecondsToTime,
   togglePlayerModeButtonIconName,
   toggleResizeModeButtonIconName,
-} from "./utils";
+} from "../utils";
+import { AdBanner } from "./control-views/ad-banner";
+import { DisableAdsView } from "./control-views/disable-ads-view";
+import { ErrorView } from "./control-views/error-view";
+import { HomeView } from "./control-views/home-view";
+import { useCanShowAds } from "./hooks/use-can-show-ads";
+import { useShowControls } from "./hooks/use-show-controls";
+import { useViewToShow } from "./hooks/use-view-to-show";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
   const { areAdsDisabled, setAreAdsDisabled } = useCanShowAds();
@@ -28,42 +25,18 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const [shouldResume, setShouldResume] = useState(false);
   const { fadeAnim, showControls } = useShowControls(videoPlayer);
 
+  const {
+    shouldShowErrorView,
+    shouldShowDisableAdsView,
+    shouldShowHomeView,
+    shouldDisableLowerBarControls,
+    setShowDisableAdsView,
+  } = useViewToShow(videoPlayer);
+
   const selectVideoAndShowAds = useSelectVideoAndShowInterstitialAds(
     videoPlayer,
     areAdsDisabled
   );
-
-  const shouldShowErrorView = videoPlayer.errorLoadingVideo;
-
-  const [showDisableAdsView, setShowDisableAdsView] = useState(false);
-  const shouldShowDisableAdsView =
-    !shouldShowErrorView && showDisableAdsView && !videoPlayer.hasVideo;
-
-  const shouldShowHomeView =
-    !shouldShowDisableAdsView && !shouldShowErrorView && !videoPlayer.hasVideo;
-
-  const shouldDisableLowerBarControls =
-    shouldShowErrorView || !videoPlayer.hasVideo;
-
-  useEffect(() => {
-    const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (videoPlayer.isLoaded) {
-        videoPlayer.unloadVideo();
-        return true;
-      }
-
-      if (shouldShowErrorView) {
-        videoPlayer.clearError();
-        return true;
-      }
-
-      if (showDisableAdsView) {
-        setShowDisableAdsView(false);
-        return true;
-      }
-    });
-    return () => backhander.remove();
-  }, [videoPlayer.isLoaded]);
 
   return (
     <TouchableWithoutFeedback
@@ -163,64 +136,6 @@ export const Controls = ({ videoPlayer, zIndex }) => {
       </Animated.View>
     </TouchableWithoutFeedback>
   );
-};
-
-const useShowControls = (videoPlayer) => {
-  const [areControlsVisible, setAreControlsVisible] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  const showControls = useCallback(() => {
-    fadeAnim.setValue(1);
-    setAreControlsVisible(true);
-  }, [fadeAnim?.current]);
-
-  useEffect(() => {
-    if (areControlsVisible && videoPlayer.isPlaying) {
-      const timeout = setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start(() => {
-          setAreControlsVisible(false);
-        });
-      }, 7000);
-      return () => clearTimeout(timeout);
-    }
-  }, [areControlsVisible, videoPlayer.isPlaying]);
-
-  useEffect(() => {
-    if (!videoPlayer.isPlaying) showControls();
-  }, [showControls, videoPlayer.isPlaying]);
-
-  return {
-    fadeAnim,
-    showControls,
-  };
-};
-
-const useCanShowAds = () => {
-  const [areAdsDisabled, setAreAdsDisabled] = useState(false);
-
-  useEffect(() => {
-    // Check if ads are disabled on mount
-    checkIfAdsAreDisabled().then(setAreAdsDisabled);
-  }, []);
-
-  useEffect(() => {
-    // If ads are disabled check every 30 seconds if they are now enabled
-    if (areAdsDisabled) {
-      const interval = setInterval(() => {
-        checkIfAdsAreDisabled().then((areDisabled) => {
-          if (areDisabled) return;
-          setAreAdsDisabled(false);
-        });
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [areAdsDisabled]);
-
-  return { areAdsDisabled, setAreAdsDisabled };
 };
 
 const UpperControlBar = ({

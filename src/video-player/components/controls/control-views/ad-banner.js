@@ -1,6 +1,6 @@
 import { AdMobBanner } from "expo-ads-admob";
 import React from "react";
-import { isEnvironmentProduction } from "../../../is-environment-production";
+import { isEnvironmentProduction } from "../../../../is-environment-production";
 
 export const AdBanner = ({ adUnitID }) => {
   return (

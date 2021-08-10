@@ -1,7 +1,7 @@
 import { AdMobRewarded } from "expo-ads-admob";
 import React from "react";
 import { TouchableOpacity, View } from "react-native";
-import { ControlPageIcon } from "../control-page-icon";
+import { ControlPageIcon } from "../../control-page-icon";
 import { ControlViewText } from "./control-view-text";
 
 export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
