@@ -55,6 +55,8 @@ const ICON_OPTIONS = {
   cancel: customIcon(MaterialCommunityIcons, "cancel"),
   hourglass: customIcon(Ionicons, "hourglass-outline"),
   googlePlay: customIcon(Entypo, "google-play"),
+  forward: customIcon(MaterialIcons, "forward-10"),
+  replay: customIcon(MaterialIcons, "replay-10"),
 };
 
 const TestIdElement = (props) => <View {...props} />;

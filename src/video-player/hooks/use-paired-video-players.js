@@ -153,6 +153,7 @@ export const usePairedVideosPlayers = () => {
 
           setVideoDuration(durationMillis);
         } catch (error) {
+          console.error(error);
           setErrorLoadingVideo(
             `Unable to play ${newFileObject.name} as a video`
           );

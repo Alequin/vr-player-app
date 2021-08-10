@@ -11,9 +11,6 @@ export const useViewToShow = (videoPlayer) => {
   const shouldShowHomeView =
     !shouldShowDisableAdsView && !shouldShowErrorView && !videoPlayer.hasVideo;
 
-  const shouldDisableLowerBarControls =
-    shouldShowErrorView || !videoPlayer.hasVideo;
-
   useEffect(() => {
     const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
       if (videoPlayer.isLoaded) {
@@ -38,7 +35,6 @@ export const useViewToShow = (videoPlayer) => {
     shouldShowErrorView,
     shouldShowDisableAdsView,
     shouldShowHomeView,
-    shouldDisableLowerBarControls,
     setShowDisableAdsView,
   };
 };

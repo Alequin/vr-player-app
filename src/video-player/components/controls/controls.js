@@ -1,6 +1,10 @@
 import React, { useState } from "react";
+import { useEffect } from "react";
+import { View } from "react-native";
 import { Animated, Text, TouchableWithoutFeedback } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import { homeViewAdBannerId } from "../../../../secrets.json";
+import { Icon } from "../../../icon";
 import { useSelectVideoAndShowInterstitialAds } from "../../hooks/use-select-video-and-show-interstitial-ads";
 import { ControlBar } from "../control-bar";
 import { ControlBarIconButton } from "../control-bar-icon-button";
@@ -29,14 +33,27 @@ export const Controls = ({ videoPlayer, zIndex }) => {
     shouldShowErrorView,
     shouldShowDisableAdsView,
     shouldShowHomeView,
-    shouldDisableLowerBarControls,
     setShowDisableAdsView,
   } = useViewToShow(videoPlayer);
+
+  const shouldDisableBarControls = shouldShowErrorView || !videoPlayer.hasVideo;
 
   const selectVideoAndShowAds = useSelectVideoAndShowInterstitialAds(
     videoPlayer,
     areAdsDisabled
   );
+
+  const [timeToSkipTo, setTimeToSkipTo] = useState(null);
+  useEffect(() => {
+    if (timeToSkipTo) {
+      const timeout = setTimeout(async () => {
+        await videoPlayer.setPosition(timeToSkipTo);
+        await videoPlayer.play();
+        setTimeToSkipTo(null);
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [timeToSkipTo, videoPlayer.videoDuration]);
 
   return (
     <TouchableWithoutFeedback
@@ -67,32 +84,62 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           }}
           onPressSelectVideo={selectVideoAndShowAds}
         />
-        {shouldShowHomeView && (
-          <HomeView
-            onPressSelectVideo={selectVideoAndShowAds}
-            onPressDisableAds={async () => setShowDisableAdsView(true)}
-          />
-        )}
-        {shouldShowErrorView && (
-          <ErrorView
-            errorMessage={videoPlayer.errorLoadingVideo}
-            onPressSelectAnotherVideo={selectVideoAndShowAds}
-          />
-        )}
-        {shouldShowDisableAdsView && (
-          <DisableAdsView
-            areAdsDisabled={areAdsDisabled}
-            onDisableAds={async () => {
-              setShowDisableAdsView(false);
-              setAreAdsDisabled(true);
+        <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
+          <SideControlBar
+            shouldDisableControls={shouldDisableBarControls}
+            onPress={async () => {
+              if (videoPlayer.isPlaying) await videoPlayer.pause();
+              setTimeToSkipTo((currentSkipTime) =>
+                currentSkipTime
+                  ? currentSkipTime - 10000
+                  : videoPlayer.currentVideoPositionInMillis - 10000
+              );
             }}
-          />
-        )}
-        {!areAdsDisabled && !videoPlayer.hasVideo && (
-          <AdBanner adUnitID={homeViewAdBannerId} />
-        )}
+          >
+            <Icon name="replay" color="white" size={30} />
+          </SideControlBar>
+          <View style={{ flex: 1 }}>
+            {shouldShowHomeView && (
+              <HomeView
+                onPressSelectVideo={selectVideoAndShowAds}
+                onPressDisableAds={async () => setShowDisableAdsView(true)}
+              />
+            )}
+            {shouldShowErrorView && (
+              <ErrorView
+                errorMessage={videoPlayer.errorLoadingVideo}
+                onPressSelectAnotherVideo={selectVideoAndShowAds}
+              />
+            )}
+            {shouldShowDisableAdsView && (
+              <DisableAdsView
+                areAdsDisabled={areAdsDisabled}
+                onDisableAds={async () => {
+                  setShowDisableAdsView(false);
+                  setAreAdsDisabled(true);
+                }}
+              />
+            )}
+            {!areAdsDisabled && !videoPlayer.hasVideo && (
+              <AdBanner adUnitID={homeViewAdBannerId} />
+            )}
+          </View>
+          <SideControlBar
+            shouldDisableControls={shouldDisableBarControls}
+            onPress={async () => {
+              if (videoPlayer.isPlaying) await videoPlayer.pause();
+              setTimeToSkipTo((currentSkipTime) =>
+                currentSkipTime
+                  ? currentSkipTime + 10000
+                  : videoPlayer.currentVideoPositionInMillis + 10000
+              );
+            }}
+          >
+            <Icon name="forward" color="white" size={30} />
+          </SideControlBar>
+        </View>
         <LowerControlBar
-          shouldDisableControls={shouldDisableLowerBarControls}
+          shouldDisableControls={shouldDisableBarControls}
           onPressAnyControls={showControls}
           isPlaying={videoPlayer.isPlaying}
           videoDuration={videoPlayer.videoDuration}
@@ -144,11 +191,7 @@ const UpperControlBar = ({
   onPressSelectVideo,
 }) => {
   return (
-    <ControlBar
-      style={{
-        justifyContent: "space-between",
-      }}
-    >
+    <ControlBar>
       <ControlBarIconButton
         name="backArrow"
         onPress={() => {
@@ -166,6 +209,28 @@ const UpperControlBar = ({
     </ControlBar>
   );
 };
+
+const SideControlBar = ({ children, shouldDisableControls, onPress }) => (
+  <View
+    style={{
+      opacity: shouldDisableControls ? 0.25 : 1,
+      padding: 10,
+    }}
+  >
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={shouldDisableControls}
+      style={{
+        width: "100%",
+        height: "100%",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      {children}
+    </TouchableOpacity>
+  </View>
+);
 
 const LowerControlBar = ({
   shouldDisableControls,
@@ -185,7 +250,6 @@ const LowerControlBar = ({
   return (
     <ControlBar
       style={{
-        justifyContent: "space-between",
         opacity: shouldDisableControls ? 0.25 : 1,
       }}
     >
