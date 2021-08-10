@@ -8,11 +8,13 @@ export const millisecondsToTime = (milliseconds) => {
   const minutesExcludingHours = totalMinutes - totalHours * 60;
   const secondsExcludingMinutes = totalSeconds - totalMinutes * 60;
 
-  return [
+  const timeSegments = [
     totalHours,
     asTimeUnit(minutesExcludingHours),
     asTimeUnit(secondsExcludingMinutes),
-  ].join(":");
+  ].filter(Boolean); // Remove totalHours if it is zero
+
+  return timeSegments.join(":");
 };
 
 const asTimeUnit = (number) => {

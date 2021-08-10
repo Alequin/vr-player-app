@@ -18,7 +18,7 @@ import {
   toggleResizeModeButtonIconName,
 } from "./utils";
 import { homeViewAdBannerId } from "../../../secrets.json";
-import { checkIfAdsDisabled, disableAds } from "../ads";
+import { checkIfAdsAreDisabled, disableAds } from "../ads";
 import { DisableAdsView } from "./control-views/disable-ads-view";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
@@ -36,16 +36,14 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const shouldShowErrorView = videoPlayer.errorLoadingVideo;
 
   const [showDisableAdsView, setShowDisableAdsView] = useState(false);
-  const shouldShowDisableAdsView = !shouldShowErrorView && showDisableAdsView;
+  const shouldShowDisableAdsView =
+    !shouldShowErrorView && showDisableAdsView && !videoPlayer.hasVideo;
 
   const shouldShowHomeView =
     !shouldShowDisableAdsView && !shouldShowErrorView && !videoPlayer.hasVideo;
 
   const shouldDisableLowerBarControls =
-    showDisableAdsView ||
-    shouldShowErrorView ||
-    shouldShowHomeView ||
-    videoPlayer.isLoading;
+    shouldShowErrorView || !videoPlayer.hasVideo;
 
   useEffect(() => {
     const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -110,6 +108,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         )}
         {shouldShowDisableAdsView && (
           <DisableAdsView
+            areAdsDisabled={areAdsDisabled}
             onDisableAds={async () => {
               setShowDisableAdsView(false);
               setAreAdsDisabled(true);
@@ -205,14 +204,14 @@ const useCanShowAds = () => {
 
   useEffect(() => {
     // Check if ads are disabled on mount
-    checkIfAdsDisabled().then(setAreAdsDisabled);
+    checkIfAdsAreDisabled().then(setAreAdsDisabled);
   }, []);
 
   useEffect(() => {
     // If ads are disabled check every 30 seconds if they are now enabled
     if (areAdsDisabled) {
       const interval = setInterval(() => {
-        checkIfAdsDisabled().then((areDisabled) => {
+        checkIfAdsAreDisabled().then((areDisabled) => {
           if (areDisabled) return;
           setAreAdsDisabled(false);
         });

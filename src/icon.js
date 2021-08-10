@@ -53,6 +53,8 @@ const ICON_OPTIONS = {
   backArrow: customIcon(Ionicons, "ios-arrow-back"),
   warningOutline: customIcon(Ionicons, "warning-outline"),
   cancel: customIcon(MaterialCommunityIcons, "cancel"),
+  hourglass: customIcon(Ionicons, "hourglass-outline"),
+  googlePlay: customIcon(Entypo, "google-play"),
 };
 
 const TestIdElement = (props) => <View {...props} />;

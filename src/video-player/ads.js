@@ -2,16 +2,24 @@ import * as asyncStorage from "./async-storage";
 
 const minutesToMilliseconds = (minutes) => minutes * 1000 * 60;
 
-const TOTAL_TIME_TO_DISABLE_ADS_FOR = minutesToMilliseconds(0.5);
+const TOTAL_TIME_TO_DISABLE_ADS_FOR = minutesToMilliseconds(20);
 
-export const checkIfAdsDisabled = async () => {
-  const disableTime = await asyncStorage.adsDisabledTime.load();
-  if (!disableTime) return false;
+export const timeAdsAreDisabledFor = async () => {
+  const disabledTime = await asyncStorage.adsDisabledTime.load();
+  if (!disabledTime) return 0;
 
   const currentTime = Date.now();
-  return currentTime - disableTime <= TOTAL_TIME_TO_DISABLE_ADS_FOR;
+  return TOTAL_TIME_TO_DISABLE_ADS_FOR - (currentTime - disabledTime);
+};
+
+export const checkIfAdsAreDisabled = async () => {
+  const disableTime = await timeAdsAreDisabledFor();
+  return disableTime >= 0;
 };
 
 export const disableAds = async () => {
-  return asyncStorage.adsDisabledTime.save(Date.now());
+  const remainingDisabledTime = await timeAdsAreDisabledFor();
+  return asyncStorage.adsDisabledTime.save(
+    remainingDisabledTime > 0 ? Date.now() + remainingDisabledTime : Date.now()
+  );
 };

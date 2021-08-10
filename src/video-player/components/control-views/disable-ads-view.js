@@ -2,16 +2,21 @@ import { AdMobRewarded } from "expo-ads-admob";
 import React, { useEffect, useState } from "react";
 import { TouchableOpacity, View } from "react-native";
 import { disableAdsRewardId } from "../../../../secrets.json";
-import { disableAds } from "../../ads";
+import { disableAds, timeAdsAreDisabledFor } from "../../ads";
 import { ControlPageIcon } from "../control-page-icon";
+import { millisecondsToTime } from "../utils";
 import { ControlViewText } from "./control-view-text";
 
-export const DisableAdsView = ({ onPressSelectVideo, onDisableAds }) => {
-  const [isLoading, setIsLoading] = useState(true);
+export const DisableAdsView = ({
+  onPressSelectVideo,
+  onDisableAds,
+  areAdsDisabled,
+}) => {
+  const [adsDisabledTime, setAdsDisabledTime] = useState(0);
 
   useEffect(() => {
     AdMobRewarded.setAdUnitID(disableAdsRewardId).then(async () => {
-      await loadRewardAd();
+      timeAdsAreDisabledFor().then(setAdsDisabledTime);
 
       AdMobRewarded.addEventListener(
         "rewardedVideoUserDidEarnReward",
@@ -23,14 +28,19 @@ export const DisableAdsView = ({ onPressSelectVideo, onDisableAds }) => {
       AdMobRewarded.addEventListener("rewardedVideoDidDismiss", async () =>
         loadRewardAd()
       );
-
-      setIsLoading(false);
     });
 
     return () => AdMobRewarded.removeAllListeners();
   }, []);
 
-  if (isLoading) return null;
+  useEffect(() => {
+    if (areAdsDisabled) {
+      const interval = setInterval(() => {
+        setAdsDisabledTime((previousTime) => previousTime - 1000);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [areAdsDisabled]);
 
   return (
     <View
@@ -43,26 +53,59 @@ export const DisableAdsView = ({ onPressSelectVideo, onDisableAds }) => {
           flex: 1,
           flexDirection: "row",
           justifyContent: "space-around",
-          alignItems: "center",
         }}
       >
         <TouchableOpacity
-          style={{ alignItems: "center", margin: 20, width: "30%" }}
+          style={{
+            alignItems: "center",
+            margin: 20,
+            width: "35%",
+            height: "100%",
+          }}
           onPress={async () => {
             await loadRewardAd();
             await AdMobRewarded.showAdAsync();
           }}
         >
-          <ControlPageIcon name="cancel" size={38} />
-          <ControlViewText>
-            Watch a short ad now and disable all other ads for 20 minutes
-          </ControlViewText>
+          <ControlPageIcon name="hourglass" size={38} />
+          {areAdsDisabled ? (
+            <ControlViewText>
+              Ads are already disabled. Add more time by watching another short
+              ad
+            </ControlViewText>
+          ) : (
+            <ControlViewText>
+              Watch a short ad and disable all other ads for 20 minutes
+            </ControlViewText>
+          )}
+
+          {areAdsDisabled && (
+            <View
+              style={{
+                flex: 1,
+                width: "100%",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <ControlViewText>
+                {`Ads are still disabled for ${millisecondsToTime(
+                  adsDisabledTime
+                )}`}
+              </ControlViewText>
+            </View>
+          )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={{ alignItems: "center", margin: 20, width: "30%" }}
+          style={{
+            alignItems: "center",
+            margin: 20,
+            width: "35%",
+            height: "100%",
+          }}
           onPress={onPressSelectVideo}
         >
-          <ControlPageIcon name="folderVideo" size={38} />
+          <ControlPageIcon name="googlePlay" size={38} />
           <ControlViewText>
             Buy the ad-free version of the app and help support us
           </ControlViewText>
