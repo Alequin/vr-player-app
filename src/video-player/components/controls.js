@@ -5,10 +5,13 @@ import {
   Text,
   TouchableWithoutFeedback,
 } from "react-native";
+import { homeViewAdBannerId } from "../../../secrets.json";
+import { checkIfAdsAreDisabled } from "../ads-disable-time";
 import { useSelectVideoAndShowInterstitialAds } from "../hooks/use-select-video-and-show-interstitial-ads";
 import { ControlBar } from "./control-bar";
 import { ControlBarIconButton } from "./control-bar-icon-button";
 import { AdBanner } from "./control-views/ad-banner";
+import { DisableAdsView } from "./control-views/disable-ads-view";
 import { ErrorView } from "./control-views/error-view";
 import { HomeView } from "./control-views/home-view";
 import { TimeBar } from "./time-bar";
@@ -17,9 +20,6 @@ import {
   togglePlayerModeButtonIconName,
   toggleResizeModeButtonIconName,
 } from "./utils";
-import { homeViewAdBannerId } from "../../../secrets.json";
-import { checkIfAdsAreDisabled, disableAds } from "../ads";
-import { DisableAdsView } from "./control-views/disable-ads-view";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
   const { areAdsDisabled, setAreAdsDisabled } = useCanShowAds();

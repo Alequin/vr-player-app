@@ -1,6 +1,5 @@
+import { minutesToMilliseconds } from "../minutes-to-milliseconds";
 import * as asyncStorage from "./async-storage";
-
-const minutesToMilliseconds = (minutes) => minutes * 1000 * 60;
 
 const TOTAL_TIME_TO_DISABLE_ADS_FOR = minutesToMilliseconds(20);
 

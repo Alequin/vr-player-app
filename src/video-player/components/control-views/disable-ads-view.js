@@ -2,7 +2,7 @@ import { AdMobRewarded } from "expo-ads-admob";
 import React, { useEffect, useState } from "react";
 import { TouchableOpacity, View } from "react-native";
 import { disableAdsRewardId } from "../../../../secrets.json";
-import { disableAds, timeAdsAreDisabledFor } from "../../ads";
+import { disableAds, timeAdsAreDisabledFor } from "../../ads-disable-time";
 import { ControlPageIcon } from "../control-page-icon";
 import { millisecondsToTime } from "../utils";
 import { ControlViewText } from "./control-view-text";
