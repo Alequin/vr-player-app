@@ -26,7 +26,7 @@ export const useShowControls = (videoPlayer) => {
   }, [areControlsVisible, videoPlayer.isPlaying]);
 
   useEffect(() => {
-    if (!videoPlayer.isPlaying) showControls();
+    if (!videoPlayer.isNewLoop && !videoPlayer.isPlaying) showControls();
   }, [showControls, videoPlayer.isPlaying]);
 
   return {

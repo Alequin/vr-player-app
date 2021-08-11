@@ -57,6 +57,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   return (
     <Animated.View
       style={{
+        zIndex,
         opacity: fadeAnim,
         height: "100%",
         width: "100%",
