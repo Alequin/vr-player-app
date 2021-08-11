@@ -13,7 +13,7 @@ export const useViewToShow = (videoPlayer) => {
 
   useEffect(() => {
     const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (videoPlayer.isLoaded) {
+      if (videoPlayer.hasVideo) {
         videoPlayer.unloadVideo();
         return true;
       }
