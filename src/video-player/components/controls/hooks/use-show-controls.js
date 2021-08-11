@@ -15,12 +15,12 @@ export const useShowControls = (videoPlayer) => {
       const timeout = setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 1000,
+          duration: 2000,
           useNativeDriver: true,
         }).start(() => {
           setAreControlsVisible(false);
         });
-      }, 7000);
+      }, 4000);
       return () => clearTimeout(timeout);
     }
   }, [areControlsVisible, videoPlayer.isPlaying]);
