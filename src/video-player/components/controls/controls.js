@@ -86,6 +86,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         />
         <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
           <SideControlBar
+            left
             shouldDisableControls={shouldDisableBarControls}
             onPress={async () => {
               if (videoPlayer.isPlaying) await videoPlayer.pause();
@@ -98,7 +99,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           >
             <Icon name="replay" color="white" size={30} />
           </SideControlBar>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, alignItems: "center" }}>
             {shouldShowHomeView && (
               <HomeView
                 onPressSelectVideo={selectVideoAndShowAds}
@@ -125,6 +126,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             )}
           </View>
           <SideControlBar
+            right
             shouldDisableControls={shouldDisableBarControls}
             onPress={async () => {
               if (videoPlayer.isPlaying) await videoPlayer.pause();
@@ -210,27 +212,53 @@ const UpperControlBar = ({
   );
 };
 
-const SideControlBar = ({ children, shouldDisableControls, onPress }) => (
-  <View
+const SideControlBar = ({
+  left,
+  right,
+  children,
+  shouldDisableControls,
+  onPress,
+}) => (
+  <TouchableOpacity
     style={{
       opacity: shouldDisableControls ? 0.25 : 1,
-      padding: 10,
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100%",
     }}
+    onPress={onPress}
+    disabled={shouldDisableControls}
   >
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={shouldDisableControls}
+    <View
       style={{
-        width: "100%",
-        height: "100%",
         justifyContent: "center",
         alignItems: "center",
+        backgroundColor: "#00000080",
+        height: "50%",
+        padding: 10,
+        ...sideBarBorderRadius({ left, right }),
       }}
     >
       {children}
-    </TouchableOpacity>
-  </View>
+    </View>
+  </TouchableOpacity>
 );
+
+const sideBarBorderRadius = ({ left, right }) => {
+  if (left) {
+    return {
+      borderTopRightRadius: 50,
+      borderBottomRightRadius: 50,
+    };
+  }
+
+  if (right) {
+    return {
+      borderTopLeftRadius: 50,
+      borderBottomLeftRadius: 50,
+    };
+  }
+};
 
 const LowerControlBar = ({
   shouldDisableControls,
