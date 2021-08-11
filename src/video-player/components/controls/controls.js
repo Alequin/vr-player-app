@@ -89,6 +89,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             left
             shouldDisableControls={shouldDisableBarControls}
             onPress={async () => {
+              showControls();
               if (videoPlayer.isPlaying) await videoPlayer.pause();
               setTimeToSkipTo((currentSkipTime) =>
                 currentSkipTime
@@ -129,6 +130,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             right
             shouldDisableControls={shouldDisableBarControls}
             onPress={async () => {
+              showControls();
               if (videoPlayer.isPlaying) await videoPlayer.pause();
               setTimeToSkipTo((currentSkipTime) =>
                 currentSkipTime
@@ -219,29 +221,34 @@ const SideControlBar = ({
   shouldDisableControls,
   onPress,
 }) => (
-  <TouchableOpacity
+  <View
     style={{
       opacity: shouldDisableControls ? 0.25 : 1,
       justifyContent: "center",
-      alignItems: "center",
       height: "100%",
     }}
-    onPress={onPress}
-    disabled={shouldDisableControls}
   >
-    <View
+    <TouchableOpacity
       style={{
         justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#00000080",
-        height: "50%",
-        padding: 10,
-        ...sideBarBorderRadius({ left, right }),
+        height: "100%",
       }}
+      onPress={onPress}
+      disabled={shouldDisableControls}
     >
-      {children}
-    </View>
-  </TouchableOpacity>
+      <View
+        style={{
+          justifyContent: "center",
+          backgroundColor: "#00000080",
+          height: "50%",
+          padding: 10,
+          ...sideBarBorderRadius({ left, right }),
+        }}
+      >
+        {children}
+      </View>
+    </TouchableOpacity>
+  </View>
 );
 
 const sideBarBorderRadius = ({ left, right }) => {
