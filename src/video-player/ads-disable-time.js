@@ -11,10 +11,8 @@ export const timeAdsAreDisabledFor = async () => {
   return TOTAL_TIME_TO_DISABLE_ADS_FOR - (currentTime - disabledTime);
 };
 
-export const checkIfAdsAreDisabled = async () => {
-  const disableTime = await timeAdsAreDisabledFor();
-  return disableTime >= 0;
-};
+export const checkIfAdsAreDisabled = async () =>
+  (await timeAdsAreDisabledFor()) > 0;
 
 export const disableAds = async () => {
   const remainingDisabledTime = await timeAdsAreDisabledFor();
