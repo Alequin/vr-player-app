@@ -59,7 +59,7 @@ export const DisableAdsView = ({
           style={{
             alignItems: "center",
             margin: 20,
-            width: "35%",
+            width: "40%",
             height: "100%",
           }}
           onPress={async () => {
@@ -100,7 +100,7 @@ export const DisableAdsView = ({
           style={{
             alignItems: "center",
             margin: 20,
-            width: "35%",
+            width: "40%",
             height: "100%",
           }}
           onPress={onPressSelectVideo}

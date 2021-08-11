@@ -5,7 +5,6 @@ import { isEnvironmentProduction } from "../../../../is-environment-production";
 export const AdBanner = ({ adUnitID }) => {
   return (
     <AdMobBanner
-      style={{ width: "100%" }}
       adUnitID={
         isEnvironmentProduction()
           ? adUnitID
