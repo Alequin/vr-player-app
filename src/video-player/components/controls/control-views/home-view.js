@@ -20,14 +20,14 @@ export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
         }}
       >
         <TouchableOpacity
-          style={{ alignItems: "center", margin: 20, width: "30%" }}
+          style={{ alignItems: "center", margin: 20, width: "40%" }}
           onPress={onPressSelectVideo}
         >
           <ControlPageIcon name="folderVideo" size={38} />
           <ControlViewText>Select a video to watch</ControlViewText>
         </TouchableOpacity>
         <TouchableOpacity
-          style={{ alignItems: "center", margin: 20, width: "30%" }}
+          style={{ alignItems: "center", margin: 20, width: "40%" }}
           onPress={onPressDisableAds}
         >
           <ControlPageIcon name="cancel" size={38} />
