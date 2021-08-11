@@ -1,7 +1,5 @@
-import React, { useState } from "react";
-import { useEffect } from "react";
-import { View } from "react-native";
-import { Animated, Text, TouchableWithoutFeedback } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { homeViewAdBannerId } from "../../../../secrets.json";
 import { Icon } from "../../../icon";
@@ -57,137 +55,143 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   }, [timeToSkipTo, videoPlayer.videoDuration]);
 
   return (
-    <TouchableWithoutFeedback
+    <Animated.View
       style={{
         opacity: fadeAnim,
         height: "100%",
         width: "100%",
-        zIndex,
+        justifyContent: videoPlayer.errorLoadingVideo
+          ? "flex-start"
+          : "space-between",
       }}
-      onPress={showControls}
     >
-      <Animated.View
-        style={{
-          opacity: fadeAnim,
-          height: "100%",
-          width: "100%",
-          justifyContent: videoPlayer.errorLoadingVideo
-            ? "flex-start"
-            : "space-between",
+      <UpperControlBar
+        shouldDisableControls={shouldShowHomeView}
+        onPressAnyControls={showControls}
+        onPressBack={() => {
+          videoPlayer.unloadVideo();
+          videoPlayer.clearError();
+          setShowDisableAdsView(false);
         }}
-      >
-        <UpperControlBar
-          shouldDisableControls={shouldShowHomeView}
-          onPressAnyControls={showControls}
-          onPressBack={() => {
-            videoPlayer.unloadVideo();
-            videoPlayer.clearError();
-            setShowDisableAdsView(false);
+        onPressSelectVideo={selectVideoAndShowAds}
+      />
+      <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
+        <SideControlBar
+          left
+          shouldDisableControls={shouldDisableVideoControls}
+          onPress={async () => {
+            showControls();
+            if (videoPlayer.isPlaying) await videoPlayer.pause();
+            setTimeToSkipTo((currentSkipTime) =>
+              currentSkipTime
+                ? currentSkipTime - 10000
+                : videoPlayer.currentVideoPositionInMillis - 10000
+            );
           }}
-          onPressSelectVideo={selectVideoAndShowAds}
-        />
-        <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
-          <SideControlBar
-            left
-            shouldDisableControls={shouldDisableVideoControls}
-            onPress={async () => {
-              showControls();
-              if (videoPlayer.isPlaying) await videoPlayer.pause();
-              setTimeToSkipTo((currentSkipTime) =>
-                currentSkipTime
-                  ? currentSkipTime - 10000
-                  : videoPlayer.currentVideoPositionInMillis - 10000
-              );
-            }}
-          >
-            <Icon name="replay" color="white" size={30} />
-          </SideControlBar>
-          <View style={{ flex: 1, alignItems: "center" }}>
-            {shouldShowHomeView && (
-              <HomeView
-                onPressSelectVideo={selectVideoAndShowAds}
-                onPressDisableAds={async () => setShowDisableAdsView(true)}
-              />
-            )}
-            {shouldShowErrorView && (
-              <ErrorView
-                errorMessage={videoPlayer.errorLoadingVideo}
-                onPressSelectAnotherVideo={selectVideoAndShowAds}
-              />
-            )}
-            {shouldShowDisableAdsView && (
-              <DisableAdsView
-                areAdsDisabled={areAdsDisabled}
-                onDisableAds={async () => {
-                  setShowDisableAdsView(false);
-                  setAreAdsDisabled(true);
+        >
+          <Icon name="replay" color="white" size={30} />
+        </SideControlBar>
+        <View style={{ flex: 1, alignItems: "center" }}>
+          {shouldShowHomeView && (
+            <HomeView
+              onPressSelectVideo={selectVideoAndShowAds}
+              onPressDisableAds={async () => setShowDisableAdsView(true)}
+            />
+          )}
+          {shouldShowErrorView && (
+            <ErrorView
+              errorMessage={videoPlayer.errorLoadingVideo}
+              onPressSelectAnotherVideo={selectVideoAndShowAds}
+            />
+          )}
+          {shouldShowDisableAdsView && (
+            <DisableAdsView
+              areAdsDisabled={areAdsDisabled}
+              onDisableAds={async () => {
+                setShowDisableAdsView(false);
+                setAreAdsDisabled(true);
+              }}
+            />
+          )}
+          {!areAdsDisabled && !videoPlayer.hasVideo && (
+            <AdBanner adUnitID={homeViewAdBannerId} />
+          )}
+          {videoPlayer.hasVideo && (
+            <TouchableWithoutFeedback
+              style={{
+                height: "100%",
+                width: "100%",
+              }}
+              onPress={showControls}
+            >
+              <View
+                style={{
+                  height: "100%",
+                  width: "100%",
                 }}
               />
-            )}
-            {!areAdsDisabled && !videoPlayer.hasVideo && (
-              <AdBanner adUnitID={homeViewAdBannerId} />
-            )}
-          </View>
-          <SideControlBar
-            right
-            shouldDisableControls={shouldDisableVideoControls}
-            onPress={async () => {
-              showControls();
-              if (videoPlayer.isPlaying) await videoPlayer.pause();
-              setTimeToSkipTo((currentSkipTime) =>
-                currentSkipTime
-                  ? currentSkipTime + 10000
-                  : videoPlayer.currentVideoPositionInMillis + 10000
-              );
-            }}
-          >
-            <Icon name="forward" color="white" size={30} />
-          </SideControlBar>
+            </TouchableWithoutFeedback>
+          )}
         </View>
-        <LowerControlBar
+        <SideControlBar
+          right
           shouldDisableControls={shouldDisableVideoControls}
-          onPressAnyControls={showControls}
-          isPlaying={videoPlayer.isPlaying}
-          videoDuration={videoPlayer.videoDuration}
-          currentVideoPositionInMillis={
-            // Use manual position while user select a position with the time bar.
-            // It produces a smoother experience
-            shouldUseManualPosition
-              ? manualPositionInMillis
-              : videoPlayer.currentVideoPositionInMillis
+          onPress={async () => {
+            showControls();
+            if (videoPlayer.isPlaying) await videoPlayer.pause();
+            setTimeToSkipTo((currentSkipTime) =>
+              currentSkipTime
+                ? currentSkipTime + 10000
+                : videoPlayer.currentVideoPositionInMillis + 10000
+            );
+          }}
+        >
+          <Icon name="forward" color="white" size={30} />
+        </SideControlBar>
+      </View>
+      <LowerControlBar
+        shouldDisableControls={shouldDisableVideoControls}
+        onPressAnyControls={showControls}
+        isPlaying={videoPlayer.isPlaying}
+        videoDuration={videoPlayer.videoDuration}
+        currentVideoPositionInMillis={
+          // Use manual position while user select a position with the time bar.
+          // It produces a smoother experience
+          shouldUseManualPosition
+            ? manualPositionInMillis
+            : videoPlayer.currentVideoPositionInMillis
+        }
+        videoPlayerMode={videoPlayer.videoPlayerMode}
+        videoResizeMode={videoPlayer.videoResizeMode}
+        onPressPlay={() =>
+          videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
+        }
+        onSeekVideoPositionStart={(newPosition) => {
+          setShouldUseManualPosition(true);
+
+          setManualPositionInMillis(newPosition);
+
+          if (videoPlayer.isPlaying) {
+            videoPlayer.pause();
+            setShouldResume(true);
           }
-          videoPlayerMode={videoPlayer.videoPlayerMode}
-          videoResizeMode={videoPlayer.videoResizeMode}
-          onPressPlay={() =>
-            videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
-          }
-          onSeekVideoPositionStart={(newPosition) => {
-            setShouldUseManualPosition(true);
+        }}
+        onSeekVideoPosition={(newPosition) => {
+          setManualPositionInMillis(newPosition);
+        }}
+        onSeekVideoPositionComplete={async (newPosition) => {
+          setManualPositionInMillis(newPosition);
+          await videoPlayer.setPosition(newPosition);
 
-            setManualPositionInMillis(newPosition);
+          setShouldUseManualPosition(false);
 
-            if (videoPlayer.isPlaying) {
-              videoPlayer.pause();
-              setShouldResume(true);
-            }
-          }}
-          onSeekVideoPosition={(newPosition) => {
-            setManualPositionInMillis(newPosition);
-          }}
-          onSeekVideoPositionComplete={async (newPosition) => {
-            setManualPositionInMillis(newPosition);
-            await videoPlayer.setPosition(newPosition);
-
-            setShouldUseManualPosition(false);
-
-            if (shouldResume) videoPlayer.play();
-            setShouldResume(false);
-          }}
-          togglePlayerMode={() => videoPlayer.toggleVideoMode()}
-          togglePlayerResizeMode={() => videoPlayer.toggleResizeMode()}
-        />
-      </Animated.View>
-    </TouchableWithoutFeedback>
+          if (shouldResume) videoPlayer.play();
+          setShouldResume(false);
+        }}
+        togglePlayerMode={() => videoPlayer.toggleVideoMode()}
+        togglePlayerResizeMode={() => videoPlayer.toggleResizeMode()}
+      />
+    </Animated.View>
   );
 };
 
