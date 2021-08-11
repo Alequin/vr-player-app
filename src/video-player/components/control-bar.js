@@ -10,6 +10,7 @@ export const ControlBar = (props) => (
       backgroundColor: "#00000080",
       alignItems: "center",
       paddingHorizontal: 15,
+      paddingVertical: 10,
       justifyContent: "space-between",
       ...props.style,
     }}

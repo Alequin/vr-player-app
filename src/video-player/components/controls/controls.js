@@ -36,7 +36,8 @@ export const Controls = ({ videoPlayer, zIndex }) => {
     setShowDisableAdsView,
   } = useViewToShow(videoPlayer);
 
-  const shouldDisableBarControls = shouldShowErrorView || !videoPlayer.hasVideo;
+  const shouldDisableVideoControls =
+    shouldShowErrorView || !videoPlayer.hasVideo;
 
   const selectVideoAndShowAds = useSelectVideoAndShowInterstitialAds(
     videoPlayer,
@@ -76,6 +77,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         }}
       >
         <UpperControlBar
+          shouldDisableControls={shouldShowHomeView}
           onPressAnyControls={showControls}
           onPressBack={() => {
             videoPlayer.unloadVideo();
@@ -87,7 +89,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
           <SideControlBar
             left
-            shouldDisableControls={shouldDisableBarControls}
+            shouldDisableControls={shouldDisableVideoControls}
             onPress={async () => {
               showControls();
               if (videoPlayer.isPlaying) await videoPlayer.pause();
@@ -128,7 +130,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           </View>
           <SideControlBar
             right
-            shouldDisableControls={shouldDisableBarControls}
+            shouldDisableControls={shouldDisableVideoControls}
             onPress={async () => {
               showControls();
               if (videoPlayer.isPlaying) await videoPlayer.pause();
@@ -143,7 +145,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           </SideControlBar>
         </View>
         <LowerControlBar
-          shouldDisableControls={shouldDisableBarControls}
+          shouldDisableControls={shouldDisableVideoControls}
           onPressAnyControls={showControls}
           isPlaying={videoPlayer.isPlaying}
           videoDuration={videoPlayer.videoDuration}
@@ -193,6 +195,7 @@ const UpperControlBar = ({
   onPressBack,
   onPressAnyControls,
   onPressSelectVideo,
+  shouldDisableControls,
 }) => {
   return (
     <ControlBar>
@@ -202,6 +205,7 @@ const UpperControlBar = ({
           onPressBack();
           onPressAnyControls();
         }}
+        disabled={shouldDisableControls}
       />
       <ControlBarIconButton
         name="folderVideo"
