@@ -304,7 +304,9 @@ const LowerControlBar = ({
           onPressAnyControls();
         }}
       />
-      <Text style={{ color: "white", fontWeight: "bold", fontSize: 17 }}>
+      <Text
+        style={{ color: "white", fontWeight: "bold", fontSize: 17, margin: 5 }}
+      >
         {millisecondsToTime(currentVideoPositionInMillis)}
       </Text>
       <TimeBar

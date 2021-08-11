@@ -7,10 +7,10 @@ export const ControlBar = (props) => (
     style={{
       flexDirection: "row",
       width: "100%",
+      height: 50,
       backgroundColor: "#00000080",
       alignItems: "center",
       paddingHorizontal: 15,
-      paddingVertical: 10,
       justifyContent: "space-between",
       ...props.style,
     }}
