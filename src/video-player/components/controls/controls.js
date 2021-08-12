@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
-import { homeViewAdBannerId } from "../../../../secrets.json";
 import { Icon } from "../../../icon";
 import { useSelectVideoAndShowInterstitialAds } from "../../hooks/use-select-video-and-show-interstitial-ads";
 import { ControlBar } from "../control-bar";
@@ -114,9 +113,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
               }}
             />
           )}
-          {!areAdsDisabled && !videoPlayer.hasVideo && (
-            <AdBanner adUnitID={homeViewAdBannerId} />
-          )}
+          {!areAdsDisabled && !videoPlayer.hasVideo && <AdBanner />}
           {videoPlayer.hasVideo && (
             <TouchableWithoutFeedback
               style={{
