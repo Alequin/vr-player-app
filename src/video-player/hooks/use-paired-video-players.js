@@ -88,14 +88,14 @@ export const usePairedVideosPlayers = () => {
     // Start playing video from beginning when a new one is selected
     if (hasVideo) {
       setIsLoading(true);
-      // Delay starting the video to stop issues with ads and video players becoming out of sync
+      // Delay starting the video to stop issues with ads causing video players becoming out of sync
       let timeout = null;
       setPosition(0).then(
         () =>
           (timeout = setTimeout(() => {
             play();
             setIsLoading(false);
-          }, 500))
+          }, 1000))
       );
       return () => clearTimeout(timeout);
     }
