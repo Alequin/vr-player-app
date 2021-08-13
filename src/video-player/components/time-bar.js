@@ -11,6 +11,7 @@ export const TimeBar = ({
 }) => {
   return (
     <Slider
+      testID="timeBar"
       disabled={disabled}
       value={currentPosition}
       maximumValue={videoDuration}

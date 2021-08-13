@@ -290,6 +290,7 @@ const LowerControlBar = ({
 }) => {
   return (
     <ControlBar
+      testID="lowerControlBar"
       style={{
         opacity: shouldDisableControls ? 0.25 : 1,
       }}
