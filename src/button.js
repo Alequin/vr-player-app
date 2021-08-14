@@ -3,7 +3,8 @@ import { TouchableOpacity } from "react-native";
 
 export const Button = ({ disabled, ...otherProps }) => (
   <TouchableOpacity
-    accessibilityRole={disabled ? "disabledButton" : "button"}
+    testID={disabled ? "disabledButton" : "button"}
+    accessibilityRole="button"
     disabled={disabled}
     {...otherProps}
   />

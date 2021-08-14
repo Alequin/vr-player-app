@@ -6,7 +6,7 @@ import { App } from "./App";
 import {
   asyncRender,
   getButtonByText,
-  getButtonByIconTestId,
+  getButtonByChildTestId,
 } from "./test-utils";
 
 describe("App - Home page", () => {
@@ -42,25 +42,58 @@ describe("App - Home page", () => {
     const lowerControlBar = screen.getByTestId("lowerControlBar");
     expect(lowerControlBar).toBeDefined();
 
-    const playButton = getButtonByIconTestId(
+    const playButton = getButtonByChildTestId(
       within(lowerControlBar),
       "playIcon"
     );
-    expect(playButton.props.accessibilityRole).toBe("disabledButton");
+    expect(playButton.props.testID).toBe("disabledButton");
 
-    const playerTypeButton = getButtonByIconTestId(
+    const playerTypeButton = getButtonByChildTestId(
       within(lowerControlBar),
       "screenDesktopIcon"
     );
-    expect(playerTypeButton.props.accessibilityRole).toBe("disabledButton");
+    expect(playerTypeButton.props.testID).toBe("disabledButton");
 
-    const screenStretchIcon = getButtonByIconTestId(
+    const screenStretchIcon = getButtonByChildTestId(
       within(lowerControlBar),
       "screenNormalIcon"
     );
-    expect(screenStretchIcon.props.accessibilityRole).toBe("disabledButton");
+    expect(screenStretchIcon.props.testID).toBe("disabledButton");
 
     const timeBar = within(lowerControlBar).getByTestId("timeBar");
     expect(timeBar.props.disabled).toBe(true);
+  });
+
+  it("Disables all side bar controls while on the home page", async () => {
+    const screen = await asyncRender(<App />);
+    const sideBarLeft = screen.getByTestId("sidebarLeft");
+    expect(sideBarLeft).toBeDefined();
+
+    const replaySidebarButton = getButtonByChildTestId(
+      within(sideBarLeft),
+      "replay10Icon"
+    );
+    expect(replaySidebarButton.props.testID).toBe("disabledButton");
+
+    const sideBarRight = screen.getByTestId("sidebarRight");
+    expect(sideBarRight).toBeDefined();
+    const forwardSidebarButton = getButtonByChildTestId(
+      within(sideBarRight),
+      "forward10Icon"
+    );
+    expect(forwardSidebarButton.props.testID).toBe("disabledButton");
+  });
+
+  it("Disables the back button while on the home page", async () => {
+    const screen = await asyncRender(<App />);
+    const upperControlBar = screen.getByTestId("upperControlBar");
+    expect(upperControlBar).toBeDefined();
+
+    const backButton = getButtonByChildTestId(
+      within(upperControlBar),
+      "iosArrowBackIcon"
+    );
+
+    expect(backButton.props.testID).toBe("disabledButton");
   });
 });

@@ -8,10 +8,7 @@ export const getButtonByText = (screen, innerText) => {
   return buttons.find((button) => within(button).queryByText(innerText));
 };
 
-export const getButtonByIconTestId = (screen, iconTestId) => {
-  const buttons = screen.queryAllByRole("button");
-  const disabledButtons = screen.queryAllByRole("disabledButton");
-  return [...buttons, ...disabledButtons].find((button) =>
-    within(button).queryByTestId(iconTestId)
-  );
+export const getButtonByChildTestId = (screen, childTestId) => {
+  const buttons = screen.getAllByRole("button");
+  return buttons.find((button) => within(button).queryByTestId(childTestId));
 };

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
+import { Button } from "../../../button";
 import { Icon } from "../../../icon";
 import { useSelectVideoAndShowInterstitialAds } from "../../hooks/use-select-video-and-show-interstitial-ads";
 import { ControlBar } from "../control-bar";
@@ -77,6 +78,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
       />
       <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
         <SideControlBar
+          testID="sidebarLeft"
           left
           shouldDisableControls={shouldDisableVideoControls}
           onPress={async () => {
@@ -132,6 +134,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           )}
         </View>
         <SideControlBar
+          testID="sidebarRight"
           right
           shouldDisableControls={shouldDisableVideoControls}
           onPress={async () => {
@@ -200,7 +203,7 @@ const UpperControlBar = ({
   shouldDisableControls,
 }) => {
   return (
-    <ControlBar>
+    <ControlBar testID="upperControlBar">
       <ControlBarIconButton
         name="backArrow"
         onPress={() => {
@@ -221,6 +224,7 @@ const UpperControlBar = ({
 };
 
 const SideControlBar = ({
+  testID,
   left,
   right,
   children,
@@ -228,13 +232,14 @@ const SideControlBar = ({
   onPress,
 }) => (
   <View
+    testID={testID}
     style={{
       opacity: shouldDisableControls ? 0.25 : 1,
       justifyContent: "center",
       height: "100%",
     }}
   >
-    <TouchableOpacity
+    <Button
       style={{
         justifyContent: "center",
         height: "100%",
@@ -253,7 +258,7 @@ const SideControlBar = ({
       >
         {children}
       </View>
-    </TouchableOpacity>
+    </Button>
   </View>
 );
 
