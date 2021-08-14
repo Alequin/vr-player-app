@@ -96,7 +96,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         <View style={{ flex: 1, alignItems: "center" }}>
           {shouldShowHomeView && (
             <HomeView
-              onPressSelectVideo={selectVideoAndShowAds}
+              onPressSelectVideo={async () => await selectVideoAndShowAds()}
               onPressDisableAds={async () => setShowDisableAdsView(true)}
             />
           )}

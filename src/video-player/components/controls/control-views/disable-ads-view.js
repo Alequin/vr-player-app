@@ -44,6 +44,7 @@ export const DisableAdsView = ({
 
   return (
     <View
+      testID="disableAdsView"
       style={{
         flex: 1,
       }}
