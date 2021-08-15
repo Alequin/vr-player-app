@@ -10,5 +10,8 @@ export const mockDocumentPicker = {
   returnWithASelectedFile: (filePath) =>
     jest
       .spyOn(DocumentPicker, "getDocumentAsync")
-      .mockResolvedValue({ uri: filePath || "path/to/file" }),
+      .mockResolvedValue({
+        name: filePath || "path/to/file",
+        uri: filePath || "path/to/file",
+      }),
 };

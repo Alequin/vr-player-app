@@ -1,5 +1,6 @@
 import React from "react";
-import { TouchableOpacity, View } from "react-native";
+import { View } from "react-native";
+import { Button } from "../../../../button";
 import { ControlPageIcon } from "../../control-page-icon";
 import { ControlViewText } from "./control-view-text";
 
@@ -29,13 +30,13 @@ export const ErrorView = ({
           Sorry, there was an issue playing the video
         </ControlViewText>
         <ControlViewText>{errorMessage}</ControlViewText>
-        <TouchableOpacity
+        <Button
           style={{ alignItems: "center", margin: 20 }}
           onPress={onPressSelectAnotherVideo}
         >
           <ControlPageIcon name="folderVideo" />
           <ControlViewText>Open a different video</ControlViewText>
-        </TouchableOpacity>
+        </Button>
       </View>
     </View>
   );
