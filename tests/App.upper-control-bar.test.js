@@ -1,5 +1,4 @@
 jest.mock("react-native/Libraries/Animated/src/NativeAnimatedHelper");
-jest.genMockFromModule("expo-av");
 
 import { cleanup, within } from "@testing-library/react-native";
 import * as DocumentPicker from "expo-document-picker";

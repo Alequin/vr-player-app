@@ -1,25 +1,22 @@
 jest.mock("react-native/Libraries/Animated/src/NativeAnimatedHelper");
-jest.genMockFromModule("expo-ads-admob");
 
-jest.genMockFromModule("expo-av");
-
-import { cleanup, within, act, waitFor } from "@testing-library/react-native";
+import { act, cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as DocumentPicker from "expo-document-picker";
 import React from "React";
 import waitForExpect from "wait-for-expect";
 import { App } from "../App";
+import { logError } from "../src/logger";
 import {
   asyncPressEvent,
   asyncRender,
   getButtonByChildTestId,
   getButtonByText,
 } from "./common-test-utils";
-import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
-import { mockDocumentPicker } from "./mocks/mock-document-picker";
 import { mockAdMobInterstitial } from "./mocks/mock-ad-mob";
+import { mockDocumentPicker } from "./mocks/mock-document-picker";
 import { mockLogError } from "./mocks/mock-logger";
-import { logError } from "../src/logger";
+import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
 
 describe("App - Home view", () => {
   beforeEach(() => {
@@ -334,8 +331,4 @@ describe("App - Home view", () => {
       expect(videoPlayerMocks.play).toHaveBeenCalledTimes(1);
     };
   });
-
-  it.todo("unload video sad path");
-  it.todo("load video sad path");
-  it.todo("plays video when on is selected");
 });
