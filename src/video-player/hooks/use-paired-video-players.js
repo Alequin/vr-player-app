@@ -65,7 +65,7 @@ export const usePairedVideosPlayers = () => {
         setIsNewLoop(false);
         await videoPlayer.pause();
       } catch (error) {
-        console.error(error);
+        logError(error);
         setErrorLoadingVideo("There was an issue trying to pause the video");
       }
     }
@@ -134,7 +134,7 @@ export const usePairedVideosPlayers = () => {
       setVideoDuration(durationMillis);
       await setPosition(0);
       await play();
-    }, [hasVideo, setPosition, play]),
+    }, [hasVideo, setPosition, play, videoPlayer.getStatus]),
   });
 
   return {

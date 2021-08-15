@@ -128,6 +128,23 @@ describe("App - Home view", () => {
     expect(AdMobInterstitial.showAdAsync).toHaveBeenCalledTimes(1);
   });
 
+  it("plays video from the home view when one is selected", async () => {
+    const { mocks } = mockUseVideoPlayerRefs();
+    mockDocumentPicker.returnWithASelectedFile();
+    const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+    const screen = await asyncRender(<App />);
+    const homeView = screen.getByTestId("homeView");
+    expect(homeView).toBeDefined();
+
+    // Play the video and confirm the correct functions are called
+    await startWatchingVideoFromHomeView({
+      screen,
+      videoPlayerMocks: mocks,
+      getInterstitialDidCloseCallback,
+    });
+  });
+
   it("Loads a new interstitial ad after showing one if a video is selected", async () => {
     mockUseVideoPlayerRefs();
     mockDocumentPicker.returnWithASelectedFile();
@@ -153,23 +170,6 @@ describe("App - Home view", () => {
 
     // loads ads twice, the initial load and after the ads are shown
     expect(AdMobInterstitial.requestAdAsync).toHaveBeenCalledTimes(2);
-  });
-
-  it("plays video from the home view when one is selected", async () => {
-    const { mocks } = mockUseVideoPlayerRefs();
-    mockDocumentPicker.returnWithASelectedFile();
-    const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-
-    const screen = await asyncRender(<App />);
-    const homeView = screen.getByTestId("homeView");
-    expect(homeView).toBeDefined();
-
-    // Play the video and confirm the correct functions are called
-    await startWatchingVideoFromHomeView({
-      screen,
-      videoPlayerMocks: mocks,
-      getInterstitialDidCloseCallback,
-    });
   });
 
   describe("still allows the video to load and play when there is an error with interstitial ads", () => {

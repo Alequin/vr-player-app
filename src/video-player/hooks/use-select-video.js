@@ -9,8 +9,8 @@ export const useSelectVideo = (videoPlayer) => {
     const selectedVideo = await DocumentPicker.getDocumentAsync({
       copyToCacheDirectory: false,
     });
-    if (selectedVideo.type !== "cancel") {
-      await videoPlayer.loadVideoSource(selectedVideo);
-    }
+
+    if (selectedVideo.type === "cancel") return;
+    await videoPlayer.loadVideoSource(selectedVideo);
   }, [videoPlayer.loadVideoSource, videoPlayer.clearError]);
 };

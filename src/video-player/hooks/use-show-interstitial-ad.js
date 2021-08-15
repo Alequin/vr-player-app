@@ -70,9 +70,9 @@ export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
         logError(error);
       }
     }
-  }, [lastTimeAdWasShows]);
+  }, [lastTimeAdWasShows, onFinishShowingAd]);
 };
 
-const TOTAL_TIME_TO_NOT_SHOW_ADS_FOR = minutesToMilliseconds(0.00001);
+const TOTAL_TIME_TO_NOT_SHOW_ADS_FOR = minutesToMilliseconds(1);
 const hasEnoughTimePastToShowAnotherAd = (time) =>
   Date.now() - time > TOTAL_TIME_TO_NOT_SHOW_ADS_FOR;

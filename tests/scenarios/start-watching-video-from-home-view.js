@@ -16,7 +16,7 @@ export const startWatchingVideoFromHomeView = async ({
   );
   expect(loadViewButton).toBeDefined();
 
-  // Able to load a video
+  // Press button to load video
   await asyncPressEvent(loadViewButton);
 
   // Fire callback to start playing the video
@@ -25,8 +25,8 @@ export const startWatchingVideoFromHomeView = async ({
 
   // confirm video is loaded and starts playing
   expect(videoPlayerMocks.load).toHaveBeenCalledTimes(1);
-  expect(videoPlayerMocks.setPosition).toHaveBeenCalledTimes(1);
   // Confirm position is set to 0 manually to reduce chances of sync issues
+  expect(videoPlayerMocks.setPosition).toHaveBeenCalledTimes(1);
   expect(videoPlayerMocks.setPosition).toHaveBeenCalledWith(0);
   expect(videoPlayerMocks.play).toHaveBeenCalledTimes(1);
 };
