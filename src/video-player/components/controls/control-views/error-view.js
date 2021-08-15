@@ -10,6 +10,7 @@ export const ErrorView = ({
 }) => {
   return (
     <View
+      testID="errorView"
       style={{
         flex: 1,
         justifyContent: "flex-end",

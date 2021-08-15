@@ -1,16 +1,16 @@
 jest.mock("react-native/Libraries/Animated/src/NativeAnimatedHelper");
 
-import { cleanup } from "@testing-library/react-native";
+import { within } from "@testing-library/react-native";
+import React from "React";
+import { App } from "../App";
+import {
+  asyncPressEvent,
+  asyncRender,
+  getButtonByText,
+} from "./common-test-utils";
+import { mockDocumentPicker } from "./mocks/mock-document-picker";
+import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
 
-describe("App - Home view", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    cleanup();
-  });
-
-  it.todo("unload video sad path");
-  it.todo("load video sad path");
+describe("App - Error view", () => {
+  it.todo("write tests");
 });

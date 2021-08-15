@@ -10,8 +10,7 @@ export const useSelectVideo = (videoPlayer) => {
       copyToCacheDirectory: false,
     });
     if (selectedVideo.type !== "cancel") {
-      await videoPlayer.unloadVideo();
       await videoPlayer.loadVideoSource(selectedVideo);
     }
-  }, [videoPlayer.isLoaded]);
+  }, [videoPlayer.loadVideoSource, videoPlayer.clearError]);
 };

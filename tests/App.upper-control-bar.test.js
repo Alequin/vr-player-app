@@ -10,6 +10,8 @@ import {
   asyncRender,
   getButtonByChildTestId,
 } from "./common-test-utils";
+import { mockDocumentPicker } from "./mocks/mock-document-picker";
+import { mockLogError } from "./mocks/mock-logger";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
 
 describe("App - Upper control bar", () => {
@@ -61,5 +63,70 @@ describe("App - Upper control bar", () => {
     await waitForExpect(() =>
       expect(DocumentPicker.getDocumentAsync).toHaveBeenCalled()
     );
+  });
+
+  describe("Upper control bar - directed to error page", () => {
+    let logErrorMock = mockLogError();
+
+    beforeEach(() => {
+      // Silence custom logs for error related tests
+      logErrorMock.mockImplementation(() => {});
+    });
+
+    afterAll(() => {
+      logErrorMock.mockReset();
+    });
+
+    it("Shows the error page when attempting to open a video but there is an issue unloading the previous video", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      mockDocumentPicker.returnWithASelectedFile();
+
+      mocks.unload.mockRejectedValue(null);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeDefined();
+
+      // Pick a new video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      );
+
+      // Pick another video as unload is only called if we have a video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      );
+
+      // Check the error page is shown due to the error
+      const errorView = screen.getByTestId("errorView");
+      expect(errorView).toBeDefined();
+    });
+
+    it("Shows the error page when attempting to open a video from the upper control bar but there is an issue loading the new video", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      mockDocumentPicker.returnWithASelectedFile();
+
+      mocks.load.mockRejectedValue(null);
+
+      const screen = await asyncRender(<App />);
+
+      // Pick a new video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      );
+
+      // Check the error page is shown due to the error
+      const errorView = screen.getByTestId("errorView");
+      expect(errorView).toBeDefined();
+    });
   });
 });

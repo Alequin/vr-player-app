@@ -44,7 +44,7 @@ export const usePairedVideosPlayers = () => {
 
   const [videoDuration, setVideoDuration] = useState(null);
 
-  const play = async () => {
+  const play = useCallback(async () => {
     if (hasVideo) {
       try {
         setIsLoading(false);
@@ -52,11 +52,11 @@ export const usePairedVideosPlayers = () => {
         setIsPlaying(true);
         await videoPlayer.play();
       } catch (error) {
-        console.error(error);
+        logError(error);
         setErrorLoadingVideo("There was an issue trying to start the video");
       }
     }
-  };
+  }, [hasVideo, videoPlayer.play]);
 
   const pause = useCallback(async () => {
     if (hasVideo) {
@@ -80,6 +80,16 @@ export const usePairedVideosPlayers = () => {
     },
     [hasVideo, videoPlayer.setPosition]
   );
+
+  const unloadVideo = useCallback(async () => {
+    if (!hasVideo) return;
+    await videoPlayer.unload();
+
+    setVideoDuration(0);
+    setHasVideo(null);
+    setIsPlaying(false);
+    setCurrentVideoPositionInMillis(0);
+  }, [videoPlayer.unload, hasVideo]);
 
   useEffect(() => {
     if (isPlaying && hasVideo) {
@@ -127,13 +137,8 @@ export const usePairedVideosPlayers = () => {
     }, [hasVideo, setPosition, play]),
   });
 
-  useEffect(() => {
-    if (hasVideo) {
-    }
-  }, [hasVideo]);
-
   return {
-    hasVideo: hasVideo,
+    hasVideo,
     isLoading,
     isPlaying,
     isNewLoop,
@@ -149,11 +154,14 @@ export const usePairedVideosPlayers = () => {
     setPosition,
     setDisplayPosition: setCurrentVideoPositionInMillis,
     clearError: useCallback(() => setErrorLoadingVideo(false), []),
+    unloadVideo,
     loadVideoSource: useCallback(
       async (newFileObject) => {
         if (newFileObject.type === "cancel") return;
 
         try {
+          await unloadVideo();
+
           // Load video
           // Set hasVideo early to ensure the correct pages are shown while the videos are loading
           setHasVideo(true);
@@ -165,7 +173,7 @@ export const usePairedVideosPlayers = () => {
 
           await showInterstitialAd();
         } catch (error) {
-          console.error(error);
+          logError(error);
           setErrorLoadingVideo(
             `Unable to play ${newFileObject.name} as a video`
           );
@@ -176,16 +184,8 @@ export const usePairedVideosPlayers = () => {
           setCurrentVideoPositionInMillis(0);
         }
       },
-      [videoPlayer.load, videoPlayer.getStatus]
+      [unloadVideo, videoPlayer.load, showInterstitialAd]
     ),
-    unloadVideo: useCallback(async () => {
-      await videoPlayer.unload();
-
-      setHasVideo(null);
-      setVideoDuration(0);
-      setIsPlaying(false);
-      setCurrentVideoPositionInMillis(0);
-    }, [videoPlayer.unload]),
     toggleVideoMode: useCallback(
       () =>
         setVideoPlayerMode((currentVideoPlayerMode) =>

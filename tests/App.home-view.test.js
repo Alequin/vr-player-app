@@ -325,4 +325,38 @@ describe("App - Home view", () => {
       expect(logError).toHaveBeenCalledTimes(0);
     });
   });
+
+  describe("Shows the error page", () => {
+    let logErrorMock = mockLogError();
+
+    beforeEach(() => {
+      // Silence custom logs for error related tests
+      logErrorMock.mockImplementation(() => {});
+    });
+
+    afterAll(() => {
+      logErrorMock.mockReset();
+    });
+
+    it("Shows the error page when attempting to open a video from the home view but there is an issue loading the new video", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      mockDocumentPicker.returnWithASelectedFile();
+
+      mocks.load.mockRejectedValue(null);
+
+      const screen = await asyncRender(<App />);
+
+      // Pick a new video
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("homeView")),
+          "Select a video to watch"
+        )
+      );
+
+      // Check the error page is shown due to the error
+      const errorView = screen.getByTestId("errorView");
+      expect(errorView).toBeDefined();
+    });
+  });
 });
