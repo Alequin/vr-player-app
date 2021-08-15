@@ -85,7 +85,6 @@ export const usePairedVideosPlayers = () => {
       setPosition(0).then(
         () =>
           (timeout = setTimeout(() => {
-            console.log("play");
             play();
           }, 1000))
       );

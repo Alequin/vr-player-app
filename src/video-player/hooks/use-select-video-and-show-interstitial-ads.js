@@ -3,6 +3,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { useCallback, useEffect, useState } from "react";
 import { videoSelectAdId } from "../../../secrets.json";
 import { isEnvironmentProduction } from "../../is-environment-production";
+import { logError } from "../../logger";
 import { minutesToMilliseconds } from "../../minutes-to-milliseconds";
 
 export const useSelectVideoAndShowInterstitialAds = (
@@ -27,7 +28,7 @@ export const useSelectVideoAndShowInterstitialAds = (
         }
       } catch (error) {
         // Swallow error. A failure to show an ad should not interrupt the user
-        console.error(error);
+        logError(error);
       }
     }
 
@@ -43,8 +44,8 @@ export const useSelectVideoAndShowInterstitialAds = (
         // Prepare next ad to be shown
         await AdMobInterstitial.requestAdAsync();
       } catch (error) {
-        // Swallow error. A failure to show an ad should not interrupt the user
-        console.error(error);
+        // Swallow error. A failure to load an ad should not interrupt the user
+        logError(error);
       }
     }
   }, [videoPlayer.isLoaded, areAdsDisabled, lastTimeAdWasShows]);
@@ -55,12 +56,12 @@ const prepareAds = async () => {
     await AdMobInterstitial.setAdUnitID(
       isEnvironmentProduction()
         ? videoSelectAdId
-        : "ca-app-pub-3940256099942544/1033173712"
+        : "ca-app-pub-3940256099942544/1033173712-fake"
     );
     await AdMobInterstitial.requestAdAsync();
   } catch (error) {
-    // Swallow error. A failure to show an ad should not interrupt the user
-    console.error(error);
+    // Swallow error. A failure to prepare an ad should not interrupt the user
+    logError(error);
   }
 };
 

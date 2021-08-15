@@ -3,7 +3,7 @@ jest.mock("react-native/Libraries/Animated/src/NativeAnimatedHelper");
 import { cleanup, within } from "@testing-library/react-native";
 import React from "React";
 import { App } from "../App";
-import { asyncRender, getButtonByChildTestId } from "../common-test-utils";
+import { asyncRender, getButtonByChildTestId } from "./common-test-utils";
 
 describe("App - Side control bar", () => {
   afterEach(cleanup);

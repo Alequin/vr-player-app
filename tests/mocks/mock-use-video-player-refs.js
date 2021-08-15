@@ -1,4 +1,4 @@
-import * as useVideoPlayerRefs from "../src/video-player/hooks/use-video-player-refs";
+import * as useVideoPlayerRefs from "../../src/video-player/hooks/use-video-player-refs";
 
 export const mockUseVideoPlayerRefs = () => {
   const mockVideoPlayerRefs = {

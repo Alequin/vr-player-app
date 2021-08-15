@@ -1,5 +1,4 @@
 jest.mock("react-native/Libraries/Animated/src/NativeAnimatedHelper");
-jest.genMockFromModule("expo-document-picker");
 jest.genMockFromModule("expo-av");
 
 import { cleanup, within } from "@testing-library/react-native";
@@ -11,8 +10,8 @@ import {
   asyncPressEvent,
   asyncRender,
   getButtonByChildTestId,
-} from "../common-test-utils";
-import { mockUseVideoPlayerRefs } from "./mock-use-video-player-refs";
+} from "./common-test-utils";
+import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
 
 describe("App - Upper control bar", () => {
   beforeEach(() => {
