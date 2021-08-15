@@ -1,6 +1,6 @@
 jest.mock("react-native/Libraries/Animated/src/NativeAnimatedHelper");
 
-import { act, cleanup, within } from "@testing-library/react-native";
+import { cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as DocumentPicker from "expo-document-picker";
 import React from "React";
@@ -17,6 +17,7 @@ import { mockAdMobInterstitial } from "./mocks/mock-ad-mob";
 import { mockDocumentPicker } from "./mocks/mock-document-picker";
 import { mockLogError } from "./mocks/mock-logger";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
+import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 
 describe("App - Home view", () => {
   beforeEach(() => {
@@ -153,10 +154,28 @@ describe("App - Home view", () => {
     expect(AdMobInterstitial.requestAdAsync).toHaveBeenCalledTimes(2);
   });
 
+  it("plays video from the home view when one is selected", async () => {
+    const { mocks } = mockUseVideoPlayerRefs();
+    mockDocumentPicker.returnWithASelectedFile();
+    const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+    const screen = await asyncRender(<App />);
+    const homeView = screen.getByTestId("homeView");
+    expect(homeView).toBeDefined();
+
+    // Play the video and confirm the correct functions are called
+    await startWatchingVideoFromHomeView({
+      screen,
+      videoPlayerMocks: mocks,
+      getInterstitialDidCloseCallback,
+    });
+  });
+
   describe("still allows the video to load and play when there is an error with interstitial ads", () => {
     let logErrorMock = mockLogError();
 
     beforeEach(() => {
+      // Silence custom logs for error related tests
       logErrorMock.mockClear();
       logErrorMock.mockImplementation(() => {});
     });
@@ -180,7 +199,7 @@ describe("App - Home view", () => {
       // an error occurs
       expect(logError).toHaveBeenCalledWith("fake setAdUnitID error");
 
-      await pickVideoAndConfirmPlayIsCalled({
+      await startWatchingVideoFromHomeView({
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
@@ -202,7 +221,7 @@ describe("App - Home view", () => {
       // an error occurs
       expect(logError).toHaveBeenCalledWith("fake requestAdAsync error");
 
-      await pickVideoAndConfirmPlayIsCalled({
+      await startWatchingVideoFromHomeView({
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
@@ -224,7 +243,7 @@ describe("App - Home view", () => {
       // No error initially
       expect(logError).not.toHaveBeenCalled();
 
-      await pickVideoAndConfirmPlayIsCalled({
+      await startWatchingVideoFromHomeView({
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
@@ -249,7 +268,7 @@ describe("App - Home view", () => {
       // No error initially
       expect(logError).not.toHaveBeenCalled();
 
-      await pickVideoAndConfirmPlayIsCalled({
+      await startWatchingVideoFromHomeView({
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
@@ -277,7 +296,7 @@ describe("App - Home view", () => {
       expect(logError).not.toHaveBeenCalled();
 
       // View video to view ad an load next ad
-      await pickVideoAndConfirmPlayIsCalled({
+      await startWatchingVideoFromHomeView({
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
@@ -297,7 +316,7 @@ describe("App - Home view", () => {
       // View video again without issues
 
       logError.mockClear();
-      await pickVideoAndConfirmPlayIsCalled({
+      await startWatchingVideoFromHomeView({
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
@@ -305,30 +324,5 @@ describe("App - Home view", () => {
 
       expect(logError).toHaveBeenCalledTimes(0);
     });
-
-    const pickVideoAndConfirmPlayIsCalled = async ({
-      screen,
-      videoPlayerMocks,
-      getInterstitialDidCloseCallback,
-    }) => {
-      videoPlayerMocks.load.mockClear();
-      videoPlayerMocks.play.mockClear();
-
-      const loadViewButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
-        "Select a video to watch"
-      );
-      expect(loadViewButton).toBeDefined();
-
-      // Able to load a video
-      await asyncPressEvent(loadViewButton);
-
-      // Fire callback to start playing the video
-      const fireDidCloseCallback = getInterstitialDidCloseCallback();
-      await act(fireDidCloseCallback);
-
-      expect(videoPlayerMocks.load).toHaveBeenCalledTimes(1);
-      expect(videoPlayerMocks.play).toHaveBeenCalledTimes(1);
-    };
   });
 });
