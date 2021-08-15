@@ -1,6 +1,11 @@
+import { AdMobInterstitial } from "expo-ads-admob";
 import { Video } from "expo-av";
 import { isNil } from "lodash";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isEnvironmentProduction } from "../../is-environment-production";
+import { logError } from "../../logger";
+import { minutesToMilliseconds } from "../../minutes-to-milliseconds";
+import { useShowInterstitialAd } from "./use-show-interstitial-ad";
 import { useVideoPlayerRefs } from "./use-video-player-refs";
 
 export const MODES = {
@@ -39,26 +44,26 @@ export const usePairedVideosPlayers = () => {
 
   const [videoDuration, setVideoDuration] = useState(null);
 
-  const play = useCallback(async () => {
+  const play = async () => {
     if (hasVideo) {
       try {
-        await videoPlayer.play();
         setIsLoading(false);
         setIsNewLoop(false);
         setIsPlaying(true);
+        await videoPlayer.play();
       } catch (error) {
         console.error(error);
         setErrorLoadingVideo("There was an issue trying to start the video");
       }
     }
-  }, [hasVideo, videoPlayer.play]);
+  };
 
   const pause = useCallback(async () => {
     if (hasVideo) {
       try {
-        await videoPlayer.pause();
         setIsPlaying(false);
         setIsNewLoop(false);
+        await videoPlayer.pause();
       } catch (error) {
         console.error(error);
         setErrorLoadingVideo("There was an issue trying to pause the video");
@@ -75,22 +80,6 @@ export const usePairedVideosPlayers = () => {
     },
     [hasVideo, videoPlayer.setPosition]
   );
-
-  useEffect(() => {
-    // Start playing video from beginning when a new one is selected
-    if (hasVideo) {
-      setIsLoading(true);
-      // Delay starting the video to stop issues with ads causing video players becoming out of sync
-      let timeout = null;
-      setPosition(0).then(
-        () =>
-          (timeout = setTimeout(() => {
-            play();
-          }, 1000))
-      );
-      return () => clearTimeout(timeout);
-    }
-  }, [hasVideo, play]);
 
   useEffect(() => {
     if (isPlaying && hasVideo) {
@@ -126,6 +115,23 @@ export const usePairedVideosPlayers = () => {
     }
   }, [videoPlayer.getStatus, isPlaying, hasVideo, setPosition, pause, play]);
 
+  const showInterstitialAd = useShowInterstitialAd({
+    onFinishShowingAd: useCallback(async () => {
+      if (!hasVideo) return;
+      setIsLoading(true);
+      // Update state to indicate the video is available
+      const { durationMillis } = await videoPlayer.getStatus();
+      setVideoDuration(durationMillis);
+      await setPosition(0);
+      await play();
+    }, [hasVideo, setPosition, play]),
+  });
+
+  useEffect(() => {
+    if (hasVideo) {
+    }
+  }, [hasVideo]);
+
   return {
     hasVideo: hasVideo,
     isLoading,
@@ -151,17 +157,13 @@ export const usePairedVideosPlayers = () => {
           // Load video
           // Set hasVideo early to ensure the correct pages are shown while the videos are loading
           setHasVideo(true);
-
           await videoPlayer.load(newFileObject, {
             secondaryOptions: {
               isMuted: true,
             },
           });
 
-          // Update state to indicate the video is available
-          const { durationMillis } = await videoPlayer.getStatus();
-
-          setVideoDuration(durationMillis);
+          await showInterstitialAd();
         } catch (error) {
           console.error(error);
           setErrorLoadingVideo(

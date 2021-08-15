@@ -3,7 +3,7 @@ jest.genMockFromModule("expo-ads-admob");
 
 jest.genMockFromModule("expo-av");
 
-import { cleanup, within, act } from "@testing-library/react-native";
+import { cleanup, within, act, waitFor } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as DocumentPicker from "expo-document-picker";
 import React from "React";
@@ -98,7 +98,7 @@ describe("App - Home view", () => {
 
   it("Opens an interstitial ad when the 'load a video' button is press", async () => {
     mockUseVideoPlayerRefs();
-    mockDocumentPicker.returnWithoutSelectingAFile();
+    mockDocumentPicker.returnWithASelectedFile();
     mockAdMobInterstitial();
 
     jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -113,14 +113,14 @@ describe("App - Home view", () => {
     );
     expect(loadViewButton).toBeDefined();
 
-    // Press button to pick a video
-    await asyncPressEvent(loadViewButton);
-
     // Sets a unit ad id
     expect(AdMobInterstitial.setAdUnitID).toHaveBeenCalledTimes(1);
 
     // Requests an ad to show
     expect(AdMobInterstitial.requestAdAsync).toHaveBeenCalledTimes(1);
+
+    // Press button to pick a video
+    await asyncPressEvent(loadViewButton);
 
     // Checks if an ad is ready to show
     expect(AdMobInterstitial.getIsReadyAsync).toHaveBeenCalledTimes(1);
@@ -157,12 +157,22 @@ describe("App - Home view", () => {
   });
 
   describe("still allows the video to load and play when there is an error with interstitial ads", () => {
-    beforeEach(() => mockLogError().mockImplementation(() => {}));
+    let logErrorMock = mockLogError();
+
+    beforeEach(() => {
+      logErrorMock.mockClear();
+      logErrorMock.mockImplementation(() => {});
+    });
+
+    afterAll(() => {
+      logErrorMock.mockReset();
+    });
 
     it("catches the error and still allows the video to play when there is an issue setting the interstitial unit id", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       mockDocumentPicker.returnWithASelectedFile();
-      const { setAdUnitID } = mockAdMobInterstitial();
+      const { setAdUnitID, getInterstitialDidCloseCallback } =
+        mockAdMobInterstitial();
 
       setAdUnitID.mockRejectedValue("fake setAdUnitID error");
 
@@ -173,13 +183,18 @@ describe("App - Home view", () => {
       // an error occurs
       expect(logError).toHaveBeenCalledWith("fake setAdUnitID error");
 
-      pickVideoAndConfirmPlayIsCalled(screen, mocks);
+      await pickVideoAndConfirmPlayIsCalled({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
     });
 
     it("catches the error and still allows the video to play when there is an issue requesting an ad", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       mockDocumentPicker.returnWithASelectedFile();
-      const { requestAdAsync } = mockAdMobInterstitial();
+      const { requestAdAsync, getInterstitialDidCloseCallback } =
+        mockAdMobInterstitial();
 
       requestAdAsync.mockRejectedValue("fake requestAdAsync error");
 
@@ -190,13 +205,18 @@ describe("App - Home view", () => {
       // an error occurs
       expect(logError).toHaveBeenCalledWith("fake requestAdAsync error");
 
-      await pickVideoAndConfirmPlayIsCalled(screen, mocks);
+      await pickVideoAndConfirmPlayIsCalled({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
     });
 
     it("catches the error and still allows the video to play when there is an issue confirming the ad is ready to show", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       mockDocumentPicker.returnWithASelectedFile();
-      const { getIsReadyAsync } = mockAdMobInterstitial();
+      const { getIsReadyAsync, getInterstitialDidCloseCallback } =
+        mockAdMobInterstitial();
 
       getIsReadyAsync.mockRejectedValue("fake getIsReadyAsync error");
 
@@ -207,7 +227,11 @@ describe("App - Home view", () => {
       // No error initially
       expect(logError).not.toHaveBeenCalled();
 
-      await pickVideoAndConfirmPlayIsCalled(screen, mocks);
+      await pickVideoAndConfirmPlayIsCalled({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
 
       // an error occurs
       expect(logError).toHaveBeenCalledWith("fake getIsReadyAsync error");
@@ -216,7 +240,8 @@ describe("App - Home view", () => {
     it("catches the error and still allows the video to play when there is an issue showing the ad", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       mockDocumentPicker.returnWithASelectedFile();
-      const { showAdAsync } = mockAdMobInterstitial();
+      const { showAdAsync, getInterstitialDidCloseCallback } =
+        mockAdMobInterstitial();
 
       showAdAsync.mockRejectedValue("fake showAdAsync error");
 
@@ -227,7 +252,11 @@ describe("App - Home view", () => {
       // No error initially
       expect(logError).not.toHaveBeenCalled();
 
-      await pickVideoAndConfirmPlayIsCalled(screen, mocks);
+      await pickVideoAndConfirmPlayIsCalled({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
 
       // an error occurs
       expect(logError).toHaveBeenCalledWith("fake showAdAsync error");
@@ -236,7 +265,8 @@ describe("App - Home view", () => {
     it("catches the error and still allows the video to play when there is an issue requesting an ad for the second time", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       mockDocumentPicker.returnWithASelectedFile();
-      const { requestAdAsync } = mockAdMobInterstitial();
+      const { requestAdAsync, getInterstitialDidCloseCallback } =
+        mockAdMobInterstitial();
 
       requestAdAsync.mockResolvedValueOnce();
       requestAdAsync.mockRejectedValueOnce("fake requestAdAsync error");
@@ -250,7 +280,11 @@ describe("App - Home view", () => {
       expect(logError).not.toHaveBeenCalled();
 
       // View video to view ad an load next ad
-      await pickVideoAndConfirmPlayIsCalled(screen, mocks);
+      await pickVideoAndConfirmPlayIsCalled({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
 
       // an error occurs
       expect(logError).toHaveBeenCalledWith("fake requestAdAsync error");
@@ -266,14 +300,22 @@ describe("App - Home view", () => {
       // View video again without issues
 
       logError.mockClear();
-      await pickVideoAndConfirmPlayIsCalled(screen, mocks);
+      await pickVideoAndConfirmPlayIsCalled({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
 
       expect(logError).toHaveBeenCalledTimes(0);
     });
 
-    const pickVideoAndConfirmPlayIsCalled = async (screen, mocks) => {
-      mocks.load.mockClear();
-      mocks.play.mockClear();
+    const pickVideoAndConfirmPlayIsCalled = async ({
+      screen,
+      videoPlayerMocks,
+      getInterstitialDidCloseCallback,
+    }) => {
+      videoPlayerMocks.load.mockClear();
+      videoPlayerMocks.play.mockClear();
 
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("homeView")),
@@ -283,11 +325,13 @@ describe("App - Home view", () => {
 
       // Able to load a video
       await asyncPressEvent(loadViewButton);
-      await act(async () => {});
-      expect(mocks.load).toHaveBeenCalledTimes(1);
-      await waitForExpect(async () => {
-        expect(mocks.play).toHaveBeenCalledTimes(1);
-      });
+
+      // Fire callback to start playing the video
+      const fireDidCloseCallback = getInterstitialDidCloseCallback();
+      await act(fireDidCloseCallback);
+
+      expect(videoPlayerMocks.load).toHaveBeenCalledTimes(1);
+      expect(videoPlayerMocks.play).toHaveBeenCalledTimes(1);
     };
   });
 

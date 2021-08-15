@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
-import { TouchableOpacity } from "react-native-gesture-handler";
 import { Button } from "../../../button";
 import { Icon } from "../../../icon";
-import { useSelectVideoAndShowInterstitialAds } from "../../hooks/use-select-video-and-show-interstitial-ads";
+import { useSelectVideo } from "../../hooks/use-select-video";
 import { ControlBar } from "../control-bar";
 import { ControlBarIconButton } from "../control-bar-icon-button";
 import { TimeBar } from "../time-bar";
@@ -37,10 +36,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const shouldDisableVideoControls =
     shouldShowErrorView || !videoPlayer.hasVideo;
 
-  const selectVideoAndShowAds = useSelectVideoAndShowInterstitialAds(
-    videoPlayer,
-    areAdsDisabled
-  );
+  const selectVideo = useSelectVideo(videoPlayer);
 
   const [timeToSkipTo, setTimeToSkipTo] = useState(null);
   useEffect(() => {
@@ -74,7 +70,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           videoPlayer.clearError();
           setShowDisableAdsView(false);
         }}
-        onPressSelectVideo={selectVideoAndShowAds}
+        onPressSelectVideo={selectVideo}
       />
       <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
         <SideControlBar
@@ -96,14 +92,14 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         <View style={{ flex: 1, alignItems: "center" }}>
           {shouldShowHomeView && (
             <HomeView
-              onPressSelectVideo={async () => await selectVideoAndShowAds()}
+              onPressSelectVideo={async () => await selectVideo()}
               onPressDisableAds={async () => setShowDisableAdsView(true)}
             />
           )}
           {shouldShowErrorView && (
             <ErrorView
               errorMessage={videoPlayer.errorLoadingVideo}
-              onPressSelectAnotherVideo={selectVideoAndShowAds}
+              onPressSelectAnotherVideo={selectVideo}
             />
           )}
           {shouldShowDisableAdsView && (
