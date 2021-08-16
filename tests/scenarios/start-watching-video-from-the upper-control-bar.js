@@ -1,15 +1,18 @@
 import { act, within } from "@testing-library/react-native";
+import { mockDocumentPicker } from "../mocks/mock-document-picker";
 import { asyncPressEvent, getButtonByChildTestId } from "../test-utils";
 
 export const startWatchingVideoFromUpperControlBar = async ({
   screen,
   videoPlayerMocks,
   getInterstitialDidCloseCallback,
+  mockVideoFilepath,
 }) => {
   videoPlayerMocks.load.mockClear();
   videoPlayerMocks.play.mockClear();
   videoPlayerMocks.getStatus.mockClear();
   videoPlayerMocks.setPosition.mockClear();
+  mockDocumentPicker.returnWithASelectedFile(mockVideoFilepath);
 
   // Press button to pick a video
   await asyncPressEvent(

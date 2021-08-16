@@ -87,7 +87,7 @@ describe("App", () => {
       expect(screenStretchIcon.props.testID).toBe("disabledButton");
 
       const timeBar = within(lowerControlBar).getByTestId("timeBar");
-      expect(timeBar.props.disabled).toBe(true);
+      expect(timeBar.props.disabled).toBeTruthy();
     });
 
     it("Disables all side bar controls while on the home page", async () => {
@@ -424,7 +424,6 @@ describe("App", () => {
   describe("Opening a video from the upper control bar", () => {
     it("Is able to load and play a video with the button on the upper control bar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
       const screen = await asyncRender(<App />);
@@ -438,7 +437,6 @@ describe("App", () => {
 
     it("shows an interstitial ad when opening a video", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
       const screen = await asyncRender(<App />);
@@ -455,7 +453,6 @@ describe("App", () => {
 
     it("Does not open a second interstitial ad if another one was opened recently", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
       const screen = await asyncRender(<App />);
@@ -500,7 +497,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue setting the interstitial unit id", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { getInterstitialDidCloseCallback, setAdUnitID } =
           mockAdMobInterstitial();
 
@@ -520,7 +516,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue requesting an ad", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { getInterstitialDidCloseCallback, requestAdAsync } =
           mockAdMobInterstitial();
 
@@ -540,7 +535,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue confirming the ad is ready to show", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { getIsReadyAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
 
@@ -560,7 +554,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue showing the ad", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { showAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
 
@@ -580,7 +573,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue requesting an ad for the second time", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { requestAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
 
@@ -638,7 +630,6 @@ describe("App", () => {
 
       it("Shows the error page when attempting to open a video but there is an issue unloading the previous video", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
         const screen = await asyncRender(<App />);
@@ -689,7 +680,6 @@ describe("App", () => {
   describe("Unloading a video and returning to the home view", () => {
     it("Is able to unload a video and return to the home view when the back button is pressed", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
       const screen = await asyncRender(<App />);
@@ -779,31 +769,6 @@ describe("App", () => {
       ).toBeDefined();
     });
 
-    it("Returns to the error page when attempting to open a video but there is an issue loading a new video", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-
-      mocks.load.mockRejectedValue("fail to load");
-
-      const screen = await asyncRender(<App />);
-
-      // Go to error page
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-
-      // Load a new video from the error page
-      const loadViewButton = getButtonByText(
-        within(screen.getByTestId("errorView")),
-        "Open a different video"
-      );
-      await asyncPressEvent(loadViewButton);
-
-      // Stay on the error page due to another error
-      expect(screen.getByTestId("errorView")).toBeDefined();
-    });
-
     it("Can start playing a new video from the error page", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
@@ -841,7 +806,130 @@ describe("App", () => {
       expect(mocks.play).toHaveBeenCalledTimes(1);
     });
 
-    it("Shows an ad when opening a video after an error even if there is no delay between the two attempts to open the video", async () => {
+    it("Disables all lower bar controls while on the home page", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+
+      const screen = await asyncRender(<App />);
+
+      await goToErrorViewAfterFailToLoadFromHomePage({
+        screen,
+        videoPlayerMocks: mocks,
+        mockVideoFilepath: "./fake/file/path.jpeg",
+      });
+
+      // Confirm the view we are on
+      expect(screen.getByTestId("errorView")).toBeDefined();
+
+      // Confirm all buttons are disabled
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      expect(lowerControlBar).toBeDefined();
+
+      const playButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "playIcon"
+      );
+      expect(playButton.props.testID).toBe("disabledButton");
+
+      const playerTypeButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "screenDesktopIcon"
+      );
+      expect(playerTypeButton.props.testID).toBe("disabledButton");
+
+      const screenStretchIcon = getButtonByChildTestId(
+        within(lowerControlBar),
+        "screenNormalIcon"
+      );
+      expect(screenStretchIcon.props.testID).toBe("disabledButton");
+
+      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      expect(timeBar.props.disabled).toBe(true);
+    });
+
+    it("Disables all side bar controls while on the home page", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+
+      const screen = await asyncRender(<App />);
+
+      await goToErrorViewAfterFailToLoadFromHomePage({
+        screen,
+        videoPlayerMocks: mocks,
+        mockVideoFilepath: "./fake/file/path.jpeg",
+      });
+
+      // Confirm the view we are on
+      expect(screen.getByTestId("errorView")).toBeDefined();
+
+      // Confirm buttons are disabled
+      const sideBarLeft = screen.getByTestId("sidebarLeft");
+      expect(sideBarLeft).toBeDefined();
+
+      const replaySidebarButton = getButtonByChildTestId(
+        within(sideBarLeft),
+        "replay10Icon"
+      );
+      expect(replaySidebarButton.props.testID).toBe("disabledButton");
+
+      const sideBarRight = screen.getByTestId("sidebarRight");
+      expect(sideBarRight).toBeDefined();
+      const forwardSidebarButton = getButtonByChildTestId(
+        within(sideBarRight),
+        "forward10Icon"
+      );
+      expect(forwardSidebarButton.props.testID).toBe("disabledButton");
+    });
+
+    it("Can start playing a new video from the error page using the upper control bar", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Go to error page
+      await goToErrorViewAfterFailToLoadFromHomePage({
+        screen,
+        videoPlayerMocks: mocks,
+        mockVideoFilepath: "./fake/file/path.jpeg",
+      });
+
+      // Reset mocks before attempting to open a new video
+      jest.clearAllMocks();
+      mocks.load.mockResolvedValue(undefined);
+
+      // Start watching a new video from the uppper control bar
+      await startWatchingVideoFromUpperControlBar({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+    });
+
+    it("Returns to the error page when attempting to open a video but there is an issue loading a new video", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+
+      mocks.load.mockRejectedValue("fail to load");
+
+      const screen = await asyncRender(<App />);
+
+      // Go to error page
+      await goToErrorViewAfterFailToLoadFromHomePage({
+        screen,
+        videoPlayerMocks: mocks,
+        mockVideoFilepath: "./fake/file/path.jpeg",
+      });
+
+      // Load a new video from the error page
+      const loadViewButton = getButtonByText(
+        within(screen.getByTestId("errorView")),
+        "Open a different video"
+      );
+      await asyncPressEvent(loadViewButton);
+
+      // Stay on the error page due to another error
+      expect(screen.getByTestId("errorView")).toBeDefined();
+    });
+
+    it("Shows an ad when opening a video after the first attempt to open a video results in error, even if there is no delay between the two attempts to open the video", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback, showAdAsync } =
         mockAdMobInterstitial();
@@ -879,7 +967,7 @@ describe("App", () => {
       expect(showAdAsync).toHaveBeenCalledTimes(1);
     });
 
-    it("Clears an error and returns to the home view when the back button is pressed after an error occurs", async () => {
+    it("Clears the error and returns to the home view when the back button is pressed after an error occurs", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
 
       const screen = await asyncRender(<App />);
