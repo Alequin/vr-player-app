@@ -39,39 +39,39 @@ describe("App", () => {
     it("Shows a button to load a video", async () => {
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
-      expect(homeView).toBeDefined();
+      expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
         within(homeView),
         "Select a video to watch"
       );
 
-      expect(loadViewButton).toBeDefined();
+      expect(loadViewButton).toBeTruthy();
       expect(
         within(loadViewButton).getByTestId("folderVideoIcon")
-      ).toBeDefined();
+      ).toBeTruthy();
     });
 
     it("Shows a button to view the disable ads view", async () => {
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
-      expect(homeView).toBeDefined();
+      expect(homeView).toBeTruthy();
 
       const disableAdsButton = getButtonByText(within(homeView), "Disable ads");
 
-      expect(disableAdsButton).toBeDefined();
-      expect(within(disableAdsButton).getByTestId("cancelIcon")).toBeDefined();
+      expect(disableAdsButton).toBeTruthy();
+      expect(within(disableAdsButton).getByTestId("cancelIcon")).toBeTruthy();
     });
 
     it("Disables all lower bar controls while on the home page", async () => {
       const screen = await asyncRender(<App />);
 
       // Confirm the view we are on
-      expect(screen.getByTestId("homeView")).toBeDefined();
+      expect(screen.getByTestId("homeView")).toBeTruthy();
 
       // Confirm all buttons are disabled
       const lowerControlBar = screen.getByTestId("lowerControlBar");
-      expect(lowerControlBar).toBeDefined();
+      expect(lowerControlBar).toBeTruthy();
 
       const playButton = getButtonByChildTestId(
         within(lowerControlBar),
@@ -99,11 +99,11 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       // Confirm the view we are on
-      expect(screen.getByTestId("homeView")).toBeDefined();
+      expect(screen.getByTestId("homeView")).toBeTruthy();
 
       // Confirm buttons are disabled
       const sideBarLeft = screen.getByTestId("sidebarLeft");
-      expect(sideBarLeft).toBeDefined();
+      expect(sideBarLeft).toBeTruthy();
 
       const replaySidebarButton = getButtonByChildTestId(
         within(sideBarLeft),
@@ -112,7 +112,7 @@ describe("App", () => {
       expect(replaySidebarButton.props.testID).toBe("disabledButton");
 
       const sideBarRight = screen.getByTestId("sidebarRight");
-      expect(sideBarRight).toBeDefined();
+      expect(sideBarRight).toBeTruthy();
       const forwardSidebarButton = getButtonByChildTestId(
         within(sideBarRight),
         "forward10Icon"
@@ -124,10 +124,10 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       // Confirm the view we are on
-      expect(screen.getByTestId("homeView")).toBeDefined();
+      expect(screen.getByTestId("homeView")).toBeTruthy();
 
       const upperControlBar = screen.getByTestId("upperControlBar");
-      expect(upperControlBar).toBeDefined();
+      expect(upperControlBar).toBeTruthy();
 
       const backButton = getButtonByChildTestId(
         within(upperControlBar),
@@ -145,7 +145,7 @@ describe("App", () => {
           within(screen.getByTestId("upperControlBar")),
           "folderVideoIcon"
         )
-      ).toBeDefined();
+      ).toBeTruthy();
     });
   });
 
@@ -159,13 +159,13 @@ describe("App", () => {
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
-      expect(homeView).toBeDefined();
+      expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
         within(homeView),
         "Select a video to watch"
       );
-      expect(loadViewButton).toBeDefined();
+      expect(loadViewButton).toBeTruthy();
 
       // Press button to pick a video
       await asyncPressEvent(loadViewButton);
@@ -185,13 +185,13 @@ describe("App", () => {
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
-      expect(homeView).toBeDefined();
+      expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
         within(homeView),
         "Select a video to watch"
       );
-      expect(loadViewButton).toBeDefined();
+      expect(loadViewButton).toBeTruthy();
 
       // Sets a unit ad id
       expect(AdMobInterstitial.setAdUnitID).toHaveBeenCalledTimes(1);
@@ -218,7 +218,7 @@ describe("App", () => {
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
-      expect(homeView).toBeDefined();
+      expect(homeView).toBeTruthy();
 
       // Play the video and confirm the correct functions are called
       await startWatchingVideoFromHomeView({
@@ -250,7 +250,7 @@ describe("App", () => {
 
         const screen = await asyncRender(<App />);
         const homeView = screen.getByTestId("homeView");
-        expect(homeView).toBeDefined();
+        expect(homeView).toBeTruthy();
 
         // an error occurs when setting the unit id on mount
         expect(logError).toHaveBeenCalledWith("fake setAdUnitID error");
@@ -271,7 +271,7 @@ describe("App", () => {
 
         const screen = await asyncRender(<App />);
         const homeView = screen.getByTestId("homeView");
-        expect(homeView).toBeDefined();
+        expect(homeView).toBeTruthy();
 
         // an error occurs when a request for an ad is made on mount
         expect(logError).toHaveBeenCalledWith("fake requestAdAsync error");
@@ -292,7 +292,7 @@ describe("App", () => {
 
         const screen = await asyncRender(<App />);
         const homeView = screen.getByTestId("homeView");
-        expect(homeView).toBeDefined();
+        expect(homeView).toBeTruthy();
 
         // No error initially
         expect(logError).not.toHaveBeenCalled();
@@ -316,7 +316,7 @@ describe("App", () => {
 
         const screen = await asyncRender(<App />);
         const homeView = screen.getByTestId("homeView");
-        expect(homeView).toBeDefined();
+        expect(homeView).toBeTruthy();
 
         // No error initially
         expect(logError).not.toHaveBeenCalled();
@@ -342,7 +342,7 @@ describe("App", () => {
 
         const screen = await asyncRender(<App />);
         const homeView = screen.getByTestId("homeView");
-        expect(homeView).toBeDefined();
+        expect(homeView).toBeTruthy();
 
         // No error initially
         expect(logError).not.toHaveBeenCalled();
@@ -362,7 +362,7 @@ describe("App", () => {
           within(screen.getByTestId("upperControlBar")),
           "iosArrowBackIcon"
         );
-        expect(backButton).toBeDefined();
+        expect(backButton).toBeTruthy();
         await asyncPressEvent(backButton);
 
         // View video again without issues
@@ -407,16 +407,16 @@ describe("App", () => {
     it("Opens the disable ads view when the 'disable ads' button is pressed", async () => {
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
-      expect(homeView).toBeDefined();
+      expect(homeView).toBeTruthy();
 
       const disableAdsButton = getButtonByText(within(homeView), "Disable ads");
-      expect(disableAdsButton).toBeDefined();
+      expect(disableAdsButton).toBeTruthy();
 
       // Press button to move to disable ads view
       await asyncPressEvent(disableAdsButton);
 
       // Confirm disable ad view is shown
-      expect(screen.getByTestId("disableAdsView")).toBeDefined();
+      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
     });
   });
 
@@ -599,7 +599,7 @@ describe("App", () => {
           within(screen.getByTestId("upperControlBar")),
           "iosArrowBackIcon"
         );
-        expect(backButton).toBeDefined();
+        expect(backButton).toBeTruthy();
         await asyncPressEvent(backButton);
 
         // View video again without issues
@@ -651,7 +651,7 @@ describe("App", () => {
 
         // Check the error page is shown due to the error when unloading the first video
         const errorView = screen.getByTestId("errorView");
-        expect(errorView).toBeDefined();
+        expect(errorView).toBeTruthy();
       });
 
       it("Shows the error page when attempting to open a video from the upper control bar but there is an issue loading the new video", async () => {
@@ -671,7 +671,7 @@ describe("App", () => {
 
         // Check the error page is shown due to the error
         const errorView = screen.getByTestId("errorView");
-        expect(errorView).toBeDefined();
+        expect(errorView).toBeTruthy();
       });
     });
   });
@@ -704,7 +704,7 @@ describe("App", () => {
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
       // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeDefined();
+      expect(screen.getByTestId("homeView")).toBeTruthy();
     });
   });
 
@@ -762,10 +762,10 @@ describe("App", () => {
         "Open a different video"
       );
 
-      expect(loadViewButton).toBeDefined();
+      expect(loadViewButton).toBeTruthy();
       expect(
         within(loadViewButton).getByTestId("folderVideoIcon")
-      ).toBeDefined();
+      ).toBeTruthy();
     });
 
     it("Can start playing a new video from the error page", async () => {
@@ -817,11 +817,11 @@ describe("App", () => {
       });
 
       // Confirm the view we are on
-      expect(screen.getByTestId("errorView")).toBeDefined();
+      expect(screen.getByTestId("errorView")).toBeTruthy();
 
       // Confirm all buttons are disabled
       const lowerControlBar = screen.getByTestId("lowerControlBar");
-      expect(lowerControlBar).toBeDefined();
+      expect(lowerControlBar).toBeTruthy();
 
       const playButton = getButtonByChildTestId(
         within(lowerControlBar),
@@ -857,11 +857,11 @@ describe("App", () => {
       });
 
       // Confirm the view we are on
-      expect(screen.getByTestId("errorView")).toBeDefined();
+      expect(screen.getByTestId("errorView")).toBeTruthy();
 
       // Confirm buttons are disabled
       const sideBarLeft = screen.getByTestId("sidebarLeft");
-      expect(sideBarLeft).toBeDefined();
+      expect(sideBarLeft).toBeTruthy();
 
       const replaySidebarButton = getButtonByChildTestId(
         within(sideBarLeft),
@@ -870,7 +870,7 @@ describe("App", () => {
       expect(replaySidebarButton.props.testID).toBe("disabledButton");
 
       const sideBarRight = screen.getByTestId("sidebarRight");
-      expect(sideBarRight).toBeDefined();
+      expect(sideBarRight).toBeTruthy();
       const forwardSidebarButton = getButtonByChildTestId(
         within(sideBarRight),
         "forward10Icon"
@@ -925,7 +925,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Stay on the error page due to another error
-      expect(screen.getByTestId("errorView")).toBeDefined();
+      expect(screen.getByTestId("errorView")).toBeTruthy();
     });
 
     it("Shows an ad when opening a video after the first attempt to open a video results in error, even if there is no delay between the two attempts to open the video", async () => {
@@ -988,7 +988,7 @@ describe("App", () => {
       );
 
       // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeDefined();
+      expect(screen.getByTestId("homeView")).toBeTruthy();
     });
   });
 
@@ -1008,7 +1008,7 @@ describe("App", () => {
 
       // Confirm all buttons are disabled
       const lowerControlBar = screen.getByTestId("lowerControlBar");
-      expect(lowerControlBar).toBeDefined();
+      expect(lowerControlBar).toBeTruthy();
 
       const pauseButton = getButtonByChildTestId(
         within(lowerControlBar),
@@ -1047,7 +1047,7 @@ describe("App", () => {
 
       // Confirm buttons are disabled
       const sideBarLeft = screen.getByTestId("sidebarLeft");
-      expect(sideBarLeft).toBeDefined();
+      expect(sideBarLeft).toBeTruthy();
 
       const replaySidebarButton = getButtonByChildTestId(
         within(sideBarLeft),
@@ -1056,7 +1056,7 @@ describe("App", () => {
       expect(replaySidebarButton.props.testID).toBe("enabledButton");
 
       const sideBarRight = screen.getByTestId("sidebarRight");
-      expect(sideBarRight).toBeDefined();
+      expect(sideBarRight).toBeTruthy();
       const forwardSidebarButton = getButtonByChildTestId(
         within(sideBarRight),
         "forward10Icon"
@@ -1089,7 +1089,7 @@ describe("App", () => {
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
       // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeDefined();
+      expect(screen.getByTestId("homeView")).toBeTruthy();
     });
 
     it("Can start playing a new video while watching a video using the upper control bar", async () => {
@@ -1235,8 +1235,6 @@ describe("App", () => {
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
       });
-
-      console.log(findLeftVideoPlayer(screen).props.resizeMode);
 
       // Confirm the video player uses the resizeMode cover as default
       expect(findLeftVideoPlayer(screen).props.resizeMode).toBe(
