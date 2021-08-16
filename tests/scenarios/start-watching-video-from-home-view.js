@@ -1,15 +1,18 @@
 import { act, within } from "@testing-library/react-native";
+import { mockDocumentPicker } from "../mocks/mock-document-picker";
 import { asyncPressEvent, getButtonByText } from "../test-utils";
 
 export const startWatchingVideoFromHomeView = async ({
   screen,
   videoPlayerMocks,
   getInterstitialDidCloseCallback,
+  mockVideoFilepath,
 }) => {
   videoPlayerMocks.load.mockClear();
   videoPlayerMocks.play.mockClear();
   videoPlayerMocks.getStatus.mockClear();
   videoPlayerMocks.setPosition.mockClear();
+  mockDocumentPicker.returnWithASelectedFile(mockVideoFilepath);
 
   const loadViewButton = getButtonByText(
     within(screen.getByTestId("homeView")),

@@ -46,29 +46,32 @@ export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
   }, [onFinishShowingAd]);
 
   return useCallback(async () => {
-    if (hasEnoughTimePastToShowAnotherAd(lastTimeAdWasShows)) {
-      try {
-        const hasAdReadyToShow = await AdMobInterstitial.getIsReadyAsync();
-        if (hasAdReadyToShow) {
-          await AdMobInterstitial.showAdAsync();
-          setLastTimeAdWasShown(Date.now());
-        } else {
-          // call event if no ad is shown
-          onFinishShowingAd();
-        }
-      } catch (error) {
-        // Swallow error. A failure to show an ad should not interrupt the user
-        logError(error);
-        // call event if there is an issue showing the ad
-        onFinishShowingAd();
-      }
+    // call event if no ad is shown
+    if (!hasEnoughTimePastToShowAnotherAd(lastTimeAdWasShows)) {
+      return await onFinishShowingAd();
+    }
 
-      try {
-        await AdMobInterstitial.requestAdAsync();
-      } catch (error) {
-        // Swallow error. A failure to request the next ad should not interrupt the user
-        logError(error);
+    try {
+      const hasAdReadyToShow = await AdMobInterstitial.getIsReadyAsync();
+      if (hasAdReadyToShow) {
+        await AdMobInterstitial.showAdAsync();
+        setLastTimeAdWasShown(Date.now());
+      } else {
+        // call event if no ad is shown
+        await onFinishShowingAd();
       }
+    } catch (error) {
+      // Swallow error. A failure to show an ad should not interrupt the user
+      logError(error);
+      // call event if there is an issue showing the ad
+      await onFinishShowingAd();
+    }
+
+    try {
+      await AdMobInterstitial.requestAdAsync();
+    } catch (error) {
+      // Swallow error. A failure to request the next ad should not interrupt the user
+      logError(error);
     }
   }, [lastTimeAdWasShows, onFinishShowingAd]);
 };

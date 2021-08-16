@@ -9,8 +9,10 @@ import {
 export const asyncRender = async (component) =>
   waitFor(() => render(component));
 
-export const asyncPressEvent = async (button) =>
-  act(async () => fireEvent.press(button));
+export const asyncPressEvent = async (button) => {
+  expect(button).toBeTruthy();
+  await act(async () => fireEvent.press(button));
+};
 
 export const getButtonByText = (screen, innerText) => {
   const buttons = screen.getAllByRole("button");

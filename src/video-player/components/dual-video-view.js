@@ -1,6 +1,6 @@
 import { Video } from "expo-av";
 import React from "react";
-import { View } from "react-native";
+import { MaskedViewBase, View, ViewBase } from "react-native";
 import { MODES } from "../hooks/use-paired-video-players";
 
 export const DualVideoView = ({
@@ -22,39 +22,39 @@ export const DualVideoView = ({
       }}
     >
       <VideoView
+        testID="leftVideoPlayer"
         videoRef={videoLeft}
         videoResizeMode={videoResizeMode}
         fullScreen={videoPlayerMode === MODES.NORMAL_VIDEO}
       />
       <VideoView
+        testID="rightVideoPlayer"
         videoRef={videoRight}
         videoResizeMode={videoResizeMode}
         hide={videoPlayerMode === MODES.NORMAL_VIDEO}
-        isMuted
       />
     </View>
   );
 };
 
 const VideoView = ({
+  testID,
   videoRef,
   videoSource,
-  isMuted,
   fullScreen,
   hide,
   videoResizeMode,
-}) => {
-  return (
-    <Video
-      ref={videoRef}
-      style={{ width: videoViewWidth(fullScreen, hide), height: "100%" }}
-      source={{
-        uri: videoSource,
-      }}
-      resizeMode={videoResizeMode}
-    />
-  );
-};
+}) => (
+  <Video
+    testID={testID}
+    style={{ width: videoViewWidth(fullScreen, hide), height: "100%" }}
+    ref={videoRef}
+    source={{
+      uri: videoSource,
+    }}
+    resizeMode={videoResizeMode}
+  />
+);
 
 const videoViewWidth = (fullScreen, hide) => {
   if (hide) return "0%";

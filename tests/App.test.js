@@ -20,6 +20,11 @@ import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
 import { goToErrorViewAfterFailToLoadFromHomePage } from "./scenarios/go-to-error-view-after-fail-to-load-from-home-page";
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 import { startWatchingVideoFromUpperControlBar } from "./scenarios/start-watching-video-from-the upper-control-bar";
+import {
+  findLeftVideoPlayer,
+  findRightVideoPlayer,
+} from "./component-queries/find-video-player";
+import { RESIZE_MODES } from "../src/video-player/hooks/use-paired-video-players";
 
 describe("App", () => {
   beforeEach(() => {
@@ -209,7 +214,6 @@ describe("App", () => {
 
     it("plays video from the home view when one is selected", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
       const screen = await asyncRender(<App />);
@@ -239,7 +243,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue setting the interstitial unit id", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { setAdUnitID, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
 
@@ -261,7 +264,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue requesting an ad", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { requestAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
 
@@ -283,7 +285,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue confirming the ad is ready to show", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { getIsReadyAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
 
@@ -308,7 +309,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue showing the ad", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { showAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
 
@@ -333,7 +333,6 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue requesting an ad for the second time", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
         const { requestAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
 
@@ -843,7 +842,7 @@ describe("App", () => {
       expect(screenStretchIcon.props.testID).toBe("disabledButton");
 
       const timeBar = within(lowerControlBar).getByTestId("timeBar");
-      expect(timeBar.props.disabled).toBe(true);
+      expect(timeBar.props.disabled).toBeTruthy();
     });
 
     it("Disables all side bar controls while on the home page", async () => {
@@ -896,7 +895,7 @@ describe("App", () => {
       jest.clearAllMocks();
       mocks.load.mockResolvedValue(undefined);
 
-      // Start watching a new video from the uppper control bar
+      // Start watching a new video from the upper control bar
       await startWatchingVideoFromUpperControlBar({
         screen,
         videoPlayerMocks: mocks,
@@ -990,6 +989,310 @@ describe("App", () => {
 
       // confirm the home view is now visible
       expect(screen.getByTestId("homeView")).toBeDefined();
+    });
+  });
+
+  describe("Playing a video", () => {
+    it("Enables the lower control bar buttons while a video is playing", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Confirm all buttons are disabled
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      expect(lowerControlBar).toBeDefined();
+
+      const pauseButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "pauseIcon"
+      );
+      expect(pauseButton.props.testID).toBe("enabledButton");
+
+      const playerTypeButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "screenDesktopIcon"
+      );
+      expect(playerTypeButton.props.testID).toBe("enabledButton");
+
+      const screenStretchIcon = getButtonByChildTestId(
+        within(lowerControlBar),
+        "screenNormalIcon"
+      );
+      expect(screenStretchIcon.props.testID).toBe("enabledButton");
+
+      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      expect(timeBar.props.disabled).toBeFalsy();
+    });
+
+    it("Enables all side bar controls while on the home page", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Confirm buttons are disabled
+      const sideBarLeft = screen.getByTestId("sidebarLeft");
+      expect(sideBarLeft).toBeDefined();
+
+      const replaySidebarButton = getButtonByChildTestId(
+        within(sideBarLeft),
+        "replay10Icon"
+      );
+      expect(replaySidebarButton.props.testID).toBe("enabledButton");
+
+      const sideBarRight = screen.getByTestId("sidebarRight");
+      expect(sideBarRight).toBeDefined();
+      const forwardSidebarButton = getButtonByChildTestId(
+        within(sideBarRight),
+        "forward10Icon"
+      );
+      expect(forwardSidebarButton.props.testID).toBe("enabledButton");
+    });
+
+    it("Unloads the video and returns to the home view when the back button is pressed", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Return to home view with the back button
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      );
+
+      // Video is unloaded
+      expect(mocks.unload).toHaveBeenCalledTimes(1);
+
+      // confirm the home view is now visible
+      expect(screen.getByTestId("homeView")).toBeDefined();
+    });
+
+    it("Can start playing a new video while watching a video using the upper control bar", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Reset mocks before attempting to open a new video
+      jest.clearAllMocks();
+
+      // Start watching a new video from the upper control bar
+      await startWatchingVideoFromUpperControlBar({
+        screen,
+        videoPlayerMocks: mocks,
+        // Ads were shown recently so don't need to call InterstitialDidClose callback
+        getInterstitialDidCloseCallback: undefined,
+      });
+    });
+
+    it("Can pause a video while one is playing", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Press the pause button
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "pauseIcon"
+        )
+      );
+
+      // Confirm pause was called
+      expect(mocks.pause).toHaveBeenCalledTimes(1);
+    });
+
+    it("Can start playing a video after pausing it", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Press the pause button
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "pauseIcon"
+        )
+      );
+
+      // Confirm pause was called
+      expect(mocks.pause).toHaveBeenCalledTimes(1);
+
+      // Press the play button
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "playIcon"
+        )
+      );
+
+      // Confirm play was called
+      expect(mocks.pause).toHaveBeenCalledTimes(1);
+    });
+
+    it("Can swap between showing two video players and one", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Confirm the video player starts with two players showing
+      expect(findLeftVideoPlayer(screen).props.style.width).toBe("50%");
+      expect(findRightVideoPlayer(screen).props.style.width).toBe("50%");
+
+      // Switch to using one video player
+
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "screenDesktopIcon"
+        )
+      );
+
+      // Confirm video player is showing one player
+
+      expect(findLeftVideoPlayer(screen).props.style.width).toBe("100%");
+      expect(findRightVideoPlayer(screen).props.style.width).toBe("0%");
+
+      // Switch to using two video players
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "vrHeadsetIcon"
+        )
+      );
+
+      // Confirm the video player is showing two players again
+
+      expect(findLeftVideoPlayer(screen).props.style.width).toBe("50%");
+      expect(findRightVideoPlayer(screen).props.style.width).toBe("50%");
+    });
+
+    it("Can switch video player resize modes", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      console.log(findLeftVideoPlayer(screen).props.resizeMode);
+
+      // Confirm the video player uses the resizeMode cover as default
+      expect(findLeftVideoPlayer(screen).props.resizeMode).toBe(
+        RESIZE_MODES.RESIZE_MODE_COVER
+      );
+      expect(findRightVideoPlayer(screen).props.resizeMode).toBe(
+        RESIZE_MODES.RESIZE_MODE_COVER
+      );
+
+      // Change to the next resize mode
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "screenNormalIcon"
+        )
+      );
+
+      // Confirm the video player resizeMode has updated to contain
+      expect(findLeftVideoPlayer(screen).props.resizeMode).toBe(
+        RESIZE_MODES.RESIZE_MODE_CONTAIN
+      );
+      expect(findRightVideoPlayer(screen).props.resizeMode).toBe(
+        RESIZE_MODES.RESIZE_MODE_CONTAIN
+      );
+
+      // Change to the next resize mode
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "fitScreenIcon"
+        )
+      );
+
+      // Confirm the video player resizeMode has updated to stretch
+      expect(findLeftVideoPlayer(screen).props.resizeMode).toBe(
+        RESIZE_MODES.RESIZE_MODE_STRETCH
+      );
+      expect(findRightVideoPlayer(screen).props.resizeMode).toBe(
+        RESIZE_MODES.RESIZE_MODE_STRETCH
+      );
+
+      // Change to the next resize mode
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "stretchToPageIcon"
+        )
+      );
+
+      // Confirm the video player resizeMode returns to the default of cover
+      expect(findLeftVideoPlayer(screen).props.resizeMode).toBe(
+        RESIZE_MODES.RESIZE_MODE_COVER
+      );
+      expect(findRightVideoPlayer(screen).props.resizeMode).toBe(
+        RESIZE_MODES.RESIZE_MODE_COVER
+      );
     });
   });
 });
