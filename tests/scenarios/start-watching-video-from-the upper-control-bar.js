@@ -1,7 +1,7 @@
 import { act, within } from "@testing-library/react-native";
-import { asyncPressEvent, getButtonByText } from "../test-utils";
+import { asyncPressEvent, getButtonByChildTestId } from "../test-utils";
 
-export const startWatchingVideoFromHomeView = async ({
+export const startWatchingVideoFromUpperControlBar = async ({
   screen,
   videoPlayerMocks,
   getInterstitialDidCloseCallback,
@@ -11,14 +11,13 @@ export const startWatchingVideoFromHomeView = async ({
   videoPlayerMocks.getStatus.mockClear();
   videoPlayerMocks.setPosition.mockClear();
 
-  const loadViewButton = getButtonByText(
-    within(screen.getByTestId("homeView")),
-    "Select a video to watch"
+  // Press button to pick a video
+  await asyncPressEvent(
+    getButtonByChildTestId(
+      within(screen.getByTestId("upperControlBar")),
+      "folderVideoIcon"
+    )
   );
-  expect(loadViewButton).toBeDefined();
-
-  // Press button to load video
-  await asyncPressEvent(loadViewButton);
 
   // Fire callback to start playing the video
   const fireDidCloseCallback = getInterstitialDidCloseCallback();

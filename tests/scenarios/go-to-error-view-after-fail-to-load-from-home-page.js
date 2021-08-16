@@ -1,5 +1,5 @@
 import { within } from "@testing-library/react-native";
-import { asyncPressEvent, getButtonByText } from "../common-test-utils";
+import { asyncPressEvent, getButtonByText } from "../test-utils";
 import { mockDocumentPicker } from "../mocks/mock-document-picker";
 
 export const goToErrorViewAfterFailToLoadFromHomePage = async ({
