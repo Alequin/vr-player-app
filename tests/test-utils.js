@@ -23,3 +23,9 @@ export const getButtonByChildTestId = (screen, childTestId) => {
   const buttons = screen.getAllByRole("button");
   return buttons.find((button) => within(button).queryByTestId(childTestId));
 };
+
+export const videoPlayerProps = (videoPlayerComponent) =>
+  videoPlayerComponent.parent.parent.parent.parent.parent.props;
+
+export const buttonProps = (buttonComponent) =>
+  buttonComponent.parent.parent.parent.parent.props;

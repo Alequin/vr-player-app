@@ -7,12 +7,7 @@ import React from "React";
 import waitForExpect from "wait-for-expect";
 import { App } from "../App";
 import { logError } from "../src/logger";
-import {
-  asyncPressEvent,
-  asyncRender,
-  getButtonByChildTestId,
-  getButtonByText,
-} from "./test-utils";
+import { RESIZE_MODES } from "../src/video-player/hooks/use-paired-video-players";
 import { mockAdMobInterstitial } from "./mocks/mock-ad-mob";
 import { mockDocumentPicker } from "./mocks/mock-document-picker";
 import { mockLogError } from "./mocks/mock-logger";
@@ -21,10 +16,13 @@ import { goToErrorViewAfterFailToLoadFromHomePage } from "./scenarios/go-to-erro
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 import { startWatchingVideoFromUpperControlBar } from "./scenarios/start-watching-video-from-the upper-control-bar";
 import {
-  findLeftVideoPlayer,
-  findRightVideoPlayer,
-} from "./component-queries/find-video-player";
-import { RESIZE_MODES } from "../src/video-player/hooks/use-paired-video-players";
+  asyncPressEvent,
+  asyncRender,
+  buttonProps,
+  getButtonByChildTestId,
+  getButtonByText,
+  videoPlayerProps,
+} from "./test-utils";
 
 describe("App", () => {
   beforeEach(() => {
@@ -77,19 +75,20 @@ describe("App", () => {
         within(lowerControlBar),
         "playIcon"
       );
-      expect(playButton.props.testID).toBe("disabledButton");
+
+      expect(buttonProps(playButton).disabled).toBeTruthy();
 
       const playerTypeButton = getButtonByChildTestId(
         within(lowerControlBar),
         "screenDesktopIcon"
       );
-      expect(playerTypeButton.props.testID).toBe("disabledButton");
+      expect(buttonProps(playerTypeButton).disabled).toBeTruthy();
 
-      const screenStretchIcon = getButtonByChildTestId(
+      const screenStretchButton = getButtonByChildTestId(
         within(lowerControlBar),
         "screenNormalIcon"
       );
-      expect(screenStretchIcon.props.testID).toBe("disabledButton");
+      expect(buttonProps(screenStretchButton).disabled).toBeTruthy();
 
       const timeBar = within(lowerControlBar).getByTestId("timeBar");
       expect(timeBar.props.disabled).toBeTruthy();
@@ -109,7 +108,7 @@ describe("App", () => {
         within(sideBarLeft),
         "replay10Icon"
       );
-      expect(replaySidebarButton.props.testID).toBe("disabledButton");
+      expect(buttonProps(replaySidebarButton).disabled).toBeTruthy();
 
       const sideBarRight = screen.getByTestId("sidebarRight");
       expect(sideBarRight).toBeTruthy();
@@ -117,7 +116,7 @@ describe("App", () => {
         within(sideBarRight),
         "forward10Icon"
       );
-      expect(forwardSidebarButton.props.testID).toBe("disabledButton");
+      expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
     });
 
     it("Disables the back button on the upper bar controls while on the home page", async () => {
@@ -134,7 +133,7 @@ describe("App", () => {
         "iosArrowBackIcon"
       );
 
-      expect(backButton.props.testID).toBe("disabledButton");
+      expect(buttonProps(backButton).disabled).toBeTruthy();
     });
 
     it("Shows an active button to load a video on the upper bar control", async () => {
@@ -827,19 +826,19 @@ describe("App", () => {
         within(lowerControlBar),
         "playIcon"
       );
-      expect(playButton.props.testID).toBe("disabledButton");
+      expect(buttonProps(playButton).disabled).toBeTruthy();
 
       const playerTypeButton = getButtonByChildTestId(
         within(lowerControlBar),
         "screenDesktopIcon"
       );
-      expect(playerTypeButton.props.testID).toBe("disabledButton");
+      expect(buttonProps(playerTypeButton).disabled).toBeTruthy();
 
       const screenStretchIcon = getButtonByChildTestId(
         within(lowerControlBar),
         "screenNormalIcon"
       );
-      expect(screenStretchIcon.props.testID).toBe("disabledButton");
+      expect(buttonProps(screenStretchIcon).disabled).toBeTruthy();
 
       const timeBar = within(lowerControlBar).getByTestId("timeBar");
       expect(timeBar.props.disabled).toBeTruthy();
@@ -867,7 +866,7 @@ describe("App", () => {
         within(sideBarLeft),
         "replay10Icon"
       );
-      expect(replaySidebarButton.props.testID).toBe("disabledButton");
+      expect(buttonProps(replaySidebarButton).disabled).toBeTruthy();
 
       const sideBarRight = screen.getByTestId("sidebarRight");
       expect(sideBarRight).toBeTruthy();
@@ -875,7 +874,7 @@ describe("App", () => {
         within(sideBarRight),
         "forward10Icon"
       );
-      expect(forwardSidebarButton.props.testID).toBe("disabledButton");
+      expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
     });
 
     it("Can start playing a new video from the error page using the upper control bar", async () => {
@@ -1014,19 +1013,19 @@ describe("App", () => {
         within(lowerControlBar),
         "pauseIcon"
       );
-      expect(pauseButton.props.testID).toBe("enabledButton");
+      expect(buttonProps(pauseButton).disabled).toBeFalsy();
 
       const playerTypeButton = getButtonByChildTestId(
         within(lowerControlBar),
         "screenDesktopIcon"
       );
-      expect(playerTypeButton.props.testID).toBe("enabledButton");
+      expect(buttonProps(playerTypeButton).disabled).toBeFalsy();
 
-      const screenStretchIcon = getButtonByChildTestId(
+      const screenStretchButton = getButtonByChildTestId(
         within(lowerControlBar),
         "screenNormalIcon"
       );
-      expect(screenStretchIcon.props.testID).toBe("enabledButton");
+      expect(buttonProps(screenStretchButton).disabled).toBeFalsy();
 
       const timeBar = within(lowerControlBar).getByTestId("timeBar");
       expect(timeBar.props.disabled).toBeFalsy();
@@ -1053,7 +1052,7 @@ describe("App", () => {
         within(sideBarLeft),
         "replay10Icon"
       );
-      expect(replaySidebarButton.props.testID).toBe("enabledButton");
+      expect(buttonProps(replaySidebarButton).disabled).toBeFalsy();
 
       const sideBarRight = screen.getByTestId("sidebarRight");
       expect(sideBarRight).toBeTruthy();
@@ -1061,7 +1060,7 @@ describe("App", () => {
         within(sideBarRight),
         "forward10Icon"
       );
-      expect(forwardSidebarButton.props.testID).toBe("enabledButton");
+      expect(buttonProps(forwardSidebarButton).disabled).toBeFalsy();
     });
 
     it("Unloads the video and returns to the home view when the back button is pressed", async () => {
@@ -1192,11 +1191,14 @@ describe("App", () => {
       });
 
       // Confirm the video player starts with two players showing
-      expect(findLeftVideoPlayer(screen).props.style.width).toBe("50%");
-      expect(findRightVideoPlayer(screen).props.style.width).toBe("50%");
+      expect(
+        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
+      ).toBe("50%");
+      expect(
+        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).style.width
+      ).toBe("50%");
 
       // Switch to using one video player
-
       await asyncPressEvent(
         getButtonByChildTestId(
           within(screen.getByTestId("lowerControlBar")),
@@ -1206,8 +1208,12 @@ describe("App", () => {
 
       // Confirm video player is showing one player
 
-      expect(findLeftVideoPlayer(screen).props.style.width).toBe("100%");
-      expect(findRightVideoPlayer(screen).props.style.width).toBe("0%");
+      expect(
+        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
+      ).toBe("100%");
+      expect(
+        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).style.width
+      ).toBe("0%");
 
       // Switch to using two video players
       await asyncPressEvent(
@@ -1219,8 +1225,12 @@ describe("App", () => {
 
       // Confirm the video player is showing two players again
 
-      expect(findLeftVideoPlayer(screen).props.style.width).toBe("50%");
-      expect(findRightVideoPlayer(screen).props.style.width).toBe("50%");
+      expect(
+        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
+      ).toBe("50%");
+      expect(
+        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).style.width
+      ).toBe("50%");
     });
 
     it("Can switch video player resize modes", async () => {
@@ -1237,12 +1247,12 @@ describe("App", () => {
       });
 
       // Confirm the video player uses the resizeMode cover as default
-      expect(findLeftVideoPlayer(screen).props.resizeMode).toBe(
-        RESIZE_MODES.RESIZE_MODE_COVER
-      );
-      expect(findRightVideoPlayer(screen).props.resizeMode).toBe(
-        RESIZE_MODES.RESIZE_MODE_COVER
-      );
+      expect(
+        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
+      expect(
+        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
 
       // Change to the next resize mode
       await asyncPressEvent(
@@ -1253,12 +1263,12 @@ describe("App", () => {
       );
 
       // Confirm the video player resizeMode has updated to contain
-      expect(findLeftVideoPlayer(screen).props.resizeMode).toBe(
-        RESIZE_MODES.RESIZE_MODE_CONTAIN
-      );
-      expect(findRightVideoPlayer(screen).props.resizeMode).toBe(
-        RESIZE_MODES.RESIZE_MODE_CONTAIN
-      );
+      expect(
+        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_CONTAIN);
+      expect(
+        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_CONTAIN);
 
       // Change to the next resize mode
       await asyncPressEvent(
@@ -1269,12 +1279,12 @@ describe("App", () => {
       );
 
       // Confirm the video player resizeMode has updated to stretch
-      expect(findLeftVideoPlayer(screen).props.resizeMode).toBe(
-        RESIZE_MODES.RESIZE_MODE_STRETCH
-      );
-      expect(findRightVideoPlayer(screen).props.resizeMode).toBe(
-        RESIZE_MODES.RESIZE_MODE_STRETCH
-      );
+      expect(
+        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_STRETCH);
+      expect(
+        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_STRETCH);
 
       // Change to the next resize mode
       await asyncPressEvent(
@@ -1285,12 +1295,12 @@ describe("App", () => {
       );
 
       // Confirm the video player resizeMode returns to the default of cover
-      expect(findLeftVideoPlayer(screen).props.resizeMode).toBe(
-        RESIZE_MODES.RESIZE_MODE_COVER
-      );
-      expect(findRightVideoPlayer(screen).props.resizeMode).toBe(
-        RESIZE_MODES.RESIZE_MODE_COVER
-      );
+      expect(
+        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
+      expect(
+        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
     });
   });
 });
