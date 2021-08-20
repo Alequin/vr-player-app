@@ -23,6 +23,16 @@ export const useVideoPlayerRefs = () => {
           primaryVideo?.current?.pauseAsync(),
           secondaryVideo?.current?.pauseAsync(),
         ]),
+      delayPrimary: async (delayTime) => {
+        await primaryVideo?.current?.pauseAsync();
+        await delay(delayTime);
+        await primaryVideo?.current?.playAsync();
+      },
+      delaySecondary: async (delayTime) => {
+        await secondaryVideo?.current?.pauseAsync();
+        await delay(delayTime);
+        await secondaryVideo?.current?.playAsync();
+      },
       setPosition: async (position) =>
         Promise.all([
           primaryVideo?.current?.setPositionAsync(position),
@@ -42,13 +52,20 @@ export const useVideoPlayerRefs = () => {
           secondaryVideo?.current?.unloadAsync(),
         ]),
       getStatus: async () => {
-        const status = await primaryVideo?.current?.getStatusAsync();
+        const status = await Promise.all([
+          primaryVideo?.current?.getStatusAsync(),
+          secondaryVideo?.current?.getStatusAsync(),
+        ]);
 
-        return status
-          ? { isStatusAvailable: true, ...status }
-          : { isStatusAvailable: false };
+        return {
+          isStatusAvailable: Boolean(status),
+          primaryStatus: status?.[0] || {},
+          secondaryStatus: status?.[1] || {},
+        };
       },
     }),
     [primaryVideo?.current, secondaryVideo?.current]
   );
 };
+
+const delay = async (delayTime) => new Promise((r) => setTimeout(r, delayTime));

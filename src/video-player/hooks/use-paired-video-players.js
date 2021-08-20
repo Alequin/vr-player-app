@@ -1,10 +1,7 @@
-import { AdMobInterstitial } from "expo-ads-admob";
 import { Video } from "expo-av";
 import { isNil } from "lodash";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { isEnvironmentProduction } from "../../is-environment-production";
+import { useCallback, useEffect, useState } from "react";
 import { logError } from "../../logger";
-import { minutesToMilliseconds } from "../../minutes-to-milliseconds";
 import { useShowInterstitialAd } from "./use-show-interstitial-ad";
 import { useVideoPlayerRefs } from "./use-video-player-refs";
 
@@ -56,7 +53,7 @@ export const usePairedVideosPlayers = () => {
         setErrorLoadingVideo("There was an issue trying to start the video");
       }
     }
-  }, [hasVideo, videoPlayer.play]);
+  }, [hasVideo, videoPlayer.play, setPosition, currentVideoPositionInMillis]);
 
   const pause = useCallback(async () => {
     if (hasVideo) {
@@ -97,11 +94,32 @@ export const usePairedVideosPlayers = () => {
         videoPlayer
           .getStatus()
           .then(
-            async ({ isStatusAvailable, positionMillis, durationMillis }) => {
+            async ({
+              isStatusAvailable,
+              primaryStatus: { positionMillis, durationMillis },
+              secondaryStatus,
+            }) => {
               if (!isStatusAvailable) return;
 
-              if (!isNil(positionMillis) && isPlaying)
+              // Update the known video position
+              if (!isNil(positionMillis) && isPlaying) {
                 setCurrentVideoPositionInMillis(positionMillis);
+              }
+
+              const playerPositionDifference =
+                positionMillis - secondaryStatus.positionMillis;
+
+              // Resync video positions if required
+              if (!arePlayerInSync(playerPositionDifference)) {
+                if (arePlayersVeryOutOfSync(playerPositionDifference)) {
+                  await setPosition(positionMillis);
+                } else {
+                  const isPrimaryAhead = playerPositionDifference > 0;
+                  isPrimaryAhead
+                    ? await videoPlayer.delayPrimary(25)
+                    : await videoPlayer.delaySecondary(25);
+                }
+              }
 
               /*
               Manually implement looping to:
@@ -129,10 +147,6 @@ export const usePairedVideosPlayers = () => {
     onFinishShowingAd: useCallback(async () => {
       if (!hasVideo) return;
       setIsLoading(true);
-      // Update state to indicate the video is available
-      const { durationMillis } = await videoPlayer.getStatus();
-      setVideoDuration(durationMillis);
-      await setPosition(0);
       await play();
     }, [hasVideo, setPosition, play, videoPlayer.getStatus]),
   });
@@ -170,6 +184,11 @@ export const usePairedVideosPlayers = () => {
               isMuted: true,
             },
           });
+
+          const {
+            primaryStatus: { durationMillis },
+          } = await videoPlayer.getStatus();
+          setVideoDuration(durationMillis);
 
           await showInterstitialAd();
         } catch (error) {
@@ -212,3 +231,10 @@ export const usePairedVideosPlayers = () => {
     ),
   };
 };
+
+const MAX_IN_SYNC_MILLISECOND_DIFFERENCE = 25;
+const arePlayerInSync = (playerPositionDifference) =>
+  Math.abs(playerPositionDifference) <= MAX_IN_SYNC_MILLISECOND_DIFFERENCE;
+
+const arePlayersVeryOutOfSync = (playerPositionDifference) =>
+  Math.abs(playerPositionDifference) > 100;

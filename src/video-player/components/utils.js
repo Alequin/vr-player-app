@@ -1,7 +1,7 @@
 import { MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
 
 export const millisecondsToTime = (milliseconds) => {
-  const totalSeconds = Math.round(milliseconds / 1000);
+  const totalSeconds = Math.floor(milliseconds / 1000);
   const totalMinutes = Math.floor(totalSeconds / 60);
   const totalHours = Math.floor(totalMinutes / 60);
 

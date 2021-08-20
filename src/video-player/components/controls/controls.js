@@ -1,3 +1,4 @@
+import { isNil } from "lodash";
 import React, { useEffect, useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { Button } from "../../../button";
@@ -40,7 +41,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
 
   const [timeToSkipTo, setTimeToSkipTo] = useState(null);
   useEffect(() => {
-    if (timeToSkipTo) {
+    if (!isNil(timeToSkipTo)) {
       const timeout = setTimeout(async () => {
         await videoPlayer.setPosition(timeToSkipTo);
         await videoPlayer.play();

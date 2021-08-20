@@ -1,12 +1,19 @@
 jest.mock("react-native/Libraries/Animated/src/NativeAnimatedHelper");
 
-import { act, cleanup, within } from "@testing-library/react-native";
+import {
+  act,
+  cleanup,
+  waitFor,
+  within,
+  wait,
+} from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as DocumentPicker from "expo-document-picker";
 import React from "React";
 import waitForExpect from "wait-for-expect";
 import { App } from "../App";
 import { logError } from "../src/logger";
+import { minutesToMilliseconds } from "../src/minutes-to-milliseconds";
 import { RESIZE_MODES } from "../src/video-player/hooks/use-paired-video-players";
 import { mockAdMobInterstitial } from "./mocks/mock-ad-mob";
 import { mockDocumentPicker } from "./mocks/mock-document-picker";
@@ -16,12 +23,14 @@ import { goToErrorViewAfterFailToLoadFromHomePage } from "./scenarios/go-to-erro
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 import { startWatchingVideoFromUpperControlBar } from "./scenarios/start-watching-video-from-the upper-control-bar";
 import {
-  asyncPressEvent,
   asyncRender,
   buttonProps,
+  enableAllErrorLogs,
   getButtonByChildTestId,
   getButtonByText,
+  silenceAllErrorLogs,
   videoPlayerProps,
+  asyncPressEvent,
 } from "./test-utils";
 
 describe("App", () => {
@@ -798,9 +807,6 @@ describe("App", () => {
 
       // confirm video is loaded and starts playing
       expect(mocks.load).toHaveBeenCalledTimes(1);
-      // Confirm position is set to 0 manually to reduce chances of sync issues
-      expect(mocks.setPosition).toHaveBeenCalledTimes(1);
-      expect(mocks.setPosition).toHaveBeenCalledWith(0);
       expect(mocks.play).toHaveBeenCalledTimes(1);
     });
 
@@ -1005,7 +1011,7 @@ describe("App", () => {
         getInterstitialDidCloseCallback,
       });
 
-      // Confirm all buttons are disabled
+      // Confirm all buttons are enabled
       const lowerControlBar = screen.getByTestId("lowerControlBar");
       expect(lowerControlBar).toBeTruthy();
 
@@ -1044,7 +1050,7 @@ describe("App", () => {
         getInterstitialDidCloseCallback,
       });
 
-      // Confirm buttons are disabled
+      // Confirm buttons are enabled
       const sideBarLeft = screen.getByTestId("sidebarLeft");
       expect(sideBarLeft).toBeTruthy();
 
@@ -1302,5 +1308,210 @@ describe("App", () => {
         videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
     });
+
+    it("Sets the expected video duration on the timebar", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const expectedDuration = minutesToMilliseconds(10);
+      mocks.getStatus.mockResolvedValue({
+        isStatusAvailable: true,
+        primaryStatus: {
+          positionMillis: 0,
+          durationMillis: expectedDuration,
+        },
+        secondaryStatus: {
+          positionMillis: 0,
+          durationMillis: expectedDuration,
+        },
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+
+      expect(timeBar.props.minimumValue).toBe(0);
+      expect(timeBar.props.maximumValue).toBe(expectedDuration);
+    });
+
+    it("starts the timebar at zero", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      expect(timeBar.props.value).toBe(0);
+    });
+
+    it("increments the video position as time passes", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const expectedDuration = minutesToMilliseconds(10);
+      let positionMillis = 0;
+      mocks.getStatus.mockImplementation(async () => {
+        // Fake time incrementing
+        positionMillis = positionMillis + 100;
+
+        return {
+          isStatusAvailable: true,
+          primaryStatus: {
+            positionMillis: positionMillis,
+            durationMillis: expectedDuration,
+          },
+          secondaryStatus: {
+            positionMillis: positionMillis,
+            durationMillis: expectedDuration,
+          },
+        };
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      expect(timeBar.props.value).toBe(0);
+
+      silenceAllErrorLogs();
+
+      await waitForExpect(() => {
+        expect(timeBar.props.value).toBeGreaterThan(1000);
+        expect(within(lowerControlBar).getByText("00:01"));
+      });
+      await waitForExpect(() => {
+        expect(timeBar.props.value).toBeLessThan(2000);
+      });
+
+      await waitForExpect(() => {
+        expect(timeBar.props.value).toBeGreaterThan(2000);
+        expect(within(lowerControlBar).getByText("00:02"));
+      });
+      await waitForExpect(() => {
+        expect(timeBar.props.value).toBeLessThan(3000);
+      });
+
+      await waitForExpect(() => {
+        expect(timeBar.props.value).toBeGreaterThan(3000);
+        expect(within(lowerControlBar).getByText("00:03"));
+      });
+      await waitForExpect(() => expect(timeBar.props.value).toBeLessThan(4000));
+
+      enableAllErrorLogs();
+    });
+
+    it("can use the side bar buttons to move forward and back by ten seconds", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      // This status should never actually happen
+      // Fake status not being available to stop position from being updated by time passing
+      // This ensures the sidebar buttons are what is controlling the current position
+      mocks.getStatus.mockResolvedValue({
+        isStatusAvailable: false,
+        primaryStatus: {
+          durationMillis: 1000,
+        },
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+
+      silenceAllErrorLogs();
+
+      // Confirm the start position is 0
+      expect(timeBar.props.value).toBe(0);
+
+      // Move the position forward by 10 seconds
+      const forwardSidebarButton = getButtonByChildTestId(
+        within(screen.getByTestId("sidebarRight")),
+        "forward10Icon"
+      );
+      await asyncPressEvent(forwardSidebarButton);
+
+      await waitForExpect(async () => {
+        expect(mocks.setPosition).toHaveBeenCalledWith(10_000);
+        expect(timeBar.props.value).toBe(10_000);
+        expect(within(lowerControlBar).getByText("00:10")).toBeTruthy();
+      });
+
+      // Move the position back by 10 seconds
+      const replaySidebarButton = getButtonByChildTestId(
+        within(screen.getByTestId("sidebarLeft")),
+        "replay10Icon"
+      );
+      await asyncPressEvent(replaySidebarButton);
+      await waitForExpect(async () => {
+        expect(mocks.setPosition).toHaveBeenCalledWith(0);
+        expect(timeBar.props.value).toBe(0);
+        expect(within(lowerControlBar).getByText("00:00")).toBeTruthy();
+      });
+
+      enableAllErrorLogs();
+    }, 10_000);
+
+    it.skip("can update the current position by dragging the timebar", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      console.log(
+        "🚀 ~ file: App.test.js ~ line 1492 ~ it ~ timeBar.props",
+        timeBar.props
+      );
+    });
+
+    it.todo(
+      "can resync the players when the primary player is slightly out of sync (out of sync by less than 100 milliseconds)"
+    );
+
+    it.todo(
+      "can resync the players when the secondary player is slightly out of sync (out of sync by less than 100 milliseconds)"
+    );
+
+    it.todo(
+      "can resync the players when they are very out of sync (out of sync by more than or equal to 100 milliseconds)"
+    );
   });
 });

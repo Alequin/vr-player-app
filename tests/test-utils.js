@@ -29,3 +29,12 @@ export const videoPlayerProps = (videoPlayerComponent) =>
 
 export const buttonProps = (buttonComponent) =>
   buttonComponent.parent.parent.parent.parent.props;
+
+// TODO silencing warning logs is not the best. Review for a better solution
+export const silenceAllErrorLogs = () => {
+  jest.spyOn(console, "error").mockImplementation(() => {});
+};
+
+export const enableAllErrorLogs = () => {
+  if (console.error.mockRestore) console.error.mockRestore();
+};

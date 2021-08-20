@@ -13,8 +13,8 @@ export const mockUseVideoPlayerRefs = () => {
     unload: jest.fn().mockResolvedValue(undefined),
     getStatus: jest.fn().mockImplementation(async () => ({
       isStatusAvailable: true,
-      positionMillis: 0,
-      durationMillis: 1000,
+      primaryStatus: { positionMillis: 0, durationMillis: 1000 },
+      secondaryStatus: { positionMillis: 0, durationMillis: 1000 },
     })),
   };
 
