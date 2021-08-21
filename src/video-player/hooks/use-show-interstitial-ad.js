@@ -1,6 +1,6 @@
 import { AdMobInterstitial } from "expo-ads-admob";
 import { useCallback, useEffect, useState } from "react";
-import { isEnvironmentProduction } from "../../is-environment-production";
+import { isEnvironmentProduction } from "../../environment";
 import { logError } from "../../logger";
 import { minutesToMilliseconds } from "../../minutes-to-milliseconds";
 
