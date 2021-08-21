@@ -19,15 +19,13 @@ export const VideoPlayer = () => {
   return (
     <View style={styles.container}>
       {/* Remove video player if there is an error to reset the references */}
-      {!videoPlayer.errorLoadingVideo && (
-        <DualVideoView
-          zIndex={-1}
-          videoLeft={videoPlayer.leftPlayer}
-          videoRight={videoPlayer.rightPlayer}
-          videoResizeMode={videoPlayer.videoResizeMode}
-          videoPlayerMode={videoPlayer.videoPlayerMode}
-        />
-      )}
+      <DualVideoView
+        zIndex={-1}
+        videoLeft={videoPlayer.leftPlayer}
+        videoRight={videoPlayer.rightPlayer}
+        videoResizeMode={videoPlayer.videoResizeMode}
+        videoPlayerMode={videoPlayer.videoPlayerMode}
+      />
       {/*z index has to be less than 1 to allow the user to press the custom controls */}
       <ScreenMask zIndex={0} isTransparent={videoPlayer.hasVideo} />
       <Controls zIndex={1} videoPlayer={videoPlayer} />
