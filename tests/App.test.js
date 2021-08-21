@@ -7,9 +7,15 @@ import { last } from "lodash";
 import React from "React";
 import waitForExpect from "wait-for-expect";
 import { App } from "../App";
+import { delay } from "../src/delay";
 import { logError } from "../src/logger";
 import { minutesToMilliseconds } from "../src/minutes-to-milliseconds";
 import { millisecondsToTime } from "../src/video-player/components/utils";
+import * as hasEnoughTimePastToShowInterstitialAd from "../src/video-player/hooks/has-enough-time-past-to-show-interstitial-ad";
+import {
+  EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE,
+  MAX_IN_SYNC_MILLISECOND_DIFFERENCE,
+} from "../src/video-player/hooks/resync-videos";
 import { RESIZE_MODES } from "../src/video-player/hooks/use-paired-video-players";
 import { mockAdMobInterstitial } from "./mocks/mock-ad-mob";
 import { mockDocumentPicker } from "./mocks/mock-document-picker";
@@ -235,16 +241,8 @@ describe("App", () => {
     });
 
     describe("Opening a video from the home view but there is an issue with ads", () => {
-      let logErrorMock = mockLogError();
-
       beforeEach(() => {
-        // Silence custom logs for error related tests
-        logErrorMock.mockClear();
-        logErrorMock.mockImplementation(() => {});
-      });
-
-      afterAll(() => {
-        logErrorMock.mockReset();
+        silenceAllErrorLogs();
       });
 
       it("catches the error and still allows the video to play when there is an issue setting the interstitial unit id", async () => {
@@ -483,9 +481,41 @@ describe("App", () => {
       expect(AdMobInterstitial.showAdAsync).toHaveBeenCalledTimes(1);
     });
 
-    it.todo(
-      "shows another ad if enough time passes between showing the first and second ad"
-    );
+    it("shows another ad if enough time passes between showing the first and second ad", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      await startWatchingVideoFromUpperControlBar({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Shows an ad
+      expect(AdMobInterstitial.showAdAsync).toHaveBeenCalledTimes(1);
+
+      const mock = jest
+        .spyOn(
+          hasEnoughTimePastToShowInterstitialAd,
+          "hasEnoughTimePastToShowInterstitialAd"
+        )
+        .mockReturnValue(true);
+
+      // Press button to pick another video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      );
+
+      // Show another ad
+      expect(AdMobInterstitial.showAdAsync).toHaveBeenCalledTimes(2);
+
+      mock.mockRestore();
+    });
 
     describe("Opening a video from the upper control bar but there is an issue with ads", () => {
       let logErrorMock = mockLogError();
@@ -1415,7 +1445,9 @@ describe("App", () => {
       });
       await waitForExpect(() => expect(timeBar.props.value).toBeLessThan(4000));
     });
+  });
 
+  describe("Using the timebar to seek for a video position", () => {
     it("can update the current position by dragging the timebar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
@@ -1486,33 +1518,364 @@ describe("App", () => {
       expect(within(lowerControlBar).getByText("01:50")).toBeTruthy();
     });
 
-    it.todo(
-      "pauses the video while seeking with the timebar if it was playing in the beginning"
-    );
+    it("pauses the video while seeking with the timebar if it was playing in the beginning", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
-    it.todo(
-      "does not pause the video while seeking with the timebar if it was already paused"
-    );
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+      }));
 
-    it.todo(
-      "resumes the video after seeking with the timebar if it was playing in the beginning"
-    );
+      const screen = await asyncRender(<App />);
 
-    it.todo(
-      "does not resume the video after seeking with the timebar if it was already paused"
-    );
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
 
-    it.todo(
-      "can resync the players when the primary player is slightly out of sync (out of sync by less than 100 milliseconds)"
-    );
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const props = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      );
 
-    it.todo(
-      "can resync the players when the secondary player is slightly out of sync (out of sync by less than 100 milliseconds)"
-    );
+      const onSeekStart = props.onSlidingStart;
 
-    it.todo(
-      "can resync the players when they are very out of sync (out of sync by more than or equal to 100 milliseconds)"
-    );
+      const seekStartPosition = 10_000;
+
+      // start seeking for the new video position
+      mocks.pause.mockClear();
+      await act(async () => onSeekStart(seekStartPosition));
+
+      // Pauses the video after starting to seek the video position
+      expect(mocks.pause).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not pause the video while seeking with the timebar if it was already paused", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Pause the video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "pauseIcon"
+        )
+      );
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const props = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      );
+
+      const onSeekStart = props.onSlidingStart;
+
+      const seekStartPosition = 10_000;
+
+      // start seeking for the new video position
+      mocks.pause.mockClear();
+      await act(async () => onSeekStart(seekStartPosition));
+
+      // Pauses the video after starting to seek the video position
+      expect(mocks.pause).toHaveBeenCalledTimes(0);
+    });
+
+    it("resumes the video after seeking with the timebar if it was playing in the beginning", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+
+      const onSeekStart = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      ).onSlidingStart;
+
+      // start seeking for the new video position
+      await act(async () => onSeekStart(10_000));
+
+      const onSeekComplete = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      ).onSlidingComplete;
+
+      // Finish seeking and end on the last position
+      mocks.play.mockClear();
+      await act(async () => onSeekComplete(10_000));
+
+      // The video starts playing again
+      expect(mocks.play).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not resume the video after seeking with the timebar if it was already paused", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Pause the video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "pauseIcon"
+        )
+      );
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+
+      const onSeekStart = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      ).onSlidingStart;
+
+      // start seeking for the new video position
+      await act(async () => onSeekStart(10_000));
+
+      const onSeekComplete = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      ).onSlidingComplete;
+
+      // Finish seeking and end on the last position
+      mocks.play.mockClear();
+      await act(async () => onSeekComplete(10_000));
+
+      // Does not start playing the video again
+      expect(mocks.play).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  describe("The two video players will always be in sync", () => {
+    it("increases the playback rate of the secondary video player when the primary player is ahead", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: {
+          positionMillis: MAX_IN_SYNC_MILLISECOND_DIFFERENCE + 1,
+          durationMillis: 1000,
+          rate: 1,
+        },
+        secondaryStatus: { positionMillis: 0, durationMillis: 1000, rate: 1 },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      silenceAllErrorLogs();
+
+      // Confirm the secondary video player rate is increased to re-sync
+      await waitForExpect(() => {
+        expect(mocks.setSecondaryRate).toHaveBeenCalledWith(1.1);
+      });
+    });
+
+    it("reduces the playback rate of the secondary video after the secondary player beings to overtake the primary player", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 1000, rate: 1 },
+        secondaryStatus: {
+          positionMillis: MAX_IN_SYNC_MILLISECOND_DIFFERENCE + 1,
+          durationMillis: 1000,
+          rate: 1.1,
+        },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      silenceAllErrorLogs();
+
+      // Confirm the secondary video player rate is reduced after re-syncing
+      await waitForExpect(() => {
+        expect(mocks.setSecondaryRate).toHaveBeenCalledWith(1);
+      });
+    });
+
+    it("delays the secondary video player when the primary player is behind to allow it to catch up", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 1000, rate: 1 },
+        secondaryStatus: {
+          positionMillis: MAX_IN_SYNC_MILLISECOND_DIFFERENCE + 1,
+          durationMillis: 1000,
+          rate: 1,
+        },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      silenceAllErrorLogs();
+
+      // Confirm the secondary video player is delayed
+      await waitForExpect(() => {
+        expect(mocks.delaySecondary).toHaveBeenCalledWith(25);
+      });
+    });
+
+    it("updates the position to resync the videos when the primary video is ahead of the secondary by 100 milliseconds", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const primaryVideoPosition =
+        EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE + 1;
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: {
+          positionMillis: primaryVideoPosition,
+          durationMillis: 1000,
+          rate: 1,
+        },
+        secondaryStatus: { positionMillis: 0, durationMillis: 1000, rate: 1 },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      silenceAllErrorLogs();
+
+      // Confirm the positions are updated to match the primary players
+      await waitForExpect(() => {
+        expect(mocks.setPosition).toHaveBeenCalledWith(primaryVideoPosition);
+      });
+    });
+
+    it("updates the position to resync the videos when the secondary video is ahead of the primary by 100 milliseconds", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const primaryVideoPosition = 0;
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: {
+          positionMillis: primaryVideoPosition,
+          durationMillis: 1000,
+          rate: 1,
+        },
+        secondaryStatus: {
+          positionMillis: EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE + 1,
+          durationMillis: 1000,
+          rate: 1,
+        },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      silenceAllErrorLogs();
+
+      // Confirm the positions are updated to match the primary players
+      await waitForExpect(() => {
+        expect(mocks.setPosition).toHaveBeenCalledWith(primaryVideoPosition);
+      });
+    });
+
+    it("does not attempt to resync the video players when the player positions are close", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 1000, rate: 1 },
+        secondaryStatus: {
+          positionMillis: MAX_IN_SYNC_MILLISECOND_DIFFERENCE,
+          durationMillis: 1000,
+          rate: 1,
+        },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      silenceAllErrorLogs();
+
+      // give the re-syncing functions a chance to be called if they were to be
+      await delay(2_000);
+
+      // Does not delay the secondary video to allow the first to catch up
+      expect(mocks.delaySecondary).not.toHaveBeenCalledWith(25);
+
+      // Does not increase the rate of the
+      expect(mocks.delaySecondary).not.toHaveBeenCalledWith(25);
+    });
   });
 
   describe("Skipping forwards and back with side buttons", () => {

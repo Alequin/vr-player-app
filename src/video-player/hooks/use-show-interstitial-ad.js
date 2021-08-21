@@ -2,7 +2,7 @@ import { AdMobInterstitial } from "expo-ads-admob";
 import { useCallback, useEffect, useState } from "react";
 import { isEnvironmentProduction } from "../../environment";
 import { logError } from "../../logger";
-import { minutesToMilliseconds } from "../../minutes-to-milliseconds";
+import { hasEnoughTimePastToShowInterstitialAd } from "./has-enough-time-past-to-show-interstitial-ad";
 
 export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
   const [lastTimeAdWasShows, setLastTimeAdWasShown] = useState(0);
@@ -47,7 +47,7 @@ export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
 
   return useCallback(async () => {
     // call event if no ad is shown
-    if (!hasEnoughTimePastToShowAnotherAd(lastTimeAdWasShows)) {
+    if (!hasEnoughTimePastToShowInterstitialAd(lastTimeAdWasShows)) {
       return await onFinishShowingAd();
     }
 
@@ -75,7 +75,3 @@ export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
     }
   }, [lastTimeAdWasShows, onFinishShowingAd]);
 };
-
-const TOTAL_TIME_TO_NOT_SHOW_ADS_FOR = minutesToMilliseconds(1);
-const hasEnoughTimePastToShowAnotherAd = (time) =>
-  Date.now() - time > TOTAL_TIME_TO_NOT_SHOW_ADS_FOR;
