@@ -37,6 +37,7 @@ describe("App", () => {
 
   afterEach(() => {
     cleanup();
+    enableAllErrorLogs();
   });
 
   describe("First opening the app", () => {
@@ -1413,8 +1414,6 @@ describe("App", () => {
         expect(within(lowerControlBar).getByText("00:03"));
       });
       await waitForExpect(() => expect(timeBar.props.value).toBeLessThan(4000));
-
-      enableAllErrorLogs();
     });
 
     it("can use the side bar buttons to move forward and back by ten seconds", async () => {
@@ -1422,7 +1421,7 @@ describe("App", () => {
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
       // This status should never actually happen
-      // Fake status not being available to stop position from being updated by time passing
+      // Fake status to stop position from being updated by time passing
       // This ensures the sidebar buttons are what is controlling the current position
       mocks.getStatus.mockResolvedValue({
         primaryStatus: {
@@ -1477,9 +1476,211 @@ describe("App", () => {
         );
         expect(within(lowerControlBar).getByText("00:00")).toBeTruthy();
       });
-
-      enableAllErrorLogs();
     }, 10_000);
+
+    it("starts playing the video again when using the side bar forward button and the video was playing", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      // This status should never actually happen
+      // Fake status to stop position from being updated by time passing
+      // This ensures the sidebar buttons are what is controlling the current position
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: {
+          durationMillis: 1000,
+        },
+        secondaryStatus: {},
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      mocks.play.mockClear();
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+
+      silenceAllErrorLogs();
+
+      // Move the position forward by 10 seconds
+      const forwardSidebarButton = getButtonByChildTestId(
+        within(screen.getByTestId("sidebarRight")),
+        "forward10Icon"
+      );
+      await asyncPressEvent(forwardSidebarButton);
+
+      await waitForExpect(async () =>
+        expect(within(lowerControlBar).getByText("00:10")).toBeTruthy()
+      );
+
+      // Confirm the video starts playing again
+      await waitForExpect(async () => {
+        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
+        expect(mocks.play).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("starts playing the video again when using the side bar replay button and the video was playing", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      // This status should never actually happen
+      // Fake status to stop position from being updated by time passing
+      // This ensures the sidebar buttons are what is controlling the current position
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: {
+          durationMillis: 1000,
+        },
+        secondaryStatus: {},
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      mocks.play.mockClear();
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+
+      silenceAllErrorLogs();
+
+      // Move the position back by 10 seconds
+      const replaySidebarButton = getButtonByChildTestId(
+        within(screen.getByTestId("sidebarLeft")),
+        "replay10Icon"
+      );
+      await asyncPressEvent(replaySidebarButton);
+
+      await waitForExpect(async () =>
+        expect(within(lowerControlBar).getByText("00:00")).toBeTruthy()
+      );
+
+      // Confirm the video starts playing again
+      await waitForExpect(async () => {
+        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
+        expect(mocks.play).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("does not start playing the video again when using the side bar forward button and the video was paused", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      // This status should never actually happen
+      // Fake status to stop position from being updated by time passing
+      // This ensures the sidebar buttons are what is controlling the current position
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: {
+          durationMillis: 1000,
+        },
+        secondaryStatus: {},
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Pause the video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "pauseIcon"
+        )
+      );
+
+      mocks.play.mockClear();
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+
+      silenceAllErrorLogs();
+
+      // Move the position forward by 10 seconds
+      const forwardSidebarButton = getButtonByChildTestId(
+        within(screen.getByTestId("sidebarRight")),
+        "forward10Icon"
+      );
+      await asyncPressEvent(forwardSidebarButton);
+
+      await waitForExpect(async () =>
+        expect(within(lowerControlBar).getByText("00:10")).toBeTruthy()
+      );
+
+      // Confirm the video does not start playing again
+      await waitForExpect(async () => {
+        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
+        expect(mocks.play).toHaveBeenCalledTimes(0);
+      });
+    });
+
+    it("does not start playing the video again when using the side bar replay button and the video was paused", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      // This status should never actually happen
+      // Fake status to stop position from being updated by time passing
+      // This ensures the sidebar buttons are what is controlling the current position
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: {
+          durationMillis: 1000,
+        },
+        secondaryStatus: {},
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Pause the video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "pauseIcon"
+        )
+      );
+
+      mocks.play.mockClear();
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+
+      silenceAllErrorLogs();
+
+      // Move the position back by 10 seconds
+      const replaySidebarButton = getButtonByChildTestId(
+        within(screen.getByTestId("sidebarLeft")),
+        "replay10Icon"
+      );
+      await asyncPressEvent(replaySidebarButton);
+
+      await waitForExpect(async () =>
+        expect(within(lowerControlBar).getByText("00:00")).toBeTruthy()
+      );
+
+      // Confirm the video does not start playing again
+      await waitForExpect(async () => {
+        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
+        expect(mocks.play).toHaveBeenCalledTimes(0);
+      });
+    });
 
     it("can update the current position by dragging the timebar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();

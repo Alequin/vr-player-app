@@ -1,7 +1,5 @@
-import { isNil } from "lodash";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
-import { Button } from "../../../button";
 import { Icon } from "../../../icon";
 import { useSelectVideo } from "../../hooks/use-select-video";
 import { ControlBar } from "../control-bar";
@@ -18,7 +16,9 @@ import { ErrorView } from "./control-views/error-view";
 import { HomeView } from "./control-views/home-view";
 import { useCanShowAds } from "./hooks/use-can-show-ads";
 import { useShowControls } from "./hooks/use-show-controls";
+import { useSkipTime } from "./hooks/use-time-skip";
 import { useViewToShow } from "./hooks/use-view-to-show";
+import { SideControlBar } from "./side-control-bar";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
   const { areAdsDisabled, setAreAdsDisabled } = useCanShowAds();
@@ -208,77 +208,6 @@ const UpperControlBar = ({
       />
     </ControlBar>
   );
-};
-
-const useSkipTime = (videoPlayer) => {
-  const [timeToSkipTo, setTimeToSkipTo] = useState(null);
-  useEffect(() => {
-    if (!isNil(timeToSkipTo)) {
-      const timeout = setTimeout(async () => {
-        await videoPlayer.setPosition(timeToSkipTo);
-        await videoPlayer.play();
-        setTimeToSkipTo(null);
-      }, 500);
-      return () => clearTimeout(timeout);
-    }
-  }, [timeToSkipTo, videoPlayer.setPosition, videoPlayer.play]);
-
-  return setTimeToSkipTo;
-};
-
-const SideControlBar = ({
-  testID,
-  left,
-  right,
-  children,
-  shouldDisableControls,
-  onPress,
-}) => (
-  <View
-    testID={testID}
-    style={{
-      opacity: shouldDisableControls ? 0.25 : 1,
-      justifyContent: "center",
-      height: "100%",
-    }}
-  >
-    <Button
-      style={{
-        justifyContent: "center",
-        height: "100%",
-      }}
-      onPress={onPress}
-      disabled={shouldDisableControls}
-    >
-      <View
-        style={{
-          justifyContent: "center",
-          backgroundColor: "#00000080",
-          height: "50%",
-          padding: 10,
-          ...sideBarBorderRadius({ left, right }),
-        }}
-      >
-        {children}
-      </View>
-    </Button>
-  </View>
-);
-
-const sideBarBorderRadius = ({ left, right }) => {
-  if (left) {
-    return {
-      borderTopRightRadius: 50,
-      borderBottomRightRadius: 50,
-    };
-  }
-
-  if (right) {
-    return {
-      borderTopLeftRadius: 50,
-      borderBottomLeftRadius: 50,
-    };
-  }
 };
 
 const LowerControlBar = ({
