@@ -1,7 +1,8 @@
 import { AdMobRewarded } from "expo-ads-admob";
 import React, { useEffect, useState } from "react";
-import { TouchableOpacity, View } from "react-native";
+import { View } from "react-native";
 import { disableAdsRewardId } from "../../../../../secrets.json";
+import { Button } from "../../../../button";
 import { disableAds, timeAdsAreDisabledFor } from "../../../ads-disable-time";
 import { ControlPageIcon } from "../../control-page-icon";
 import { millisecondsToTime } from "../../utils";
@@ -56,7 +57,7 @@ export const DisableAdsView = ({
           justifyContent: "space-around",
         }}
       >
-        <TouchableOpacity
+        <Button
           style={{
             alignItems: "center",
             margin: 20,
@@ -96,8 +97,8 @@ export const DisableAdsView = ({
               </ControlViewText>
             </View>
           )}
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Button>
+        <Button
           style={{
             alignItems: "center",
             margin: 20,
@@ -110,7 +111,7 @@ export const DisableAdsView = ({
           <ControlViewText>
             Buy the ad-free version of the app and help support us
           </ControlViewText>
-        </TouchableOpacity>
+        </Button>
       </View>
     </View>
   );

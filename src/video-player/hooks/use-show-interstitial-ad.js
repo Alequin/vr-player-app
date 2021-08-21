@@ -2,6 +2,7 @@ import { AdMobInterstitial } from "expo-ads-admob";
 import { useCallback, useEffect, useState } from "react";
 import { isEnvironmentProduction } from "../../environment";
 import { logError } from "../../logger";
+import { checkIfAdsAreDisabled } from "../ads-disable-time";
 import { hasEnoughTimePastToShowInterstitialAd } from "./has-enough-time-past-to-show-interstitial-ad";
 
 export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
@@ -47,7 +48,12 @@ export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
 
   return useCallback(async () => {
     // call event if no ad is shown
-    if (!hasEnoughTimePastToShowInterstitialAd(lastTimeAdWasShows)) {
+    const areAdsDisabled = await checkIfAdsAreDisabled();
+
+    if (
+      areAdsDisabled ||
+      !hasEnoughTimePastToShowInterstitialAd(lastTimeAdWasShows)
+    ) {
       return await onFinishShowingAd();
     }
 
