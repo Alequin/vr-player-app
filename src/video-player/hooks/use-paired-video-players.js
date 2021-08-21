@@ -93,51 +93,39 @@ export const usePairedVideosPlayers = () => {
       const interval = setInterval(() => {
         videoPlayer
           .getStatus()
-          .then(
-            async ({
-              isStatusAvailable,
-              primaryStatus: { positionMillis, durationMillis },
-              secondaryStatus,
-            }) => {
-              if (!isStatusAvailable) return;
+          .then(async ({ primaryStatus, secondaryStatus }) => {
+            if (!primaryStatus || !secondaryStatus) return;
 
-              // Update the known video position
-              if (!isNil(positionMillis) && isPlaying) {
-                setCurrentVideoPositionInMillis(positionMillis);
-              }
+            // Update the known video position
+            if (!isNil(primaryStatus.positionMillis) && isPlaying) {
+              setCurrentVideoPositionInMillis(primaryStatus.positionMillis);
+            }
 
-              const playerPositionDifference =
-                positionMillis - secondaryStatus.positionMillis;
+            if (!arePlayerInSync(primaryStatus, secondaryStatus)) {
+              await resyncVideos(
+                videoPlayer,
+                primaryStatus,
+                secondaryStatus,
+                setPosition
+              );
+            }
 
-              // Resync video positions if required
-              if (!arePlayerInSync(playerPositionDifference)) {
-                if (arePlayersVeryOutOfSync(playerPositionDifference)) {
-                  await setPosition(positionMillis);
-                } else {
-                  const isPrimaryAhead = playerPositionDifference > 0;
-                  isPrimaryAhead
-                    ? await videoPlayer.delayPrimary(25)
-                    : await videoPlayer.delaySecondary(25);
-                }
-              }
-
-              /*
+            /*
               Manually implement looping to:
                 - fix issues with video players falling out of sync 
                 - fix issues with controls staying visible after first loop
             */
-              const didFinish =
-                positionMillis &&
-                durationMillis &&
-                positionMillis >= durationMillis;
-              if (didFinish) {
-                setIsNewLoop(true);
-                await pause();
-                await setPosition(0);
-                await play();
-              }
+            const didFinish =
+              primaryStatus.positionMillis &&
+              primaryStatus.durationMillis &&
+              primaryStatus.positionMillis >= primaryStatus.durationMillis;
+            if (didFinish) {
+              setIsNewLoop(true);
+              await pause();
+              await setPosition(0);
+              await play();
             }
-          );
+          });
       }, 25);
       return () => clearInterval(interval);
     }
@@ -232,9 +220,42 @@ export const usePairedVideosPlayers = () => {
   };
 };
 
-const MAX_IN_SYNC_MILLISECOND_DIFFERENCE = 25;
-const arePlayerInSync = (playerPositionDifference) =>
-  Math.abs(playerPositionDifference) <= MAX_IN_SYNC_MILLISECOND_DIFFERENCE;
+const resyncVideos = async (
+  videoPlayer,
+  primaryStatus,
+  secondaryStatus,
+  setPosition
+) => {
+  // use set position if the sync issues is very bad
+  if (arePlayersVeryOutOfSync(primaryStatus, secondaryStatus))
+    await setPosition(primaryStatus.positionMillis);
 
-const arePlayersVeryOutOfSync = (playerPositionDifference) =>
-  Math.abs(playerPositionDifference) > 100;
+  // use video rate for small tweaks in video sync
+  const isPrimaryAhead =
+    getPlayersPositionDifference(primaryStatus, secondaryStatus) > 0;
+
+  const promises = [];
+
+  if (isPrimaryAhead && secondaryStatus.rate <= 1)
+    promises.push(videoPlayer.setSecondaryRate(1.1));
+
+  if (!isPrimaryAhead && secondaryStatus.rate > 1)
+    promises.push(videoPlayer.setSecondaryRate(1));
+
+  if (!isPrimaryAhead) promises.push(videoPlayer.delaySecondary(25));
+
+  await Promise.all(promises);
+};
+
+const MAX_IN_SYNC_MILLISECOND_DIFFERENCE = 25;
+const arePlayerInSync = (primaryStatus, secondaryStatus) =>
+  Math.abs(getPlayersPositionDifference(primaryStatus, secondaryStatus)) <=
+  MAX_IN_SYNC_MILLISECOND_DIFFERENCE;
+
+const EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE = 100;
+const arePlayersVeryOutOfSync = (primaryStatus, secondaryStatus) =>
+  Math.abs(getPlayersPositionDifference(primaryStatus, secondaryStatus)) >
+  EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE;
+
+const getPlayersPositionDifference = (primaryStatus, secondaryStatus) =>
+  primaryStatus.positionMillis - secondaryStatus.positionMillis;

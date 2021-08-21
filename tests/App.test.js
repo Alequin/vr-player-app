@@ -1315,7 +1315,6 @@ describe("App", () => {
 
       const expectedDuration = minutesToMilliseconds(10);
       mocks.getStatus.mockResolvedValue({
-        isStatusAvailable: true,
         primaryStatus: {
           positionMillis: 0,
           durationMillis: expectedDuration,
@@ -1371,7 +1370,6 @@ describe("App", () => {
         positionMillis = positionMillis + 100;
 
         return {
-          isStatusAvailable: true,
           primaryStatus: {
             positionMillis: positionMillis,
             durationMillis: expectedDuration,
@@ -1430,10 +1428,10 @@ describe("App", () => {
       // Fake status not being available to stop position from being updated by time passing
       // This ensures the sidebar buttons are what is controlling the current position
       mocks.getStatus.mockResolvedValue({
-        isStatusAvailable: false,
         primaryStatus: {
           durationMillis: 1000,
         },
+        secondaryStatus: {},
       });
 
       const screen = await asyncRender(<App />);

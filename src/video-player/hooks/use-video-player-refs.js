@@ -1,4 +1,5 @@
 import { useRef, useMemo } from "react";
+import { delay } from "../../delay";
 
 /**
  * A mockable wrapper for video player functions exposed by references
@@ -14,25 +15,24 @@ export const useVideoPlayerRefs = () => {
     () => ({
       refs: { primaryVideo, secondaryVideo },
       play: async () =>
+        // Start the second one first as syncing the players is smoother when the second is ahead
         Promise.all([
-          primaryVideo?.current?.playAsync(),
           secondaryVideo?.current?.playAsync(),
+          primaryVideo?.current?.playAsync(),
         ]),
+
       pause: async () =>
         Promise.all([
           primaryVideo?.current?.pauseAsync(),
           secondaryVideo?.current?.pauseAsync(),
         ]),
-      delayPrimary: async (delayTime) => {
-        await primaryVideo?.current?.pauseAsync();
-        await delay(delayTime);
-        await primaryVideo?.current?.playAsync();
-      },
       delaySecondary: async (delayTime) => {
         await secondaryVideo?.current?.pauseAsync();
         await delay(delayTime);
         await secondaryVideo?.current?.playAsync();
       },
+      setSecondaryRate: async (rate) =>
+        secondaryVideo?.current?.setRateAsync(rate),
       setPosition: async (position) =>
         Promise.all([
           primaryVideo?.current?.setPositionAsync(position),
@@ -40,11 +40,8 @@ export const useVideoPlayerRefs = () => {
         ]),
       load: async (newFileObject, { primaryOptions, secondaryOptions } = {}) =>
         Promise.all([
-          primaryVideo?.current?.loadAsync(newFileObject, primaryOptions || {}),
-          secondaryVideo?.current?.loadAsync(
-            newFileObject,
-            secondaryOptions || {}
-          ),
+          primaryVideo?.current?.loadAsync(newFileObject, primaryOptions),
+          secondaryVideo?.current?.loadAsync(newFileObject, secondaryOptions),
         ]),
       unload: async () =>
         Promise.all([
@@ -58,14 +55,11 @@ export const useVideoPlayerRefs = () => {
         ]);
 
         return {
-          isStatusAvailable: Boolean(status),
-          primaryStatus: status?.[0] || {},
-          secondaryStatus: status?.[1] || {},
+          primaryStatus: status?.[0],
+          secondaryStatus: status?.[1],
         };
       },
     }),
     [primaryVideo?.current, secondaryVideo?.current]
   );
 };
-
-const delay = async (delayTime) => new Promise((r) => setTimeout(r, delayTime));
