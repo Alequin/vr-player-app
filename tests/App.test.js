@@ -1,19 +1,15 @@
 jest.mock("react-native/Libraries/Animated/src/NativeAnimatedHelper");
 
-import {
-  act,
-  cleanup,
-  waitFor,
-  within,
-  wait,
-} from "@testing-library/react-native";
+import { act, cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as DocumentPicker from "expo-document-picker";
+import { last } from "lodash";
 import React from "React";
 import waitForExpect from "wait-for-expect";
 import { App } from "../App";
 import { logError } from "../src/logger";
 import { minutesToMilliseconds } from "../src/minutes-to-milliseconds";
+import { millisecondsToTime } from "../src/video-player/components/utils";
 import { RESIZE_MODES } from "../src/video-player/hooks/use-paired-video-players";
 import { mockAdMobInterstitial } from "./mocks/mock-ad-mob";
 import { mockDocumentPicker } from "./mocks/mock-document-picker";
@@ -23,14 +19,15 @@ import { goToErrorViewAfterFailToLoadFromHomePage } from "./scenarios/go-to-erro
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 import { startWatchingVideoFromUpperControlBar } from "./scenarios/start-watching-video-from-the upper-control-bar";
 import {
+  asyncPressEvent,
   asyncRender,
   buttonProps,
   enableAllErrorLogs,
   getButtonByChildTestId,
   getButtonByText,
   silenceAllErrorLogs,
+  timeBarProps,
   videoPlayerProps,
-  asyncPressEvent,
 } from "./test-utils";
 
 describe("App", () => {
@@ -1479,9 +1476,14 @@ describe("App", () => {
       enableAllErrorLogs();
     }, 10_000);
 
-    it.skip("can update the current position by dragging the timebar", async () => {
+    it("can update the current position by dragging the timebar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+      }));
 
       const screen = await asyncRender(<App />);
 
@@ -1492,13 +1494,73 @@ describe("App", () => {
         getInterstitialDidCloseCallback,
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
-      console.log(
-        "🚀 ~ file: App.test.js ~ line 1492 ~ it ~ timeBar.props",
-        timeBar.props
+      // Pause the video to ensure the position is controlled by the timebar
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "pauseIcon"
+        )
       );
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const props = timeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      );
+
+      const onSeekStart = props.onSlidingStart;
+      const onSeekChange = props.onValueChange;
+      const onSeekComplete = props.onSlidingComplete;
+
+      const seekStartPosition = 10_000;
+
+      // start seeking for the new video position
+      await act(async () => onSeekStart(seekStartPosition));
+
+      // Should not update the videos position until finished seeking
+      expect(mocks.setPosition).not.toHaveBeenCalled();
+      // Should update the visual time to respond to the user
+      expect(within(lowerControlBar).getByText("00:10")).toBeTruthy();
+
+      const dragBarPositions = new Array(100)
+        .fill(null)
+        .map((_, index) => seekStartPosition + (index + 1) * 1_000);
+
+      // Drag the timebar
+      for (const newPosition of dragBarPositions) {
+        await act(async () => onSeekChange(newPosition));
+        // Should still not update the videos position until finished seeking
+        expect(mocks.setPosition).not.toHaveBeenCalled();
+        // Should update the visual time to respond to the user
+        expect(
+          within(lowerControlBar).getByText(millisecondsToTime(newPosition))
+        ).toBeTruthy();
+      }
+
+      // Finish seeking and end on the last position
+      await act(async () => onSeekComplete(last(dragBarPositions)));
+
+      // Updates the video position now seeking is complete
+      expect(mocks.setPosition).toHaveBeenCalledTimes(1);
+      expect(mocks.setPosition).toHaveBeenCalledWith(last(dragBarPositions));
+      // Visual time is now where the user dragged it to
+      expect(within(lowerControlBar).getByText("01:50")).toBeTruthy();
     });
+
+    it.todo(
+      "pauses the video while seeking with the timebar if it was playing in the beginning"
+    );
+
+    it.todo(
+      "does not pause the video while seeking with the timebar if it was already paused"
+    );
+
+    it.todo(
+      "resumes the video after seeking with the timebar if it was playing in the beginning"
+    );
+
+    it.todo(
+      "does not resume the video after seeking with the timebar if it was already paused"
+    );
 
     it.todo(
       "can resync the players when the primary player is slightly out of sync (out of sync by less than 100 milliseconds)"
