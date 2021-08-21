@@ -39,17 +39,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
 
   const selectVideo = useSelectVideo(videoPlayer);
 
-  const [timeToSkipTo, setTimeToSkipTo] = useState(null);
-  useEffect(() => {
-    if (!isNil(timeToSkipTo)) {
-      const timeout = setTimeout(async () => {
-        await videoPlayer.setPosition(timeToSkipTo);
-        await videoPlayer.play();
-        setTimeToSkipTo(null);
-      }, 500);
-      return () => clearTimeout(timeout);
-    }
-  }, [timeToSkipTo, videoPlayer.videoDuration]);
+  const setTimeToSkipTo = useSkipTime(videoPlayer);
 
   return (
     <Animated.View
@@ -218,6 +208,22 @@ const UpperControlBar = ({
       />
     </ControlBar>
   );
+};
+
+const useSkipTime = (videoPlayer) => {
+  const [timeToSkipTo, setTimeToSkipTo] = useState(null);
+  useEffect(() => {
+    if (!isNil(timeToSkipTo)) {
+      const timeout = setTimeout(async () => {
+        await videoPlayer.setPosition(timeToSkipTo);
+        await videoPlayer.play();
+        setTimeToSkipTo(null);
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [timeToSkipTo, videoPlayer.setPosition, videoPlayer.play]);
+
+  return setTimeToSkipTo;
 };
 
 const SideControlBar = ({

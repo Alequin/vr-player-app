@@ -37,7 +37,7 @@ export const usePairedVideosPlayers = () => {
   const [errorLoadingVideo, setErrorLoadingVideo] = useState(false);
 
   const [currentVideoPositionInMillis, setCurrentVideoPositionInMillis] =
-    useState(null);
+    useState(0);
 
   const [videoDuration, setVideoDuration] = useState(null);
 

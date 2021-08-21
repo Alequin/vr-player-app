@@ -30,7 +30,7 @@ export const videoPlayerProps = (videoPlayerComponent) =>
 export const buttonProps = (buttonComponent) =>
   buttonComponent.parent.parent.parent.parent.props;
 
-export const timeBarProps = (timeBarComponent) =>
+export const getTimeBarProps = (timeBarComponent) =>
   timeBarComponent.parent.parent.props;
 
 // TODO silencing warning logs is not the best. Review for a better solution

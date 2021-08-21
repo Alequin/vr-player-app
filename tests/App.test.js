@@ -26,7 +26,7 @@ import {
   getButtonByChildTestId,
   getButtonByText,
   silenceAllErrorLogs,
-  timeBarProps,
+  getTimeBarProps,
   videoPlayerProps,
 } from "./test-utils";
 
@@ -1441,12 +1441,13 @@ describe("App", () => {
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
 
       silenceAllErrorLogs();
 
       // Confirm the start position is 0
-      expect(timeBar.props.value).toBe(0);
+      expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+        0
+      );
 
       // Move the position forward by 10 seconds
       const forwardSidebarButton = getButtonByChildTestId(
@@ -1457,7 +1458,9 @@ describe("App", () => {
 
       await waitForExpect(async () => {
         expect(mocks.setPosition).toHaveBeenCalledWith(10_000);
-        expect(timeBar.props.value).toBe(10_000);
+        expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+          10_000
+        );
         expect(within(lowerControlBar).getByText("00:10")).toBeTruthy();
       });
 
@@ -1469,7 +1472,9 @@ describe("App", () => {
       await asyncPressEvent(replaySidebarButton);
       await waitForExpect(async () => {
         expect(mocks.setPosition).toHaveBeenCalledWith(0);
-        expect(timeBar.props.value).toBe(0);
+        expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+          0
+        );
         expect(within(lowerControlBar).getByText("00:00")).toBeTruthy();
       });
 
@@ -1503,7 +1508,7 @@ describe("App", () => {
       );
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
-      const props = timeBarProps(
+      const props = getTimeBarProps(
         within(lowerControlBar).getByTestId("timeBar")
       );
 
