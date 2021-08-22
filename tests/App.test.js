@@ -5,6 +5,7 @@ import { AdMobInterstitial } from "expo-ads-admob";
 import * as DocumentPicker from "expo-document-picker";
 import { last } from "lodash";
 import React from "React";
+import { Alert } from "react-native";
 import waitForExpect from "wait-for-expect";
 import { App } from "../App";
 import { delay } from "../src/delay";
@@ -19,6 +20,7 @@ import {
 } from "../src/video-player/hooks/resync-videos";
 import { RESIZE_MODES } from "../src/video-player/hooks/use-paired-video-players";
 import { mockAdMobInterstitial, mockAdMobRewarded } from "./mocks/mock-ad-mob";
+import { mockAdsAreDisabled } from "./mocks/mock-ads-are-disabled";
 import { mockDocumentPicker } from "./mocks/mock-document-picker";
 import { mockLogError } from "./mocks/mock-logger";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
@@ -173,12 +175,7 @@ describe("App", () => {
     });
 
     it("Hide the banner ad on the home view if ads are disabled", async () => {
-      const disableAdsTime = new Date();
-      disableAdsTime.setMinutes(disableAdsTime.getMinutes() - 10);
-      jest
-        .spyOn(asyncStorage.adsDisabledTime, "load")
-        .mockResolvedValue(disableAdsTime.getTime());
-
+      mockAdsAreDisabled();
       const screen = await asyncRender(<App />);
 
       // Confirm the current view
@@ -258,11 +255,7 @@ describe("App", () => {
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
-      const disableAdsTime = new Date();
-      disableAdsTime.setMinutes(disableAdsTime.getMinutes() - 10);
-      jest
-        .spyOn(asyncStorage.adsDisabledTime, "load")
-        .mockResolvedValue(disableAdsTime.getTime());
+      mockAdsAreDisabled();
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -515,11 +508,7 @@ describe("App", () => {
       const { mocks } = mockUseVideoPlayerRefs();
       mockAdMobInterstitial();
 
-      const disableAdsTime = new Date();
-      disableAdsTime.setMinutes(disableAdsTime.getMinutes() - 10);
-      jest
-        .spyOn(asyncStorage.adsDisabledTime, "load")
-        .mockResolvedValue(disableAdsTime.getTime());
+      mockAdsAreDisabled();
 
       const screen = await asyncRender(<App />);
 
@@ -964,11 +953,7 @@ describe("App", () => {
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
 
-      const disableAdsTime = new Date();
-      disableAdsTime.setMinutes(disableAdsTime.getMinutes() - 10);
-      jest
-        .spyOn(asyncStorage.adsDisabledTime, "load")
-        .mockResolvedValue(disableAdsTime.getTime());
+      mockAdsAreDisabled();
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -1194,11 +1179,7 @@ describe("App", () => {
     it("Hide the banner ad on the error view if ads are disabled", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
 
-      const disableAdsTime = new Date();
-      disableAdsTime.setMinutes(disableAdsTime.getMinutes() - 10);
-      jest
-        .spyOn(asyncStorage.adsDisabledTime, "load")
-        .mockResolvedValue(disableAdsTime.getTime());
+      mockAdsAreDisabled();
 
       const screen = await asyncRender(<App />);
 
@@ -2454,7 +2435,29 @@ describe("App", () => {
       expect(buyTheAppButton).toBeTruthy();
     });
 
-    it("Disables all lower bar controls while on the home page", async () => {
+    it("shows a different message on the disable ads button when ads are already disabled", async () => {
+      mockAdsAreDisabled();
+
+      const screen = await asyncRender(<App />);
+
+      const disableAdsButton = getButtonByText(
+        within(screen.getByTestId("homeView")),
+        "Disable ads"
+      );
+      expect(disableAdsButton).toBeTruthy();
+
+      await asyncPressEvent(disableAdsButton);
+
+      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+
+      const disableAsRewardButton = getButtonByText(
+        within(screen.getByTestId("disableAdsView")),
+        "Ads are already disabled. Add more time by watching another short ad"
+      );
+      expect(disableAsRewardButton).toBeTruthy();
+    });
+
+    it("Disables all lower bar controls while on the disable ads view", async () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
@@ -2495,7 +2498,7 @@ describe("App", () => {
       expect(timeBar.props.disabled).toBeTruthy();
     });
 
-    it("Disables all side bar controls while on the home page", async () => {
+    it("Disables all side bar controls while on the disable ads view", async () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
@@ -2548,11 +2551,7 @@ describe("App", () => {
     });
 
     it("Hide the banner ad on the home view if ads are disabled", async () => {
-      const disableAdsTime = new Date();
-      disableAdsTime.setMinutes(disableAdsTime.getMinutes() - 10);
-      jest
-        .spyOn(asyncStorage.adsDisabledTime, "load")
-        .mockResolvedValue(disableAdsTime.getTime());
+      mockAdsAreDisabled();
 
       const screen = await asyncRender(<App />);
 
@@ -2746,7 +2745,182 @@ describe("App", () => {
       // Check ad banner is not visible
       expect(screen.queryByTestId("bannerAd")).not.toBeTruthy();
     });
+
+    it("shows an error alert if the reward ad fails to load", async () => {
+      const mockRewardAds = mockAdMobRewarded();
+
+      // Errors when an ad is loaded
+      mockRewardAds.requestAdAsync.mockRejectedValue("error requesting ad");
+
+      jest.spyOn(Alert, "alert");
+
+      const screen = await asyncRender(<App />);
+
+      const disableAdsButton = getButtonByText(
+        within(screen.getByTestId("homeView")),
+        "Disable ads"
+      );
+      expect(disableAdsButton).toBeTruthy();
+
+      // Visit the disable ads view
+      await asyncPressEvent(disableAdsButton);
+      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+
+      // Press the button to views ads and disable other ads
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("disableAdsView")),
+          "Watch a short ad and disable all other ads for 20 minutes"
+        )
+      );
+
+      // Confirm the ad does not show
+      expect(mockRewardAds.showAdAsync).not.toHaveBeenCalled();
+
+      // Confirm the error alert is shown
+      expect(Alert.alert).toHaveBeenCalledTimes(1);
+
+      // Confirm alert message is correct
+      expect(Alert.alert.mock.calls[0][0]).toBe("Unable to load advert");
+      expect(Alert.alert.mock.calls[0][1]).toBe(
+        `Sorry, we had trouble loading an advert to show.\n\nAll other ads will be disabled for 2 minutes.\n\nTry again later`
+      );
+    });
+
+    it("shows an error alert if the reward ad fails to show", async () => {
+      const mockRewardAds = mockAdMobRewarded();
+
+      // Errors when an ad is loaded
+      mockRewardAds.showAdAsync.mockRejectedValue("error showing ad");
+
+      jest.spyOn(Alert, "alert");
+
+      const screen = await asyncRender(<App />);
+
+      const disableAdsButton = getButtonByText(
+        within(screen.getByTestId("homeView")),
+        "Disable ads"
+      );
+      expect(disableAdsButton).toBeTruthy();
+
+      // Visit the disable ads view
+      await asyncPressEvent(disableAdsButton);
+      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+
+      // Press the button to views ads and disable other ads
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("disableAdsView")),
+          "Watch a short ad and disable all other ads for 20 minutes"
+        )
+      );
+
+      // Confirm the error alert is shown
+      expect(Alert.alert).toHaveBeenCalledTimes(1);
+
+      // Confirm alert message is correct
+      expect(Alert.alert.mock.calls[0][0]).toBe("Unable to load advert");
+      expect(Alert.alert.mock.calls[0][1]).toBe(
+        `Sorry, we had trouble loading an advert to show.\n\nAll other ads will be disabled for 2 minutes.\n\nTry again later`
+      );
+    });
+
+    it("disables ads for 2 minutes when the the reward ad error alert is dismissed", async () => {
+      const mockRewardAds = mockAdMobRewarded();
+
+      // Errors when an ad is loaded
+      mockRewardAds.requestAdAsync.mockRejectedValue("error requesting ad");
+
+      jest.spyOn(asyncStorage.adsDisabledTime, "save");
+      jest.spyOn(Alert, "alert");
+
+      const screen = await asyncRender(<App />);
+
+      const disableAdsButton = getButtonByText(
+        within(screen.getByTestId("homeView")),
+        "Disable ads"
+      );
+      expect(disableAdsButton).toBeTruthy();
+
+      // Visit the disable ads view
+      await asyncPressEvent(disableAdsButton);
+      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+
+      // Press the button to views ads and disable other ads
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("disableAdsView")),
+          "Watch a short ad and disable all other ads for 20 minutes"
+        )
+      );
+
+      // Confirm the ad does not show
+      expect(mockRewardAds.showAdAsync).not.toHaveBeenCalled();
+
+      // Confirm the error alert is shown
+      expect(Alert.alert).toHaveBeenCalledTimes(1);
+
+      // Fire the alerts dismiss callback
+      const { onPress } = Alert.alert.mock.calls[0][2][0];
+      await act(onPress);
+
+      // Confirm ads were disabled for 2 minutes
+      expect(asyncStorage.adsDisabledTime.save).toHaveBeenCalledTimes(1);
+      expect(
+        asyncStorage.adsDisabledTime.save.mock.calls[0][0].totalDisableTime
+      ).toBe(2 * 60 * 1000); // two minutes
+    });
+
+    it("shows an error alert with a different message when there is an issue showing a reward ad but ads are already disabled", async () => {
+      const mockRewardAds = mockAdMobRewarded();
+
+      // Errors when an ad is loaded
+      mockRewardAds.requestAdAsync.mockRejectedValue("error requesting ad");
+
+      mockAdsAreDisabled();
+      jest.spyOn(asyncStorage.adsDisabledTime, "save");
+      jest.spyOn(Alert, "alert");
+
+      const screen = await asyncRender(<App />);
+
+      const disableAdsButton = getButtonByText(
+        within(screen.getByTestId("homeView")),
+        "Disable ads"
+      );
+      expect(disableAdsButton).toBeTruthy();
+
+      // Visit the disable ads view
+      await asyncPressEvent(disableAdsButton);
+      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+
+      // Press the button to views ads and disable other ads
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("disableAdsView")),
+          "Ads are already disabled. Add more time by watching another short ad"
+        )
+      );
+
+      // Confirm the error alert is shown
+      expect(Alert.alert).toHaveBeenCalledTimes(1);
+
+      // Fire the alerts dismiss callback
+      const { onPress } = Alert.alert.mock.calls[0][2][0];
+      await act(onPress);
+
+      // Confirm alert message is correct
+      expect(Alert.alert.mock.calls[0][0]).toBe("Unable to load advert");
+      expect(Alert.alert.mock.calls[0][1]).toBe(
+        `Sorry, we had trouble loading an advert to show.\n\nAds are already disabled but more time can be added next time an advert can be shown.\n\nTry again later`
+      );
+    });
   });
 
   it.todo("when ads fail to load");
+
+  it.todo("disables ads for 2 minutes when reward ad fails to show");
+
+  it.todo(
+    "does not disable ads 2 minutes when reward ad fails to show if ads are already disabled"
+  );
 });

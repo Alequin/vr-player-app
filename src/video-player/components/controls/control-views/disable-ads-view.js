@@ -1,40 +1,45 @@
 import { AdMobRewarded } from "expo-ads-admob";
-import React, { useEffect, useState } from "react";
-import { View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { Alert, View } from "react-native";
 import { disableAdsRewardId } from "../../../../../secrets.json";
 import { Button } from "../../../../button";
 import { isEnvironmentProduction } from "../../../../environment";
+import { logError } from "../../../../logger";
 import { disableAds, timeAdsAreDisabledFor } from "../../../ads-disable-time";
 import { ControlPageIcon } from "../../control-page-icon";
 import { millisecondsToTime } from "../../utils";
 import { ControlViewText } from "./control-view-text";
 
-export const DisableAdsView = ({
-  onPressSelectVideo,
-  onDisableAds,
-  areAdsDisabled,
-}) => {
+export const DisableAdsView = ({ onDisableAds }) => {
   const [adsDisabledTime, setAdsDisabledTime] = useState(0);
+
+  const areAdsDisabled = adsDisabledTime > 0;
 
   useEffect(() => {
     AdMobRewarded.setAdUnitID(
       isEnvironmentProduction()
         ? disableAdsRewardId
         : "ca-app-pub-3940256099942544/5224354917"
-    ).then(async () => {
-      timeAdsAreDisabledFor().then(setAdsDisabledTime);
+    );
+  }, []);
 
-      AdMobRewarded.addEventListener(
-        "rewardedVideoUserDidEarnReward",
-        async () => {
-          await disableAds();
-          onDisableAds();
-        }
-      );
-      AdMobRewarded.addEventListener("rewardedVideoDidDismiss", async () =>
-        loadRewardAd()
-      );
-    });
+  useEffect(() => {
+    timeAdsAreDisabledFor().then(setAdsDisabledTime);
+  }, []);
+
+  useEffect(() => {
+    AdMobRewarded.addEventListener(
+      "rewardedVideoUserDidEarnReward",
+      async () => {
+        await disableAds({ minutesToDisableFor: 20 });
+        setAdsDisabledTime(await timeAdsAreDisabledFor());
+        onDisableAds();
+      }
+    );
+
+    AdMobRewarded.addEventListener("rewardedVideoDidDismiss", async () =>
+      loadRewardAd()
+    );
 
     return () => AdMobRewarded.removeAllListeners();
   }, []);
@@ -47,6 +52,11 @@ export const DisableAdsView = ({
       return () => clearInterval(interval);
     }
   }, [areAdsDisabled]);
+
+  const showFailedRewardAdAlert = useFailedRewardAdAlert(
+    areAdsDisabled,
+    setAdsDisabledTime
+  );
 
   return (
     <View
@@ -70,8 +80,13 @@ export const DisableAdsView = ({
             height: "100%",
           }}
           onPress={async () => {
-            await loadRewardAd();
-            await AdMobRewarded.showAdAsync();
+            try {
+              await loadRewardAd();
+              await AdMobRewarded.showAdAsync();
+            } catch (error) {
+              logError(error);
+              showFailedRewardAdAlert();
+            }
           }}
         >
           <ControlPageIcon name="hourglass" size={38} />
@@ -110,7 +125,6 @@ export const DisableAdsView = ({
             width: "40%",
             height: "100%",
           }}
-          onPress={onPressSelectVideo}
         >
           <ControlPageIcon name="googlePlay" size={38} />
           <ControlViewText>
@@ -125,4 +139,30 @@ export const DisableAdsView = ({
 const loadRewardAd = async () => {
   const isAdLoaded = await AdMobRewarded.getIsReadyAsync();
   if (!isAdLoaded) await AdMobRewarded.requestAdAsync();
+};
+
+const useFailedRewardAdAlert = (areAdsDisabled, setAdsDisabledTime) => {
+  return useCallback(() => {
+    const disableAdsMessage = areAdsDisabled
+      ? "Ads are already disabled but more time can be added next time an advert can be shown"
+      : "All other ads will be disabled for 2 minutes";
+
+    return Alert.alert(
+      "Unable to load advert",
+      `Sorry, we had trouble loading an advert to show.\n\n${disableAdsMessage}.\n\nTry again later`,
+      [
+        {
+          text: "OK",
+          onPress: async () => {
+            await disableAds({
+              minutesToDisableFor: 2,
+              wasDisabledDueToError: true,
+            });
+            setAdsDisabledTime(await timeAdsAreDisabledFor());
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  }, [areAdsDisabled, setAdsDisabledTime]);
 };

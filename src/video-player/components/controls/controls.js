@@ -95,11 +95,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           )}
           {shouldShowDisableAdsView && (
             <DisableAdsView
-              areAdsDisabled={areAdsDisabled}
-              onDisableAds={async () => {
-                setShowDisableAdsView(false);
-                setAreAdsDisabled(true);
-              }}
+              onDisableAds={async () => setAreAdsDisabled(true)}
             />
           )}
           {!areAdsDisabled && !videoPlayer.hasVideo && <AdBanner />}

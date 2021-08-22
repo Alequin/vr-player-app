@@ -1,22 +1,29 @@
 import { minutesToMilliseconds } from "../minutes-to-milliseconds";
 import * as asyncStorage from "./async-storage";
 
-const TOTAL_TIME_TO_DISABLE_ADS_FOR = minutesToMilliseconds(20);
-
 export const timeAdsAreDisabledFor = async () => {
-  const disabledTime = await asyncStorage.adsDisabledTime.load();
-  if (!disabledTime) return 0;
+  const disabledDetails = await asyncStorage.adsDisabledTime.load();
+  if (!disabledDetails) return 0;
+  const { disableTime, totalDisableTime } = disabledDetails;
+  const timeAdHaveBeenDisabledFor = Date.now() - disableTime;
 
-  const currentTime = Date.now();
-  return TOTAL_TIME_TO_DISABLE_ADS_FOR - (currentTime - disabledTime);
+  return Math.max(totalDisableTime - timeAdHaveBeenDisabledFor, 0);
 };
 
 export const checkIfAdsAreDisabled = async () =>
   (await timeAdsAreDisabledFor()) > 0;
 
-export const disableAds = async () => {
+export const disableAds = async ({
+  minutesToDisableFor,
+  wasDisabledDueToError,
+}) => {
   const remainingDisabledTime = await timeAdsAreDisabledFor();
-  return asyncStorage.adsDisabledTime.save(
-    remainingDisabledTime > 0 ? Date.now() + remainingDisabledTime : Date.now()
-  );
+  // Do not disable ads more than once when they are being disabled due to an error
+  if (wasDisabledDueToError && remainingDisabledTime > 0) return;
+
+  return asyncStorage.adsDisabledTime.save({
+    disableTime: Date.now(),
+    totalDisableTime:
+      remainingDisabledTime + minutesToMilliseconds(minutesToDisableFor),
+  });
 };
