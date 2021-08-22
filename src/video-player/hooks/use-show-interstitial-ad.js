@@ -4,6 +4,7 @@ import { isEnvironmentProduction } from "../../environment";
 import { logError } from "../../logger";
 import { checkIfAdsAreDisabled } from "../ads-disable-time";
 import { hasEnoughTimePastToShowInterstitialAd } from "./has-enough-time-past-to-show-interstitial-ad";
+import { videoSelectAdId } from "../../../secrets.json";
 
 export const useShowInterstitialAd = () => {
   const [isAdVisible, setIsAdVisible] = useState(false);
