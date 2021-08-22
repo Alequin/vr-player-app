@@ -132,17 +132,15 @@ export const usePairedVideosPlayers = () => {
     }
   }, [videoPlayer.getStatus, isPlaying, hasVideo, setPosition, pause, play]);
 
-  const showInterstitialAd = useShowInterstitialAd({
-    onFinishShowingAd: useCallback(async () => {
-      if (!hasVideo) return;
-      setIsLoading(true);
-      await play();
-    }, [hasVideo, setPosition, play, videoPlayer.getStatus]),
-  });
+  const { showInterstitialAd, isInterstitialAdVisible } =
+    useShowInterstitialAd();
+
+  useEffect(() => {
+    if (hasVideo && !isInterstitialAdVisible && isLoading) play();
+  }, [hasVideo, isInterstitialAdVisible, isLoading, play]);
 
   return {
     hasVideo,
-    isLoading,
     isPlaying,
     isNewLoop,
     currentVideoPositionInMillis,
@@ -173,6 +171,7 @@ export const usePairedVideosPlayers = () => {
               isMuted: true,
             },
           });
+          setIsLoading(true);
 
           const {
             primaryStatus: { durationMillis },
@@ -188,7 +187,6 @@ export const usePairedVideosPlayers = () => {
           setHasVideo(false);
           setVideoDuration(0);
         } finally {
-          setIsPlaying(false);
           setCurrentVideoPositionInMillis(0);
         }
       },

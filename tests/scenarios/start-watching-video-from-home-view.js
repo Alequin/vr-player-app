@@ -25,7 +25,7 @@ export const startWatchingVideoFromHomeView = async ({
 
   // Fire callback to start playing the video
   const fireDidCloseCallback = getInterstitialDidCloseCallback();
-  await act(fireDidCloseCallback);
+  act(fireDidCloseCallback);
 
   // confirm video is loaded and starts playing
   expect(videoPlayerMocks.load).toHaveBeenCalledTimes(1);

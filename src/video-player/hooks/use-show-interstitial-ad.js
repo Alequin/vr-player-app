@@ -5,7 +5,8 @@ import { logError } from "../../logger";
 import { checkIfAdsAreDisabled } from "../ads-disable-time";
 import { hasEnoughTimePastToShowInterstitialAd } from "./has-enough-time-past-to-show-interstitial-ad";
 
-export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
+export const useShowInterstitialAd = () => {
+  const [isAdVisible, setIsAdVisible] = useState(false);
   const [lastTimeAdWasShows, setLastTimeAdWasShown] = useState(0);
 
   useEffect(() => {
@@ -22,9 +23,9 @@ export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
   }, []);
 
   useEffect(() => {
-    AdMobInterstitial.addEventListener("interstitialDidClose", async () => {
-      await onFinishShowingAd();
-    });
+    AdMobInterstitial.addEventListener("interstitialDidClose", () =>
+      setIsAdVisible(false)
+    );
 
     AdMobInterstitial.addEventListener(
       "interstitialDidFailToLoad",
@@ -44,40 +45,39 @@ export const useShowInterstitialAd = ({ onFinishShowingAd }) => {
     );
 
     return () => AdMobInterstitial.removeAllListeners();
-  }, [onFinishShowingAd]);
+  }, []);
 
-  return useCallback(async () => {
-    // call event if no ad is shown
-    const areAdsDisabled = await checkIfAdsAreDisabled();
+  return {
+    showInterstitialAd: useCallback(async () => {
+      // call event if no ad is shown
+      const areAdsDisabled = await checkIfAdsAreDisabled();
 
-    if (
-      areAdsDisabled ||
-      !hasEnoughTimePastToShowInterstitialAd(lastTimeAdWasShows)
-    ) {
-      return await onFinishShowingAd();
-    }
-
-    try {
-      const hasAdReadyToShow = await AdMobInterstitial.getIsReadyAsync();
-      if (hasAdReadyToShow) {
-        await AdMobInterstitial.showAdAsync();
-        setLastTimeAdWasShown(Date.now());
-      } else {
-        // call event if no ad is shown
-        await onFinishShowingAd();
+      if (
+        areAdsDisabled ||
+        !hasEnoughTimePastToShowInterstitialAd(lastTimeAdWasShows)
+      ) {
+        return;
       }
-    } catch (error) {
-      // Swallow error. A failure to show an ad should not interrupt the user
-      logError(error);
-      // call event if there is an issue showing the ad
-      await onFinishShowingAd();
-    }
 
-    try {
-      await AdMobInterstitial.requestAdAsync();
-    } catch (error) {
-      // Swallow error. A failure to request the next ad should not interrupt the user
-      logError(error);
-    }
-  }, [lastTimeAdWasShows, onFinishShowingAd]);
+      try {
+        const hasAdReadyToShow = await AdMobInterstitial.getIsReadyAsync();
+        if (hasAdReadyToShow) {
+          await AdMobInterstitial.showAdAsync();
+          setLastTimeAdWasShown(Date.now());
+          setIsAdVisible(true);
+        }
+      } catch (error) {
+        // Swallow error. A failure to show an ad should not interrupt the user
+        logError(error);
+      }
+
+      try {
+        await AdMobInterstitial.requestAdAsync();
+      } catch (error) {
+        // Swallow error. A failure to request the next ad should not interrupt the user
+        logError(error);
+      }
+    }, [lastTimeAdWasShows]),
+    isInterstitialAdVisible: isAdVisible,
+  };
 };

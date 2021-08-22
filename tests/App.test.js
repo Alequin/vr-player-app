@@ -513,7 +513,7 @@ describe("App", () => {
 
     it("Does not show an interstitial ad when opening a video if ads are disabled", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockAdMobInterstitial();
 
       const disableAdsTime = new Date();
       disableAdsTime.setMinutes(disableAdsTime.getMinutes() - 10);
@@ -526,7 +526,6 @@ describe("App", () => {
       await startWatchingVideoFromUpperControlBar({
         screen,
         videoPlayerMocks: mocks,
-        getInterstitialDidCloseCallback,
       });
 
       // Shows an ad
@@ -910,7 +909,7 @@ describe("App", () => {
 
       // Fire callback to start playing the video
       const fireDidCloseCallback = getInterstitialDidCloseCallback();
-      await act(fireDidCloseCallback);
+      act(fireDidCloseCallback);
 
       // confirm video is loaded and starts playing
       expect(mocks.load).toHaveBeenCalledTimes(1);
@@ -1139,7 +1138,7 @@ describe("App", () => {
 
       // Fire callback to start playing the video
       const fireDidCloseCallback = getInterstitialDidCloseCallback();
-      await act(fireDidCloseCallback);
+      act(fireDidCloseCallback);
 
       // confirm video is loaded and starts playing
       expect(mocks.load).toHaveBeenCalledTimes(1);
@@ -2281,7 +2280,7 @@ describe("App", () => {
       });
     });
 
-    it("does not start playing the video again when using the side bar replay button and the video was paused", async () => {
+    it("does not start playing the video again when using the side bar replay button if the video was paused", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
