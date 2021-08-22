@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 import { disableAdsRewardId } from "../../../../../secrets.json";
 import { Button } from "../../../../button";
+import { isEnvironmentProduction } from "../../../../environment";
 import { disableAds, timeAdsAreDisabledFor } from "../../../ads-disable-time";
 import { ControlPageIcon } from "../../control-page-icon";
 import { millisecondsToTime } from "../../utils";
@@ -16,7 +17,11 @@ export const DisableAdsView = ({
   const [adsDisabledTime, setAdsDisabledTime] = useState(0);
 
   useEffect(() => {
-    AdMobRewarded.setAdUnitID(disableAdsRewardId).then(async () => {
+    AdMobRewarded.setAdUnitID(
+      isEnvironmentProduction()
+        ? disableAdsRewardId
+        : "ca-app-pub-3940256099942544/5224354917"
+    ).then(async () => {
       timeAdsAreDisabledFor().then(setAdsDisabledTime);
 
       AdMobRewarded.addEventListener(
