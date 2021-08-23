@@ -14,7 +14,7 @@ import { AdBanner } from "./control-views/ad-banner";
 import { DisableAdsView } from "./control-views/disable-ads-view";
 import { ErrorView } from "./control-views/error-view";
 import { HomeView } from "./control-views/home-view";
-import { useCanShowAds } from "./hooks/use-can-show-ads";
+import { useCanShowAds } from "../../hooks/use-can-show-ads";
 import { useShowControls } from "./hooks/use-show-controls";
 import { useSkipTime } from "./hooks/use-time-skip";
 import { useViewToShow } from "./hooks/use-view-to-show";

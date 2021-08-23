@@ -4,6 +4,7 @@ import { View } from "react-native";
 import { Button } from "../../../../button";
 import { ControlPageIcon } from "../../control-page-icon";
 import { ControlViewText } from "./control-view-text";
+import { isPayedVersion } from "../../../../../secrets.json";
 
 export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
   return (
@@ -28,13 +29,15 @@ export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
           <ControlPageIcon name="folderVideo" size={38} />
           <ControlViewText>Select a video to watch</ControlViewText>
         </Button>
-        <Button
-          style={{ alignItems: "center", margin: 20, width: "40%" }}
-          onPress={onPressDisableAds}
-        >
-          <ControlPageIcon name="cancel" size={38} />
-          <ControlViewText>Disable ads</ControlViewText>
-        </Button>
+        {!isPayedVersion && (
+          <Button
+            style={{ alignItems: "center", margin: 20, width: "40%" }}
+            onPress={onPressDisableAds}
+          >
+            <ControlPageIcon name="cancel" size={38} />
+            <ControlViewText>Disable ads</ControlViewText>
+          </Button>
+        )}
       </View>
     </View>
   );

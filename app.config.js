@@ -1,9 +1,9 @@
-import { googleMobileAdsAppId } from "./secrets.json";
+import { googleMobileAdsAppId, isPayedVersion } from "./secrets.json";
 const version = 1;
 
 export default {
   name: "vr-player",
-  slug: "vr-player",
+  slug: isPayedVersion ? "alequin-vr-player" : "alequin-vr-player-paid",
   version: `${version}.0.0`,
   orientation: "landscape",
   icon: "./assets/images/icon.png",

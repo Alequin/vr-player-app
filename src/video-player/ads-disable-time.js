@@ -1,7 +1,10 @@
 import { minutesToMilliseconds } from "../minutes-to-milliseconds";
 import * as asyncStorage from "./async-storage";
+import { isPayedVersion } from "../../secrets.json";
 
 export const timeAdsAreDisabledFor = async () => {
+  if (isPayedVersion) return Number.MAX_SAFE_INTEGER;
+
   const disabledDetails = await asyncStorage.adsDisabledTime.load();
   if (!disabledDetails) return 0;
   const { disableTime, totalDisableTime } = disabledDetails;
@@ -11,7 +14,7 @@ export const timeAdsAreDisabledFor = async () => {
 };
 
 export const checkIfAdsAreDisabled = async () =>
-  (await timeAdsAreDisabledFor()) > 0;
+  isPayedVersion || (await timeAdsAreDisabledFor()) > 0;
 
 export const disableAds = async ({
   minutesToDisableFor,

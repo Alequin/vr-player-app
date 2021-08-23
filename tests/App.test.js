@@ -1,4 +1,11 @@
 jest.mock("react-native/Libraries/Animated/src/NativeAnimatedHelper");
+jest.mock("../secrets.json", () => ({
+  bannerAdId: "ca-app-pub-5186020037332344/1196513783",
+  videoSelectAdId: "ca-app-pub-5186020037332344/1879040064",
+  disableAdsRewardId: "ca-app-pub-5186020037332344/3000550049",
+  googleMobileAdsAppId: "ca-app-pub-5186020037332344~5459192428",
+  isPayedVersion: false,
+}));
 
 import { act, cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
@@ -2915,12 +2922,4 @@ describe("App", () => {
       );
     });
   });
-
-  it.todo("when ads fail to load");
-
-  it.todo("disables ads for 2 minutes when reward ad fails to show");
-
-  it.todo(
-    "does not disable ads 2 minutes when reward ad fails to show if ads are already disabled"
-  );
 });

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { checkIfAdsAreDisabled } from "../../../ads-disable-time";
+import { checkIfAdsAreDisabled } from "../ads-disable-time";
+import { isPayedVersion } from "../../../secrets.json";
 
 export const useCanShowAds = () => {
   const [areAdsDisabled, setAreAdsDisabled] = useState(false);
@@ -11,7 +12,7 @@ export const useCanShowAds = () => {
 
   useEffect(() => {
     // If ads are disabled check every 30 seconds if they are now enabled
-    if (areAdsDisabled) {
+    if (areAdsDisabled && !isPayedVersion) {
       const interval = setInterval(() => {
         checkIfAdsAreDisabled().then((areDisabled) => {
           if (areDisabled) return;
