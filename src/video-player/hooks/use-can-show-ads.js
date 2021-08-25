@@ -3,7 +3,7 @@ import { checkIfAdsAreDisabled } from "../ads-disable-time";
 import { isPayedVersion } from "../../../secrets.json";
 
 export const useCanShowAds = () => {
-  const [areAdsDisabled, setAreAdsDisabled] = useState(false);
+  const [areAdsDisabled, setAreAdsDisabled] = useState(true);
 
   useEffect(() => {
     // Check if ads are disabled on mount

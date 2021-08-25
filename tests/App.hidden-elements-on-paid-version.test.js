@@ -27,9 +27,6 @@ describe("Paid version of the app ", () => {
   beforeEach(() => {
     jest.spyOn(asyncStorage.playerMode, "load").mockResolvedValue(undefined);
     jest.spyOn(asyncStorage.resizeMode, "load").mockResolvedValue(undefined);
-    jest
-      .spyOn(asyncStorage.adsDisabledTime, "load")
-      .mockResolvedValue(undefined);
     jest.clearAllMocks();
   });
 
@@ -96,7 +93,7 @@ describe("Paid version of the app ", () => {
 
       const screen = await asyncRender(<App />);
 
-      // Does not sets the unit ad id
+      // Does not set the unit ad id
       expect(AdMobInterstitial.setAdUnitID).not.toHaveBeenCalled();
 
       // Does not request an ad
