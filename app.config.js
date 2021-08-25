@@ -2,8 +2,8 @@ import { googleMobileAdsAppId, isPayedVersion } from "./secrets.json";
 const version = 1;
 
 export default {
-  name: "vr-player",
-  slug: isPayedVersion ? "alequin-vr-player" : "alequin-vr-player-paid",
+  name: "Watch In VR",
+  slug: isPayedVersion ? "alequin-watch-in-vr" : "alequin-watch-in-vr",
   version: `${version}.0.0`,
   orientation: "landscape",
   icon: "./assets/images/icon.png",
@@ -13,7 +13,7 @@ export default {
   },
   assetBundlePatterns: ["**/*"],
   android: {
-    package: "com.just_for_fun.vr_player",
+    package: "com.just_for_fun.watch_in_vr",
     permissions: [], // Use minimum permissions (https://docs.expo.dev/versions/latest/config/app/#permissions)
     versionCode: version,
     adaptiveIcon: {
