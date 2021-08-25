@@ -12,3 +12,7 @@ const newStorageItem = (storageKey) => ({
 });
 
 export const adsDisabledTime = newStorageItem("AD_DISABLE_TIME");
+
+export const playerMode = newStorageItem("PLAYER_MODE");
+
+export const resizeMode = newStorageItem("RESIZE_MODE");

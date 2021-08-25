@@ -1,4 +1,4 @@
-import { MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
+import { PLAYER_MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
 
 export const millisecondsToTime = (milliseconds) => {
   const totalSeconds = Math.floor(milliseconds / 1000);
@@ -25,8 +25,8 @@ const asTimeUnit = (number) => {
 };
 
 export const togglePlayerModeButtonIconName = (videoPlayerMode) => {
-  if (videoPlayerMode === MODES.VR_VIDEO) return "screenDesktop";
-  if (videoPlayerMode === MODES.NORMAL_VIDEO) return "vrHeadset";
+  if (videoPlayerMode === PLAYER_MODES.VR_VIDEO) return "screenDesktop";
+  if (videoPlayerMode === PLAYER_MODES.NORMAL_VIDEO) return "vrHeadset";
 };
 
 export const toggleResizeModeButtonIconName = (videoResizeMode) => {

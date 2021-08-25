@@ -2,11 +2,12 @@ import { Video } from "expo-av";
 import { isNil } from "lodash";
 import { useCallback, useEffect, useState } from "react";
 import { logError } from "../../logger";
+import { playerMode, resizeMode } from "../async-storage";
 import { arePlayerInSync, resyncVideos } from "./resync-videos";
 import { useShowInterstitialAd } from "./use-show-interstitial-ad";
 import { useVideoPlayerRefs } from "./use-video-player-refs";
 
-export const MODES = {
+export const PLAYER_MODES = {
   VR_VIDEO: "vr",
   NORMAL_VIDEO: "normal-video",
 };
@@ -26,10 +27,8 @@ const resizeModesToggleOrder = [
 export const usePairedVideosPlayers = () => {
   const videoPlayer = useVideoPlayerRefs();
 
-  const [videoPlayerMode, setVideoPlayerMode] = useState(MODES.VR_VIDEO);
-  const [videoResizeMode, setResizeMode] = useState(
-    RESIZE_MODES.RESIZE_MODE_COVER
-  );
+  const { videoPlayerMode, toggleVideoPlayerMode } = usePlayerMode();
+  const { videoResizeMode, toggleResizeMode } = usePlayerResizeMode();
 
   const [isLoading, setIsLoading] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
@@ -154,8 +153,10 @@ export const usePairedVideosPlayers = () => {
     pause,
     setPosition,
     setDisplayPosition: setCurrentVideoPositionInMillis,
-    clearError: useCallback(() => setErrorLoadingVideo(false), []),
     unloadVideo,
+    toggleVideoPlayerMode,
+    toggleResizeMode,
+    clearError: useCallback(() => setErrorLoadingVideo(false), []),
     loadVideoSource: useCallback(
       async (newFileObject) => {
         if (newFileObject.type === "cancel") return;
@@ -192,29 +193,61 @@ export const usePairedVideosPlayers = () => {
       },
       [unloadVideo, videoPlayer.load, showInterstitialAd]
     ),
-    toggleVideoMode: useCallback(
-      () =>
-        setVideoPlayerMode((currentVideoPlayerMode) =>
-          currentVideoPlayerMode === MODES.VR_VIDEO
-            ? MODES.NORMAL_VIDEO
-            : MODES.VR_VIDEO
-        ),
-      []
-    ),
-    toggleResizeMode: useCallback(
-      () =>
-        setResizeMode((currentResizeMode) => {
-          const currentIndex = resizeModesToggleOrder.findIndex(
-            (mode) => mode === currentResizeMode
-          );
-
-          const nextIndex = currentIndex + 1;
-
-          return resizeModesToggleOrder[
-            nextIndex >= resizeModesToggleOrder.length ? 0 : nextIndex
-          ];
-        }),
-      []
-    ),
   };
+};
+
+const usePlayerMode = () => {
+  const [videoPlayerMode, setVideoPlayerMode] = useState(PLAYER_MODES.VR_VIDEO);
+
+  useEffect(() => {
+    playerMode.load().then((savedPlayerMode) => {
+      if (savedPlayerMode) setVideoPlayerMode(savedPlayerMode);
+    });
+  }, []);
+
+  return {
+    videoPlayerMode,
+    toggleVideoPlayerMode: useCallback(async () => {
+      const nextPlayerMode =
+        videoPlayerMode === PLAYER_MODES.VR_VIDEO
+          ? PLAYER_MODES.NORMAL_VIDEO
+          : PLAYER_MODES.VR_VIDEO;
+
+      setVideoPlayerMode(nextPlayerMode);
+      await playerMode.save(nextPlayerMode);
+    }, [videoPlayerMode]),
+  };
+};
+
+const usePlayerResizeMode = () => {
+  const [videoResizeMode, setResizeMode] = useState(
+    RESIZE_MODES.RESIZE_MODE_COVER
+  );
+
+  useEffect(() => {
+    resizeMode.load().then((savedResizeMode) => {
+      if (savedResizeMode) setResizeMode(savedResizeMode);
+    });
+  }, []);
+
+  return {
+    videoResizeMode,
+    toggleResizeMode: useCallback(async () => {
+      const nextResizeMode = getNextResizeMode(videoResizeMode);
+      setResizeMode(nextResizeMode);
+      await resizeMode.save(nextResizeMode);
+    }, [videoResizeMode]),
+  };
+};
+
+const getNextResizeMode = (currentResizeMode) => {
+  const currentIndex = resizeModesToggleOrder.findIndex(
+    (mode) => mode === currentResizeMode
+  );
+
+  const nextIndex = currentIndex + 1;
+
+  return resizeModesToggleOrder[
+    nextIndex >= resizeModesToggleOrder.length ? 0 : nextIndex
+  ];
 };

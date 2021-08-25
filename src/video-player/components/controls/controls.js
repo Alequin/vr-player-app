@@ -172,8 +172,8 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           if (shouldResume) videoPlayer.play();
           setShouldResume(false);
         }}
-        togglePlayerMode={() => videoPlayer.toggleVideoMode()}
-        togglePlayerResizeMode={() => videoPlayer.toggleResizeMode()}
+        togglePlayerMode={async () => videoPlayer.toggleVideoPlayerMode()}
+        togglePlayerResizeMode={async () => videoPlayer.toggleResizeMode()}
       />
     </Animated.View>
   );

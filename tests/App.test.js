@@ -25,7 +25,10 @@ import {
   EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE,
   MAX_IN_SYNC_MILLISECOND_DIFFERENCE,
 } from "../src/video-player/hooks/resync-videos";
-import { RESIZE_MODES } from "../src/video-player/hooks/use-paired-video-players";
+import {
+  PLAYER_MODES,
+  RESIZE_MODES,
+} from "../src/video-player/hooks/use-paired-video-players";
 import { mockAdMobInterstitial, mockAdMobRewarded } from "./mocks/mock-ad-mob";
 import { mockAdsAreDisabled } from "./mocks/mock-ads-are-disabled";
 import { mockDocumentPicker } from "./mocks/mock-document-picker";
@@ -48,8 +51,12 @@ import {
 
 describe("App", () => {
   beforeEach(() => {
+    jest.spyOn(asyncStorage.playerMode, "load").mockResolvedValue(undefined);
+    jest.spyOn(asyncStorage.resizeMode, "load").mockResolvedValue(undefined);
+    jest
+      .spyOn(asyncStorage.adsDisabledTime, "load")
+      .mockResolvedValue(undefined);
     jest.clearAllMocks();
-    jest.spyOn(asyncStorage.adsDisabledTime, "load").mockReset();
   });
 
   afterEach(() => {
@@ -1390,9 +1397,11 @@ describe("App", () => {
       expect(mocks.pause).toHaveBeenCalledTimes(1);
     });
 
-    it("Can swap between showing two video players and one", async () => {
+    it("Can swap between video player modes and save the selected value", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      jest.spyOn(asyncStorage.playerMode, "save");
 
       const screen = await asyncRender(<App />);
 
@@ -1419,8 +1428,13 @@ describe("App", () => {
         )
       );
 
-      // Confirm video player is showing one player
+      // confirm the change is saved
+      expect(asyncStorage.playerMode.save).toHaveBeenCalledTimes(1);
+      expect(asyncStorage.playerMode.save).toHaveBeenCalledWith(
+        PLAYER_MODES.NORMAL_VIDEO
+      );
 
+      // Confirm video player is showing one player
       expect(
         videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
       ).toBe("100%");
@@ -1436,8 +1450,13 @@ describe("App", () => {
         )
       );
 
-      // Confirm the video player is showing two players again
+      // confirm the change is saved
+      expect(asyncStorage.playerMode.save).toHaveBeenCalledTimes(2);
+      expect(asyncStorage.playerMode.save).toHaveBeenCalledWith(
+        PLAYER_MODES.VR_VIDEO
+      );
 
+      // Confirm the video player is showing two players again
       expect(
         videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
       ).toBe("50%");
@@ -1446,9 +1465,37 @@ describe("App", () => {
       ).toBe("50%");
     });
 
-    it("Can switch video player resize modes", async () => {
+    it("Can load the saved video player mode", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      jest
+        .spyOn(asyncStorage.playerMode, "load")
+        .mockResolvedValue(PLAYER_MODES.NORMAL_VIDEO);
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Confirm video player is showing one player
+      expect(
+        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
+      ).toBe("100%");
+      expect(
+        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).style.width
+      ).toBe("0%");
+    });
+
+    it("Can switch video player resize modes and save the selected value", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      jest.spyOn(asyncStorage.resizeMode, "save");
 
       const screen = await asyncRender(<App />);
 
@@ -1475,6 +1522,12 @@ describe("App", () => {
         )
       );
 
+      // Saves the current resize mode
+      expect(asyncStorage.resizeMode.save).toHaveBeenCalledTimes(1);
+      expect(asyncStorage.resizeMode.save).toHaveBeenCalledWith(
+        RESIZE_MODES.RESIZE_MODE_CONTAIN
+      );
+
       // Confirm the video player resizeMode has updated to contain
       expect(
         videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
@@ -1489,6 +1542,12 @@ describe("App", () => {
           within(screen.getByTestId("lowerControlBar")),
           "fitScreenIcon"
         )
+      );
+
+      // Saves the current resize mode
+      expect(asyncStorage.resizeMode.save).toHaveBeenCalledTimes(2);
+      expect(asyncStorage.resizeMode.save).toHaveBeenCalledWith(
+        RESIZE_MODES.RESIZE_MODE_STRETCH
       );
 
       // Confirm the video player resizeMode has updated to stretch
@@ -1507,6 +1566,12 @@ describe("App", () => {
         )
       );
 
+      // Saves the current resize mode
+      expect(asyncStorage.resizeMode.save).toHaveBeenCalledTimes(3);
+      expect(asyncStorage.resizeMode.save).toHaveBeenCalledWith(
+        RESIZE_MODES.RESIZE_MODE_COVER
+      );
+
       // Confirm the video player resizeMode returns to the default of cover
       expect(
         videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
@@ -1514,6 +1579,32 @@ describe("App", () => {
       expect(
         videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
+    });
+
+    it("Can load the saved resize mode", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      jest
+        .spyOn(asyncStorage.resizeMode, "load")
+        .mockResolvedValue(RESIZE_MODES.RESIZE_MODE_CONTAIN);
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Confirm the video player uses the resizeMode contain
+      expect(
+        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_CONTAIN);
+      expect(
+        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+      ).toBe(RESIZE_MODES.RESIZE_MODE_CONTAIN);
     });
 
     it("Sets the expected video duration on the timebar", async () => {

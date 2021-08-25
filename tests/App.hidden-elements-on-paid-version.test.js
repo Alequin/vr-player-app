@@ -25,8 +25,12 @@ import {
 
 describe("Paid version of the app ", () => {
   beforeEach(() => {
+    jest.spyOn(asyncStorage.playerMode, "load").mockResolvedValue(undefined);
+    jest.spyOn(asyncStorage.resizeMode, "load").mockResolvedValue(undefined);
+    jest
+      .spyOn(asyncStorage.adsDisabledTime, "load")
+      .mockResolvedValue(undefined);
     jest.clearAllMocks();
-    jest.spyOn(asyncStorage.adsDisabledTime, "load").mockReset();
   });
 
   afterEach(() => {
