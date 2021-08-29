@@ -2672,6 +2672,28 @@ describe("App", () => {
       expect(disableAsRewardButton).toBeTruthy();
     });
 
+    it("shows a message about how long ads are disabled for when they are disabled", async () => {
+      mockAdsAreDisabled();
+
+      const screen = await asyncRender(<App />);
+
+      const disableAdsButton = getButtonByText(
+        within(screen.getByTestId("homeView")),
+        "Disable ads"
+      );
+      expect(disableAdsButton).toBeTruthy();
+
+      await asyncPressEvent(disableAdsButton);
+
+      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+
+      expect(
+        within(screen.getByTestId("disableAdsView")).getByText(
+          /^Ads are disabled for \d\d:\d\d$/
+        )
+      ).toBeTruthy();
+    });
+
     it("Disables all lower bar controls while on the disable ads view", async () => {
       const screen = await asyncRender(<App />);
 
@@ -2915,7 +2937,7 @@ describe("App", () => {
       expect(mockRewardAds.showAdAsync).toHaveBeenCalledTimes(1);
     });
 
-    it("records that ads are disabled after the reward is earned from the reward ad", async () => {
+    it("Stops showing the banner ad after ads are disabled", async () => {
       const mockRewardAds = mockAdMobRewarded();
 
       jest.spyOn(asyncStorage.adsDisabledTime, "save");
@@ -2944,8 +2966,10 @@ describe("App", () => {
       const earnRewardCallback = mockRewardAds.getEarnRewardCallback();
       await act(async () => earnRewardCallback());
 
-      // Confirm ads are recorded as disabled
-      expect(asyncStorage.adsDisabledTime.save).toHaveBeenCalledTimes(1);
+      // Check the disable message is shown
+      expect(
+        within(screen.getByTestId("disableAdsView")).queryByTestId("bannerAd")
+      ).not.toBeTruthy();
     });
 
     it("Stops showing the banner ad after ads are disabled", async () => {

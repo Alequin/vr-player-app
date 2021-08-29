@@ -112,9 +112,7 @@ export const DisableAdsView = ({ onDisableAds }) => {
               }}
             >
               <ControlViewText>
-                {`Ads are still disabled for ${millisecondsToTime(
-                  adsDisabledTime
-                )}`}
+                {`Ads are disabled for ${millisecondsToTime(adsDisabledTime)}`}
               </ControlViewText>
             </View>
           )}
