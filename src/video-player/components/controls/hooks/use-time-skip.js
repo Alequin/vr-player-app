@@ -1,4 +1,4 @@
-import { isNil } from "lodash/isNil";
+import isNil from "lodash/isNil";
 import { useCallback, useEffect, useState } from "react";
 
 export const useSkipTime = (videoPlayer) => {
