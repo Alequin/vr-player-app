@@ -230,7 +230,7 @@ describe("App", () => {
 
     it("Opens an interstitial ad when the 'load a video' button is press", async () => {
       mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile();
+      mockDocumentPicker.returnWithASelectedFile("path/to/file");
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -266,7 +266,7 @@ describe("App", () => {
 
     it("Does not open an interstitial ad when the 'load a video' button is press if ads are disabled", async () => {
       mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile();
+      mockDocumentPicker.returnWithASelectedFile("path/to/file");
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -774,7 +774,7 @@ describe("App", () => {
 
       it("Shows the error page when attempting to open a video from the upper control bar but there is an issue loading the new video", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile();
+        mockDocumentPicker.returnWithASelectedFile("path/to/file");
 
         const screen = await asyncRender(<App />);
 
@@ -931,7 +931,7 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockDocumentPicker.returnWithASelectedFile();
+      mockDocumentPicker.returnWithASelectedFile("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
@@ -971,7 +971,7 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockDocumentPicker.returnWithASelectedFile();
+      mockDocumentPicker.returnWithASelectedFile("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
@@ -990,7 +990,7 @@ describe("App", () => {
 
     it("Does not open an interstitial ad when the 'load a video' button is press if ads are disabled", async () => {
       mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile();
+      mockDocumentPicker.returnWithASelectedFile("path/to/file");
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -1156,7 +1156,7 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockDocumentPicker.returnWithASelectedFile();
+      mockDocumentPicker.returnWithASelectedFile("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
@@ -1830,44 +1830,6 @@ describe("App", () => {
       silenceAllErrorLogs();
       await waitForExpect(() => {
         expect(within(lowerControlBar).getByText("9999:00:00")).toBeTruthy();
-      });
-    });
-
-    it("loops the video if it reaches the end", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-
-      const screen = await asyncRender(<App />);
-
-      // Play the video and confirm the correct functions are called
-      await startWatchingVideoFromHomeView({
-        screen,
-        videoPlayerMocks: mocks,
-        getInterstitialDidCloseCallback,
-      });
-
-      // Reset mocks before forcing the loop
-      jest.clearAllMocks();
-
-      // Mock video status as being at the end on one iteration
-      mocks.getStatus.mockResolvedValueOnce({
-        primaryStatus: { positionMillis: 10_000, durationMillis: 9_999 },
-        secondaryStatus: { positionMillis: 10_000, durationMillis: 9_999 },
-      });
-      // Mock video status as being at the start on following iterations
-      mocks.getStatus.mockResolvedValueOnce({
-        primaryStatus: { positionMillis: 0, durationMillis: 9_999 },
-        secondaryStatus: { positionMillis: 0, durationMillis: 9_999 },
-      });
-
-      silenceAllErrorLogs();
-
-      // Confirm the commands to loop the video are called
-      await waitForExpect(() => {
-        expect(mocks.pause).toHaveBeenCalledTimes(1); // pauses the video
-        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
-        expect(mocks.setPosition).toHaveBeenCalledWith(0); // resets the video position to zero
-        expect(mocks.play).toHaveBeenCalledTimes(1); // starts playing the video again
       });
     });
   });

@@ -6,7 +6,7 @@ export const startWatchingVideoFromUpperControlBar = async ({
   screen,
   videoPlayerMocks,
   getInterstitialDidCloseCallback,
-  mockVideoFilepath,
+  mockVideoFilepath = "path/to/file",
 }) => {
   videoPlayerMocks.load.mockClear();
   videoPlayerMocks.play.mockClear();
@@ -30,6 +30,18 @@ export const startWatchingVideoFromUpperControlBar = async ({
 
   // confirm video is loaded and starts playing
   expect(videoPlayerMocks.load).toHaveBeenCalledTimes(1);
+  expect(videoPlayerMocks.load).toHaveBeenCalledWith(
+    { name: mockVideoFilepath, uri: mockVideoFilepath },
+    {
+      primaryOptions: {
+        isLooping: true,
+      },
+      secondaryOptions: {
+        isMuted: true,
+        isLooping: true,
+      },
+    }
+  );
   // getStatus is called to set the videos duration in state
   expect(videoPlayerMocks.getStatus).toHaveBeenCalledTimes(1);
 

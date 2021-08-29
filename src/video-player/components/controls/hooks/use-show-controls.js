@@ -25,10 +25,6 @@ export const useShowControls = (videoPlayer) => {
     }
   }, [areControlsVisible, videoPlayer.isPlaying]);
 
-  useEffect(() => {
-    if (!videoPlayer.isNewLoop && !videoPlayer.isPlaying) showControls();
-  }, [showControls, videoPlayer.isPlaying]);
-
   return {
     fadeAnim,
     showControls,

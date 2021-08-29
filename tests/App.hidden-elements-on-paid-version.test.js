@@ -59,7 +59,7 @@ describe("Paid version of the app ", () => {
   describe("Opening a video from the home view", () => {
     it("Does not open an interstitial ad when the 'load a video' button is press if the app is paid for", async () => {
       mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile();
+      mockDocumentPicker.returnWithASelectedFile("path/to/file");
       mockAdMobInterstitial();
 
       const screen = await asyncRender(<App />);

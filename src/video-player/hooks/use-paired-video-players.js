@@ -33,7 +33,6 @@ export const usePairedVideosPlayers = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isNewLoop, setIsNewLoop] = useState(false);
   const [errorLoadingVideo, setErrorLoadingVideo] = useState(false);
 
   const [currentVideoPositionInMillis, setCurrentVideoPositionInMillis] =
@@ -45,7 +44,6 @@ export const usePairedVideosPlayers = () => {
     if (hasVideo) {
       try {
         setIsLoading(false);
-        setIsNewLoop(false);
         setIsPlaying(true);
         await videoPlayer.play();
       } catch (error) {
@@ -59,7 +57,6 @@ export const usePairedVideosPlayers = () => {
     if (hasVideo) {
       try {
         setIsPlaying(false);
-        setIsNewLoop(false);
         await videoPlayer.pause();
       } catch (error) {
         logError(error);
@@ -115,22 +112,6 @@ export const usePairedVideosPlayers = () => {
             if (!isNil(primaryStatus.positionMillis) && isPlaying) {
               setCurrentVideoPositionInMillis(primaryStatus.positionMillis);
             }
-
-            /*
-              Manually implement looping to:
-                - fix issues with video players falling out of sync 
-                - fix issues with controls staying visible after first loop
-            */
-            const didFinish =
-              primaryStatus.positionMillis &&
-              primaryStatus.durationMillis &&
-              primaryStatus.positionMillis >= primaryStatus.durationMillis;
-            if (didFinish) {
-              setIsNewLoop(true);
-              await pause();
-              await setPosition(0);
-              await play();
-            }
           });
       }, 25);
       return () => clearInterval(interval);
@@ -147,7 +128,6 @@ export const usePairedVideosPlayers = () => {
   return {
     hasVideo,
     isPlaying,
-    isNewLoop,
     currentVideoPositionInMillis,
     videoDuration,
     leftPlayer: videoPlayer.refs.primaryVideo,
@@ -174,8 +154,12 @@ export const usePairedVideosPlayers = () => {
           // Set hasVideo early to ensure the correct pages are shown while the videos are loading
           setHasVideo(true);
           await videoPlayer.load(newFileObject, {
+            primaryOptions: {
+              isLooping: true,
+            },
             secondaryOptions: {
               isMuted: true,
+              isLooping: true,
             },
           });
           setIsLoading(true);
