@@ -1,5 +1,5 @@
 import { Video } from "expo-av";
-import { isNil } from "lodash";
+import isNil from "lodash/isNil";
 import { useCallback, useEffect, useState } from "react";
 import { logError } from "../../logger";
 import { playerMode, resizeMode } from "../async-storage";

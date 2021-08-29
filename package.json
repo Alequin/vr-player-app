@@ -6,7 +6,8 @@
     "eject": "expo eject",
     "test": "jest",
     "build-android-apk": "expo build:android -t apk",
-    "build-android-bundle": "expo build:android -t app-bundle"
+    "build-android-bundle": "expo build:android -t app-bundle",
+    "bundle-visualizer": "npx react-native-bundle-visualizer"
   },
   "jest": {
     "preset": "jest-expo"
