@@ -27,6 +27,12 @@ export const DisableAdsView = ({ onDisableAds }) => {
     timeAdsAreDisabledFor().then(setAdsDisabledTime);
   }, []);
 
+  const showFailedRewardAdAlert = useFailedRewardAdAlert(
+    areAdsDisabled,
+    setAdsDisabledTime,
+    onDisableAds
+  );
+
   useEffect(() => {
     AdMobRewarded.addEventListener(
       "rewardedVideoUserDidEarnReward",
@@ -42,7 +48,7 @@ export const DisableAdsView = ({ onDisableAds }) => {
     );
 
     return () => AdMobRewarded.removeAllListeners();
-  }, []);
+  }, [showFailedRewardAdAlert]);
 
   useEffect(() => {
     if (areAdsDisabled) {
@@ -52,11 +58,6 @@ export const DisableAdsView = ({ onDisableAds }) => {
       return () => clearInterval(interval);
     }
   }, [areAdsDisabled]);
-
-  const showFailedRewardAdAlert = useFailedRewardAdAlert(
-    areAdsDisabled,
-    setAdsDisabledTime
-  );
 
   return (
     <View
@@ -139,7 +140,11 @@ const loadRewardAd = async () => {
   if (!isAdLoaded) await AdMobRewarded.requestAdAsync();
 };
 
-const useFailedRewardAdAlert = (areAdsDisabled, setAdsDisabledTime) => {
+const useFailedRewardAdAlert = (
+  areAdsDisabled,
+  setAdsDisabledTime,
+  onDisableAds
+) => {
   return useCallback(() => {
     const disableAdsMessage = areAdsDisabled
       ? "Ads are already disabled but more time can be added next time an advert can be shown"
@@ -152,6 +157,7 @@ const useFailedRewardAdAlert = (areAdsDisabled, setAdsDisabledTime) => {
         {
           text: "OK",
           onPress: async () => {
+            onDisableAds();
             await disableAds({
               minutesToDisableFor: 2,
               wasDisabledDueToError: true,

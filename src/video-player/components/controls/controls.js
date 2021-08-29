@@ -21,6 +21,7 @@ import { SideControlBar } from "./side-control-bar";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
   const { areAdsDisabled, setAreAdsDisabled } = useCanShowAds();
+
   const [manualPositionInMillis, setManualPositionInMillis] = useState(null);
   const [shouldUseManualPosition, setShouldUseManualPosition] = useState(false);
   const [shouldResume, setShouldResume] = useState(false);
@@ -92,9 +93,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             />
           )}
           {shouldShowDisableAdsView && (
-            <DisableAdsView
-              onDisableAds={async () => setAreAdsDisabled(true)}
-            />
+            <DisableAdsView onDisableAds={() => setAreAdsDisabled(true)} />
           )}
           {!areAdsDisabled && !videoPlayer.hasVideo && <AdBanner />}
           {videoPlayer.hasVideo && (

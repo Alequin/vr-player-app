@@ -3107,6 +3107,7 @@ describe("App", () => {
       expect(
         asyncStorage.adsDisabledTime.save.mock.calls[0][0].totalDisableTime
       ).toBe(2 * 60 * 1000); // two minutes
+      expect(screen.queryByTestId("bannerAd")).toBeFalsy();
     });
 
     it("shows an error alert with a different message when there is an issue showing a reward ad but ads are already disabled", async () => {
