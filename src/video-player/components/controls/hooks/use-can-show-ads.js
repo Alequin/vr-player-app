@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { checkIfAdsAreDisabled } from "../ads-disable-time";
-import { isPayedVersion } from "../../../secrets.json";
+import { isPayedVersion } from "../../../../../secrets.json";
+import { checkIfAdsAreDisabled } from "../../../ads-disable-time";
 
 export const useCanShowAds = () => {
   const [areAdsDisabled, setAreAdsDisabled] = useState(true);

@@ -3,28 +3,31 @@ import { useCallback, useEffect, useState } from "react";
 import { videoSelectAdId } from "../../../secrets.json";
 import { isEnvironmentProduction } from "../../environment";
 import { logError } from "../../logger";
+import { checkIfAdsAreDisabled } from "../ads-disable-time";
 import { hasEnoughTimePastToShowInterstitialAd } from "./has-enough-time-past-to-show-interstitial-ad";
-import { useCanShowAds } from "./use-can-show-ads";
 
 export const useShowInterstitialAd = () => {
-  const { areAdsDisabled } = useCanShowAds();
   const [isAdVisible, setIsAdVisible] = useState(false);
   const [lastTimeAdWasShows, setLastTimeAdWasShown] = useState(0);
 
   useEffect(() => {
-    if (!areAdsDisabled) {
-      AdMobInterstitial.setAdUnitID(
-        isEnvironmentProduction()
-          ? videoSelectAdId
-          : "ca-app-pub-3940256099942544/1033173712"
-      )
-        .then(async () => AdMobInterstitial.requestAdAsync())
-        .catch((error) => {
-          // Swallow error. A failure to prepare an ad should not interrupt the user
-          logError(error);
-        });
-    }
-  }, [areAdsDisabled]);
+    checkIfAdsAreDisabled()
+      .then(async (areAdsDisabled) => {
+        if (areAdsDisabled) return;
+
+        await AdMobInterstitial.setAdUnitID(
+          isEnvironmentProduction()
+            ? videoSelectAdId
+            : "ca-app-pub-3940256099942544/1033173712"
+        );
+
+        await AdMobInterstitial.requestAdAsync();
+      })
+      .catch((error) => {
+        // Swallow error. A failure to prepare an ad should not interrupt the user
+        logError(error);
+      });
+  }, []);
 
   useEffect(() => {
     AdMobInterstitial.addEventListener("interstitialDidClose", () =>
@@ -53,9 +56,9 @@ export const useShowInterstitialAd = () => {
 
   return {
     showInterstitialAd: useCallback(async () => {
-      // call event if no ad is shown
+      // do nothing if no ads cannot be shown
       if (
-        areAdsDisabled ||
+        (await checkIfAdsAreDisabled()) ||
         !hasEnoughTimePastToShowInterstitialAd(lastTimeAdWasShows)
       ) {
         return;
@@ -79,7 +82,7 @@ export const useShowInterstitialAd = () => {
         // Swallow error. A failure to request the next ad should not interrupt the user
         logError(error);
       }
-    }, [lastTimeAdWasShows, areAdsDisabled]),
+    }, [lastTimeAdWasShows]),
     isInterstitialAdVisible: isAdVisible,
   };
 };
