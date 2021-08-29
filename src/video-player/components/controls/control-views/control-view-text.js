@@ -5,7 +5,7 @@ export const ControlViewText = (props) => (
   <Text
     style={{
       color: "white",
-      fontSize: 18,
+      fontSize: 16,
       marginVertical: 5,
       textAlign: "center",
     }}
