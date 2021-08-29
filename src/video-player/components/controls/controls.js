@@ -239,7 +239,7 @@ const LowerControlBar = ({
       <Text
         style={{ color: "white", fontWeight: "bold", fontSize: 17, margin: 5 }}
       >
-        {millisecondsToTime(currentVideoPositionInMillis)}
+        {millisecondsToTime(currentVideoPositionInMillis, videoDuration)}
       </Text>
       <TimeBar
         disabled={shouldDisableControls}

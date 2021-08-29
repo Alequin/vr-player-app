@@ -1,6 +1,9 @@
+import { minutesToMilliseconds } from "../../minutes-to-milliseconds";
 import { PLAYER_MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
 
-export const millisecondsToTime = (milliseconds) => {
+const ONE_HOUR_IN_MILLISECONDS = minutesToMilliseconds(60);
+
+export const millisecondsToTime = (milliseconds, videoDuration) => {
   const totalSeconds = Math.floor(milliseconds / 1000);
   const totalMinutes = Math.floor(totalSeconds / 60);
   const totalHours = Math.floor(totalMinutes / 60);
@@ -8,13 +11,18 @@ export const millisecondsToTime = (milliseconds) => {
   const minutesExcludingHours = totalMinutes - totalHours * 60;
   const secondsExcludingMinutes = totalSeconds - totalMinutes * 60;
 
-  const timeSegments = [
-    totalHours,
+  return [
+    hoursAsTimeUnit(totalHours, videoDuration),
     asTimeUnit(minutesExcludingHours),
     asTimeUnit(secondsExcludingMinutes),
-  ].filter(Boolean); // Remove totalHours if it is zero
+  ]
+    .filter(Boolean) // Remove totalHours if it's not usable
+    .join(":");
+};
 
-  return timeSegments.join(":");
+const hoursAsTimeUnit = (totalHours, videoDuration) => {
+  const isVideoLongerThanAnHour = videoDuration >= ONE_HOUR_IN_MILLISECONDS;
+  return isVideoLongerThanAnHour ? asTimeUnit(totalHours) : null;
 };
 
 const asTimeUnit = (number) => {

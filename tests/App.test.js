@@ -1716,6 +1716,73 @@ describe("App", () => {
       await waitForExpect(() => expect(timeBar.props.value).toBeLessThan(4000));
     });
 
+    it("shows the hour time units if the video duration is at least an hour long", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const videoDuration = minutesToMilliseconds(60);
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: {
+          positionMillis: 0,
+          durationMillis: videoDuration,
+        },
+        secondaryStatus: {
+          positionMillis: 0,
+          durationMillis: videoDuration,
+        },
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+
+      // Confirm the correct time is shown
+      expect(within(lowerControlBar).getByText("00:00:00")).toBeTruthy();
+    });
+
+    it("increases the hours indefinitely when the video length is very long", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const oneHour = minutesToMilliseconds(60);
+      const videoDuration = oneHour * 10_000;
+      const videoPosition = oneHour * 9_999;
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: {
+          positionMillis: videoPosition,
+          durationMillis: videoDuration,
+        },
+        secondaryStatus: {
+          positionMillis: videoPosition,
+          durationMillis: videoDuration,
+        },
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+
+      // Confirm the correct time is shown
+      silenceAllErrorLogs();
+      await waitForExpect(() => {
+        expect(within(lowerControlBar).getByText("9999:00:00")).toBeTruthy();
+      });
+    });
+
     it("loops the video if it reaches the end", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
