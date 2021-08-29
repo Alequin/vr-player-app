@@ -7,7 +7,7 @@ jest.mock("../secrets.json", () => ({
   isPayedVersion: false,
 }));
 
-import { act, cleanup, within } from "@testing-library/react-native";
+import { act, cleanup, waitFor, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as DocumentPicker from "expo-document-picker";
 import { last } from "lodash";
@@ -31,6 +31,7 @@ import {
 } from "../src/video-player/hooks/use-paired-video-players";
 import { mockAdMobInterstitial, mockAdMobRewarded } from "./mocks/mock-ad-mob";
 import { mockAdsAreDisabled } from "./mocks/mock-ads-are-disabled";
+import { mockBackHandlerCallback } from "./mocks/mock-back-handler-callback";
 import { mockDocumentPicker } from "./mocks/mock-document-picker";
 import { mockLogError } from "./mocks/mock-logger";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
@@ -823,6 +824,33 @@ describe("App", () => {
       // confirm the home view is now visible
       expect(screen.getByTestId("homeView")).toBeTruthy();
     });
+
+    it("Is able to unload a video and return to the home view when the hardware back button is pressed", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      const getMockBackHandlerCallback = mockBackHandlerCallback();
+
+      const screen = await asyncRender(<App />);
+
+      await startWatchingVideoFromUpperControlBar({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // confirm the home view is not visible
+      expect(screen.queryByTestId("homeView")).toBe(null);
+
+      // fire the event for the hardware back button
+      const backHandlerCallback = getMockBackHandlerCallback();
+      await act(async () => backHandlerCallback());
+
+      // confirm video is unloaded
+      expect(mocks.unload).toHaveBeenCalledTimes(1);
+
+      // confirm the home view is now visible
+      expect(screen.getByTestId("homeView")).toBeTruthy();
+    });
   });
 
   describe("Viewing the error view", () => {
@@ -1167,6 +1195,28 @@ describe("App", () => {
           "iosArrowBackIcon"
         )
       );
+
+      // confirm the home view is now visible
+      expect(screen.getByTestId("homeView")).toBeTruthy();
+    });
+
+    it("Clears the error and returns to the home view when the hardware back button is pressed after an error occurs", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const getMockBackHandlerCallback = mockBackHandlerCallback();
+
+      const screen = await asyncRender(<App />);
+
+      await goToErrorViewAfterFailToLoadFromHomePage({
+        screen,
+        videoPlayerMocks: mocks,
+      });
+
+      // confirm the home view is not visible
+      expect(screen.queryByTestId("homeView")).toBe(null);
+
+      // fire the event for the hardware back button
+      const backHandlerCallback = getMockBackHandlerCallback();
+      await act(async () => backHandlerCallback());
 
       // confirm the home view is now visible
       expect(screen.getByTestId("homeView")).toBeTruthy();
@@ -2795,6 +2845,29 @@ describe("App", () => {
           "iosArrowBackIcon"
         )
       );
+
+      // confirm the home view is now visible
+      expect(screen.getByTestId("homeView")).toBeTruthy();
+    });
+
+    it("returns to the home view when the hardware back button is pressed after an error occurs", async () => {
+      const screen = await asyncRender(<App />);
+      const getMockBackHandlerCallback = mockBackHandlerCallback();
+
+      const disableAdsButton = getButtonByText(
+        within(screen.getByTestId("homeView")),
+        "Disable ads"
+      );
+      expect(disableAdsButton).toBeTruthy();
+
+      // Visit the disable ads view
+      await asyncPressEvent(disableAdsButton);
+      // Confirm the view we are on
+      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+
+      // fire the event for the hardware back button
+      const backHandlerCallback = getMockBackHandlerCallback();
+      await act(async () => backHandlerCallback());
 
       // confirm the home view is now visible
       expect(screen.getByTestId("homeView")).toBeTruthy();

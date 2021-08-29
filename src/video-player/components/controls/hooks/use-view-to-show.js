@@ -23,13 +23,13 @@ export const useViewToShow = (videoPlayer) => {
         return true;
       }
 
-      if (showDisableAdsView) {
+      if (shouldShowDisableAdsView) {
         setShowDisableAdsView(false);
         return true;
       }
     });
     return () => backhander.remove();
-  }, [videoPlayer.isLoaded]);
+  }, [videoPlayer.hasVideo, shouldShowErrorView, shouldShowDisableAdsView]);
 
   return {
     shouldShowErrorView,
