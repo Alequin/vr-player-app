@@ -15,7 +15,7 @@ export const mockUseVideoPlayerRefs = () => {
       primaryStatus: { positionMillis: 0, durationMillis: 1000 },
       secondaryStatus: { positionMillis: 0, durationMillis: 1000 },
     })),
-    delaySecondary: jest.fn(),
+    pauseSecondary: jest.fn(),
     setSecondaryRate: jest.fn(),
   };
 

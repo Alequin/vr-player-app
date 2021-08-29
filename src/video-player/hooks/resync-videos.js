@@ -27,7 +27,9 @@ export const resyncVideos = async (
   if (!isPrimaryAhead && secondaryStatus.rate > 1)
     promises.push(videoPlayer.setSecondaryRate(1));
 
-  if (!isPrimaryAhead) promises.push(videoPlayer.delaySecondary(25));
+  // Pause the second video to give the first time to catch up.
+  // Will start playing when it's noticed the two player have a different status
+  if (!isPrimaryAhead) promises.push(videoPlayer.pauseSecondary());
 
   await Promise.all(promises);
 };

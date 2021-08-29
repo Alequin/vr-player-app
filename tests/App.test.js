@@ -2195,7 +2195,7 @@ describe("App", () => {
 
       // Confirm the secondary video player is delayed
       await waitForExpect(() => {
-        expect(mocks.delaySecondary).toHaveBeenCalledWith(25);
+        expect(mocks.pauseSecondary).toHaveBeenCalled();
       });
     });
 
@@ -2296,10 +2296,10 @@ describe("App", () => {
       await delay(2_000);
 
       // Does not delay the secondary video to allow the first to catch up
-      expect(mocks.delaySecondary).not.toHaveBeenCalledWith(25);
+      expect(mocks.pauseSecondary).not.toHaveBeenCalledWith(25);
 
       // Does not increase the rate of the
-      expect(mocks.delaySecondary).not.toHaveBeenCalledWith(25);
+      expect(mocks.pauseSecondary).not.toHaveBeenCalledWith(25);
     });
   });
 

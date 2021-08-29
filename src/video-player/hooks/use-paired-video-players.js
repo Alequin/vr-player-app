@@ -96,11 +96,12 @@ export const usePairedVideosPlayers = () => {
           .then(async ({ primaryStatus, secondaryStatus }) => {
             if (!primaryStatus || !secondaryStatus) return;
 
-            // Update the known video position
-            if (!isNil(primaryStatus.positionMillis) && isPlaying) {
-              setCurrentVideoPositionInMillis(primaryStatus.positionMillis);
+            // Ensure the two videos are playing if the primary is
+            if (primaryStatus.isPlaying && !secondaryStatus.isPlaying) {
+              await play();
             }
 
+            // Resync the two video players if required
             if (!arePlayerInSync(primaryStatus, secondaryStatus)) {
               await resyncVideos(
                 videoPlayer,
@@ -108,6 +109,11 @@ export const usePairedVideosPlayers = () => {
                 secondaryStatus,
                 setPosition
               );
+            }
+
+            // Update the known video position
+            if (!isNil(primaryStatus.positionMillis) && isPlaying) {
+              setCurrentVideoPositionInMillis(primaryStatus.positionMillis);
             }
 
             /*

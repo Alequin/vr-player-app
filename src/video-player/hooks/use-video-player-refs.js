@@ -26,11 +26,7 @@ export const useVideoPlayerRefs = () => {
           primaryVideo?.current?.pauseAsync(),
           secondaryVideo?.current?.pauseAsync(),
         ]),
-      delaySecondary: async (delayTime) => {
-        await secondaryVideo?.current?.pauseAsync();
-        await delay(delayTime);
-        await secondaryVideo?.current?.playAsync();
-      },
+      pauseSecondary: async () => secondaryVideo?.current?.pauseAsync(),
       setSecondaryRate: async (rate) =>
         secondaryVideo?.current?.setRateAsync(rate),
       setPosition: async (position) =>
