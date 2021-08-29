@@ -89,7 +89,7 @@ export const DisableAdsView = ({ onDisableAds }) => {
             }
           }}
         >
-          <ControlPageIcon name="hourglass" size={38} />
+          <ControlPageIcon name="hourglass" />
           {areAdsDisabled ? (
             <ControlViewText>
               Ads are already disabled. Add more time by watching another short
@@ -126,10 +126,8 @@ export const DisableAdsView = ({ onDisableAds }) => {
             height: "100%",
           }}
         >
-          <ControlPageIcon name="googlePlay" size={38} />
-          <ControlViewText>
-            Buy the ad-free version of the app and help support us
-          </ControlViewText>
+          <ControlPageIcon name="googlePlay" />
+          <ControlViewText>Buy the ad-free version of the app</ControlViewText>
         </Button>
       </View>
     </View>

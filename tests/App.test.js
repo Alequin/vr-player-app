@@ -2683,7 +2683,7 @@ describe("App", () => {
 
       const buyTheAppButton = getButtonByText(
         within(screen.getByTestId("disableAdsView")),
-        "Buy the ad-free version of the app and help support us"
+        "Buy the ad-free version of the app"
       );
       expect(buyTheAppButton).toBeTruthy();
     });
