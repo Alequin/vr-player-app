@@ -39,5 +39,5 @@ export const silenceAllErrorLogs = () => {
 };
 
 export const enableAllErrorLogs = () => {
-  if (console.error.mockRestore) console.error.mockRestore();
+  console.error?.mockRestore?.();
 };

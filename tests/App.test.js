@@ -1715,6 +1715,44 @@ describe("App", () => {
       });
       await waitForExpect(() => expect(timeBar.props.value).toBeLessThan(4000));
     });
+
+    it("loops the video if it reaches the end", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // Reset mocks before forcing the loop
+      jest.clearAllMocks();
+
+      // Mock video status as being at the end on one iteration
+      mocks.getStatus.mockResolvedValueOnce({
+        primaryStatus: { positionMillis: 10_000, durationMillis: 9_999 },
+        secondaryStatus: { positionMillis: 10_000, durationMillis: 9_999 },
+      });
+      // Mock video status as being at the start on following iterations
+      mocks.getStatus.mockResolvedValueOnce({
+        primaryStatus: { positionMillis: 0, durationMillis: 9_999 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 9_999 },
+      });
+
+      silenceAllErrorLogs();
+
+      // Confirm the commands to loop the video are called
+      await waitForExpect(() => {
+        expect(mocks.pause).toHaveBeenCalledTimes(1); // pauses the video
+        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
+        expect(mocks.setPosition).toHaveBeenCalledWith(0); // resets the video position to zero
+        expect(mocks.play).toHaveBeenCalledTimes(1); // starts playing the video again
+      });
+    });
   });
 
   describe("Using the timebar to seek for a video position", () => {
