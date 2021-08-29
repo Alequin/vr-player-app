@@ -23,7 +23,11 @@ export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
         }}
       >
         <Button
-          style={{ alignItems: "center", margin: 20, width: "40%" }}
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+            width: isPayedVersion ? "100%" : "50%",
+          }}
           onPress={onPressSelectVideo}
         >
           <ControlPageIcon name="folderVideo" size={38} />
@@ -31,7 +35,11 @@ export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
         </Button>
         {!isPayedVersion && (
           <Button
-            style={{ alignItems: "center", margin: 20, width: "40%" }}
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              width: "50%",
+            }}
             onPress={onPressDisableAds}
           >
             <ControlPageIcon name="cancel" size={38} />
