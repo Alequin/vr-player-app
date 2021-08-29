@@ -16,7 +16,6 @@ import { ErrorView } from "./control-views/error-view";
 import { HomeView } from "./control-views/home-view";
 import { useCanShowAds } from "../../hooks/use-can-show-ads";
 import { useShowControls } from "./hooks/use-show-controls";
-import { useSkipTime } from "./hooks/use-time-skip";
 import { useViewToShow } from "./hooks/use-view-to-show";
 import { SideControlBar } from "./side-control-bar";
 
@@ -38,8 +37,6 @@ export const Controls = ({ videoPlayer, zIndex }) => {
     shouldShowErrorView || !videoPlayer.hasVideo;
 
   const selectVideo = useSelectVideo(videoPlayer);
-
-  const setTimeToSkipTo = useSkipTime(videoPlayer);
 
   return (
     <Animated.View
@@ -70,12 +67,13 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           shouldDisableControls={shouldDisableVideoControls}
           onPress={async () => {
             showControls();
-            if (videoPlayer.isPlaying) await videoPlayer.pause();
-            setTimeToSkipTo((currentSkipTime) =>
-              currentSkipTime
-                ? currentSkipTime - 10000
-                : videoPlayer.currentVideoPositionInMillis - 10000
-            );
+            const shouldPause = videoPlayer.isPlaying;
+            const newPosition =
+              videoPlayer.currentVideoPositionInMillis - 10000;
+
+            if (shouldPause) await videoPlayer.pause();
+            await videoPlayer.setPosition(newPosition);
+            if (shouldPause) await videoPlayer.play();
           }}
         >
           <Icon name="replay" color="white" size={30} />
@@ -122,12 +120,13 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           shouldDisableControls={shouldDisableVideoControls}
           onPress={async () => {
             showControls();
-            if (videoPlayer.isPlaying) await videoPlayer.pause();
-            setTimeToSkipTo((currentSkipTime) =>
-              currentSkipTime
-                ? currentSkipTime + 10000
-                : videoPlayer.currentVideoPositionInMillis + 10000
-            );
+            const shouldPause = videoPlayer.isPlaying;
+            const newPosition =
+              videoPlayer.currentVideoPositionInMillis + 10000;
+
+            if (shouldPause) await videoPlayer.pause();
+            await videoPlayer.setPosition(newPosition);
+            if (shouldPause) await videoPlayer.play();
           }}
         >
           <Icon name="forward" color="white" size={30} />

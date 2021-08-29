@@ -67,12 +67,14 @@ export const usePairedVideosPlayers = () => {
 
   const setPosition = useCallback(
     async (position) => {
-      if (hasVideo && !isNil(position)) {
-        await videoPlayer.setPosition(position);
-        setCurrentVideoPositionInMillis(position);
+      const positionToSet =
+        position && Math.max(Math.min(position, videoDuration), 0);
+      if (hasVideo && !isNil(positionToSet)) {
+        await videoPlayer.setPosition(positionToSet);
+        setCurrentVideoPositionInMillis(positionToSet);
       }
     },
-    [hasVideo, videoPlayer.setPosition]
+    [hasVideo, videoPlayer.setPosition, videoDuration]
   );
 
   const unloadVideo = useCallback(async () => {

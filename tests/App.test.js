@@ -1840,8 +1840,8 @@ describe("App", () => {
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
       mocks.getStatus.mockImplementation(async () => ({
-        primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
-        secondaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+        primaryStatus: { positionMillis: 0, durationMillis: 1_000_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 1_000_000 },
       }));
 
       const screen = await asyncRender(<App />);
