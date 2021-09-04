@@ -1,5 +1,5 @@
 import { act, within } from "@testing-library/react-native";
-import { mockDocumentPicker } from "../mocks/mock-document-picker";
+import { mockMediaLibrary } from "../mocks/mock-media-library";
 import { asyncPressEvent, getButtonByText } from "../test-utils";
 
 export const startWatchingVideoFromHomeView = async ({
@@ -12,7 +12,7 @@ export const startWatchingVideoFromHomeView = async ({
   videoPlayerMocks.play.mockClear();
   videoPlayerMocks.getStatus.mockClear();
   videoPlayerMocks.setPosition.mockClear();
-  mockDocumentPicker.returnWithASelectedFile(mockVideoFilepath);
+  mockMediaLibrary.returnWithASelectedFile(mockVideoFilepath);
 
   const loadViewButton = getButtonByText(
     within(screen.getByTestId("homeView")),
@@ -23,6 +23,17 @@ export const startWatchingVideoFromHomeView = async ({
   // Press button to load video
   await asyncPressEvent(loadViewButton);
 
+  // Confirm we are taken to the "select a video" page
+  expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+  // Select the first video option
+  await asyncPressEvent(
+    getButtonByText(
+      within(screen.getByTestId("selectVideoView")),
+      mockVideoFilepath
+    )
+  );
+
   // Fire callback to start playing the video
   const fireDidCloseCallback = getInterstitialDidCloseCallback();
   act(fireDidCloseCallback);
@@ -30,7 +41,7 @@ export const startWatchingVideoFromHomeView = async ({
   // confirm video is loaded and starts playing
   expect(videoPlayerMocks.load).toHaveBeenCalledTimes(1);
   expect(videoPlayerMocks.load).toHaveBeenCalledWith(
-    { name: mockVideoFilepath, uri: mockVideoFilepath },
+    { filename: mockVideoFilepath, uri: mockVideoFilepath },
     {
       primaryOptions: {
         isLooping: true,

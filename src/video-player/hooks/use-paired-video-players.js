@@ -175,7 +175,7 @@ export const usePairedVideosPlayers = () => {
         } catch (error) {
           logError(error);
           setErrorLoadingVideo(
-            `Unable to play ${newFileObject.name} as a video`
+            `Unable to play ${newFileObject.filename} as a video`
           );
           setHasVideo(false);
           setVideoDuration(0);

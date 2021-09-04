@@ -7,9 +7,8 @@ jest.mock("../secrets.json", () => ({
   isPayedVersion: false,
 }));
 
-import { act, cleanup, waitFor, within } from "@testing-library/react-native";
+import { act, cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
-import * as DocumentPicker from "expo-document-picker";
 import { last } from "lodash";
 import React from "React";
 import { Alert } from "react-native";
@@ -19,7 +18,10 @@ import { delay } from "../src/delay";
 import { logError } from "../src/logger";
 import { minutesToMilliseconds } from "../src/minutes-to-milliseconds";
 import * as asyncStorage from "../src/video-player/async-storage";
-import { millisecondsToTime } from "../src/video-player/components/utils";
+import {
+  millisecondsToTime,
+  millisecondsToTimeWithoutHours,
+} from "../src/video-player/components/utils";
 import * as hasEnoughTimePastToShowInterstitialAd from "../src/video-player/hooks/has-enough-time-past-to-show-interstitial-ad";
 import {
   EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE,
@@ -32,8 +34,8 @@ import {
 import { mockAdMobInterstitial, mockAdMobRewarded } from "./mocks/mock-ad-mob";
 import { mockAdsAreDisabled } from "./mocks/mock-ads-are-disabled";
 import { mockBackHandlerCallback } from "./mocks/mock-back-handler-callback";
-import { mockDocumentPicker } from "./mocks/mock-document-picker";
 import { mockLogError } from "./mocks/mock-logger";
+import { mockMediaLibrary } from "./mocks/mock-media-library";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
 import { goToErrorViewAfterFailToLoadFromHomePage } from "./scenarios/go-to-error-view-after-fail-to-load-from-home-page";
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
@@ -45,8 +47,8 @@ import {
   enableAllErrorLogs,
   getButtonByChildTestId,
   getButtonByText,
-  silenceAllErrorLogs,
   getTimeBarProps,
+  silenceAllErrorLogs,
   videoPlayerProps,
 } from "./test-utils";
 
@@ -202,12 +204,8 @@ describe("App", () => {
   });
 
   describe("Opening a video from the home view", () => {
-    it("Opens the document viewer when the 'load a video' button is press", async () => {
+    it("Opens the 'select a video' view when the 'load a video' button is press", async () => {
       mockUseVideoPlayerRefs();
-
-      jest
-        .spyOn(DocumentPicker, "getDocumentAsync")
-        .mockResolvedValue({ type: "cancel" });
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -222,15 +220,13 @@ describe("App", () => {
       // Press button to pick a video
       await asyncPressEvent(loadViewButton);
 
-      // Confirm document picker is opened
-      await waitForExpect(() =>
-        expect(DocumentPicker.getDocumentAsync).toHaveBeenCalled()
-      );
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
     });
 
     it("Opens an interstitial ad when the 'load a video' button is press", async () => {
       mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.returnWithASelectedFile("path/to/file");
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -254,6 +250,17 @@ describe("App", () => {
       // Press button to pick a video
       await asyncPressEvent(loadViewButton);
 
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Select the first video option
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file"
+        )
+      );
+
       // Checks if an ad is ready to show
       expect(AdMobInterstitial.getIsReadyAsync).toHaveBeenCalledTimes(1);
 
@@ -266,7 +273,7 @@ describe("App", () => {
 
     it("Does not open an interstitial ad when the 'load a video' button is press if ads are disabled", async () => {
       mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.returnWithASelectedFile("path/to/file");
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -284,6 +291,17 @@ describe("App", () => {
 
       // Press button to pick a video
       await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Select the first video option
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file"
+        )
+      );
 
       // Shows an ad
       expect(AdMobInterstitial.showAdAsync).not.toHaveBeenCalledTimes(1);
@@ -586,6 +604,7 @@ describe("App", () => {
         .mockReturnValue(true);
 
       // Press button to pick another video
+      mockMediaLibrary.returnWithASelectedFile("path/to/file");
       await asyncPressEvent(
         getButtonByChildTestId(
           within(screen.getByTestId("upperControlBar")),
@@ -593,10 +612,19 @@ describe("App", () => {
         )
       );
 
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Select the first video option
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file"
+        )
+      );
+
       // Show another ad
       expect(AdMobInterstitial.showAdAsync).toHaveBeenCalledTimes(2);
-
-      mock.mockRestore();
     });
 
     describe("Opening a video from the upper control bar but there is an issue with ads", () => {
@@ -767,6 +795,18 @@ describe("App", () => {
           )
         );
 
+        // Confirm we are taken to the "select a video" page
+        expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+        // Select the first video option
+        mockMediaLibrary.returnWithASelectedFile("path/to/file");
+        await asyncPressEvent(
+          getButtonByText(
+            within(screen.getByTestId("selectVideoView")),
+            "path/to/file"
+          )
+        );
+
         // Check the error page is shown due to the error when unloading the first video
         const errorView = screen.getByTestId("errorView");
         expect(errorView).toBeTruthy();
@@ -774,16 +814,27 @@ describe("App", () => {
 
       it("Shows the error page when attempting to open a video from the upper control bar but there is an issue loading the new video", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockDocumentPicker.returnWithASelectedFile("path/to/file");
+        mockMediaLibrary.returnWithASelectedFile("path/to/file");
+        mocks.load.mockRejectedValue(null);
 
         const screen = await asyncRender(<App />);
 
         // Pick a new video
-        mocks.load.mockRejectedValue(null);
         await asyncPressEvent(
           getButtonByChildTestId(
             within(screen.getByTestId("upperControlBar")),
             "folderVideoIcon"
+          )
+        );
+
+        // Confirm we are taken to the "select a video" page
+        expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+        // Select the first video option
+        await asyncPressEvent(
+          getButtonByText(
+            within(screen.getByTestId("selectVideoView")),
+            "path/to/file"
           )
         );
 
@@ -931,12 +982,23 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockDocumentPicker.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.returnWithASelectedFile("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
       );
       await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Select the first video option
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file"
+        )
+      );
 
       // Fire callback to start playing the video
       const fireDidCloseCallback = getInterstitialDidCloseCallback();
@@ -971,12 +1033,23 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockDocumentPicker.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.returnWithASelectedFile("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
       );
       await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Select the first video option
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file"
+        )
+      );
 
       // Checks if an ad is ready to show
       expect(AdMobInterstitial.getIsReadyAsync).toHaveBeenCalledTimes(1);
@@ -989,8 +1062,8 @@ describe("App", () => {
     });
 
     it("Does not open an interstitial ad when the 'load a video' button is press if ads are disabled", async () => {
-      mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile("path/to/file");
+      const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.returnWithASelectedFile("path/to/file");
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -1010,8 +1083,21 @@ describe("App", () => {
       // Press button to pick a video
       await asyncPressEvent(loadViewButton);
 
-      // Shows an ad
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Select the first video option
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file"
+        )
+      );
+
+      // Does not shows an ad
       expect(AdMobInterstitial.showAdAsync).not.toHaveBeenCalledTimes(1);
+      // confirm the video starts playing
+      expect(mocks.play).toHaveBeenCalledTimes(1);
     });
 
     it("Disables all lower bar controls while on the home page", async () => {
@@ -1133,6 +1219,17 @@ describe("App", () => {
       );
       await asyncPressEvent(loadViewButton);
 
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Select the first video option
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "./fake/file/path.jpeg"
+        )
+      );
+
       // Stay on the error page due to another error
       expect(screen.getByTestId("errorView")).toBeTruthy();
     });
@@ -1156,12 +1253,23 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockDocumentPicker.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.returnWithASelectedFile("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
       );
       await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Select the first video option
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file"
+        )
+      );
 
       // Fire callback to start playing the video
       const fireDidCloseCallback = getInterstitialDidCloseCallback();
@@ -1216,6 +1324,7 @@ describe("App", () => {
 
       // fire the event for the hardware back button
       const backHandlerCallback = getMockBackHandlerCallback();
+
       await act(async () => backHandlerCallback());
 
       // confirm the home view is now visible
@@ -1891,7 +2000,9 @@ describe("App", () => {
         expect(mocks.setPosition).not.toHaveBeenCalled();
         // Should update the visual time to respond to the user
         expect(
-          within(lowerControlBar).getByText(millisecondsToTime(newPosition))
+          within(lowerControlBar).getByText(
+            millisecondsToTimeWithoutHours(newPosition)
+          )
         ).toBeTruthy();
       }
 
@@ -2808,7 +2919,7 @@ describe("App", () => {
       expect(screen.queryByTestId("bannerAd")).not.toBeTruthy();
     });
 
-    it("returns to the home view when the back button is pressed after an error occurs", async () => {
+    it("returns to the home view when the back button is pressed after viewing the disable ads view", async () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
@@ -2834,7 +2945,7 @@ describe("App", () => {
       expect(screen.getByTestId("homeView")).toBeTruthy();
     });
 
-    it("returns to the home view when the hardware back button is pressed after an error occurs", async () => {
+    it("returns to the home view when the hardware back button is pressed after viewing the disable ads view", async () => {
       const screen = await asyncRender(<App />);
       const getMockBackHandlerCallback = mockBackHandlerCallback();
 

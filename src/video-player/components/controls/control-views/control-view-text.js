@@ -3,12 +3,14 @@ import { Text } from "react-native";
 
 export const ControlViewText = (props) => (
   <Text
-    style={{
-      color: "white",
-      fontSize: 16,
-      marginVertical: 5,
-      textAlign: "center",
-    }}
     {...props}
+    style={[
+      {
+        color: "white",
+        fontSize: 16,
+        marginVertical: 5,
+      },
+      props.style,
+    ]}
   />
 );

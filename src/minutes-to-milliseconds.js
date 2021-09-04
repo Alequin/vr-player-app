@@ -1,1 +1,3 @@
-export const minutesToMilliseconds = (minutes) => minutes * 1000 * 60;
+export const secondsToMilliseconds = (seconds) => seconds * 1000;
+export const minutesToMilliseconds = (minutes) =>
+  secondsToMilliseconds(minutes * 60);

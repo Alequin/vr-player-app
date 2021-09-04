@@ -4,10 +4,14 @@ import { Alert, View } from "react-native";
 import { disableAdsRewardId } from "../../../../../secrets.json";
 import { Button } from "../../../../button";
 import { isEnvironmentProduction } from "../../../../environment";
+import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
 import { logError } from "../../../../logger";
 import { disableAds, timeAdsAreDisabledFor } from "../../../ads-disable-time";
 import { ControlPageIcon } from "../../control-page-icon";
-import { millisecondsToTime } from "../../utils";
+import {
+  millisecondsToTime,
+  millisecondsToTimeWithoutHours,
+} from "../../utils";
 import { ControlViewText } from "./control-view-text";
 
 export const DisableAdsView = ({ onDisableAds }) => {
@@ -92,12 +96,12 @@ export const DisableAdsView = ({ onDisableAds }) => {
         >
           <ControlPageIcon name="hourglass" />
           {areAdsDisabled ? (
-            <ControlViewText>
+            <ControlViewText style={{ textAlign: "center" }}>
               Ads are already disabled. Add more time by watching another short
               ad
             </ControlViewText>
           ) : (
-            <ControlViewText>
+            <ControlViewText style={{ textAlign: "center" }}>
               Watch a short ad and disable all other ads for 20 minutes
             </ControlViewText>
           )}
@@ -112,7 +116,11 @@ export const DisableAdsView = ({ onDisableAds }) => {
               }}
             >
               <ControlViewText>
-                {`Ads are disabled for ${millisecondsToTime(adsDisabledTime)}`}
+                {`Ads are disabled for ${
+                  isAtLeastAnHour(adsDisabledTime)
+                    ? millisecondsToTime(adsDisabledTime)
+                    : millisecondsToTimeWithoutHours(adsDisabledTime)
+                }`}
               </ControlViewText>
             </View>
           )}

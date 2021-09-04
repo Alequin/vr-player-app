@@ -21,7 +21,7 @@
     "expo-ads-admob": "~10.1.2",
     "expo-asset": "~8.3.2",
     "expo-av": "~9.2.3",
-    "expo-document-picker": "~9.2.4",
+    "expo-media-library": "~12.1.2",
     "expo-status-bar": "~1.0.4",
     "lodash": "^4.17.21",
     "react": "16.13.1",

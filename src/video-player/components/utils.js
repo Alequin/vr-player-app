@@ -1,28 +1,23 @@
-import { minutesToMilliseconds } from "../../minutes-to-milliseconds";
 import { PLAYER_MODES, RESIZE_MODES } from "../hooks/use-paired-video-players";
 
-const ONE_HOUR_IN_MILLISECONDS = minutesToMilliseconds(60);
-
-export const millisecondsToTime = (milliseconds, videoDuration) => {
+const millisecondsToTimeUnits = (milliseconds) => {
   const totalSeconds = Math.floor(milliseconds / 1000);
   const totalMinutes = Math.floor(totalSeconds / 60);
   const totalHours = Math.floor(totalMinutes / 60);
 
-  const minutesExcludingHours = totalMinutes - totalHours * 60;
-  const secondsExcludingMinutes = totalSeconds - totalMinutes * 60;
-
   return [
-    hoursAsTimeUnit(totalHours, videoDuration),
-    asTimeUnit(minutesExcludingHours),
-    asTimeUnit(secondsExcludingMinutes),
-  ]
-    .filter(Boolean) // Remove totalHours if it's not usable
-    .join(":");
+    asTimeUnit(totalHours),
+    asTimeUnit(totalMinutes - totalHours * 60),
+    asTimeUnit(totalSeconds - totalMinutes * 60),
+  ];
 };
 
-const hoursAsTimeUnit = (totalHours, videoDuration) => {
-  const isVideoLongerThanAnHour = videoDuration >= ONE_HOUR_IN_MILLISECONDS;
-  return isVideoLongerThanAnHour ? asTimeUnit(totalHours) : null;
+export const millisecondsToTime = (milliseconds) => {
+  return millisecondsToTimeUnits(milliseconds).join(":");
+};
+
+export const millisecondsToTimeWithoutHours = (milliseconds) => {
+  return millisecondsToTimeUnits(milliseconds).slice(1).join(":");
 };
 
 const asTimeUnit = (number) => {

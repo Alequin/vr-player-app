@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { Icon } from "../../../icon";
-import { useSelectVideo } from "../../hooks/use-select-video";
+import { isAtLeastAnHour } from "../../../is-at-least-an-hour";
 import { ControlBar } from "../control-bar";
 import { ControlBarIconButton } from "../control-bar-icon-button";
 import { TimeBar } from "../time-bar";
 import {
   millisecondsToTime,
+  millisecondsToTimeWithoutHours,
   togglePlayerModeButtonIconName,
   toggleResizeModeButtonIconName,
 } from "../utils";
@@ -14,6 +15,7 @@ import { AdBanner } from "./control-views/ad-banner";
 import { DisableAdsView } from "./control-views/disable-ads-view";
 import { ErrorView } from "./control-views/error-view";
 import { HomeView } from "./control-views/home-view";
+import { SelectVideoView } from "./control-views/select-video-view";
 import { useCanShowAds } from "./hooks/use-can-show-ads";
 import { useShowControls } from "./hooks/use-show-controls";
 import { useViewToShow } from "./hooks/use-view-to-show";
@@ -30,14 +32,15 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const {
     shouldShowErrorView,
     shouldShowDisableAdsView,
+    shouldShowSelectVideoView,
     shouldShowHomeView,
-    setShowDisableAdsView,
+    showDisableAdsView,
+    showSelectVideoView,
+    returnToHomeView,
   } = useViewToShow(videoPlayer);
 
   const shouldDisableVideoControls =
     shouldShowErrorView || !videoPlayer.hasVideo;
-
-  const selectVideo = useSelectVideo(videoPlayer);
 
   return (
     <Animated.View
@@ -54,12 +57,8 @@ export const Controls = ({ videoPlayer, zIndex }) => {
       <UpperControlBar
         shouldDisableControls={shouldShowHomeView}
         onPressAnyControls={showControls}
-        onPressBack={() => {
-          videoPlayer.unloadVideo();
-          videoPlayer.clearError();
-          setShowDisableAdsView(false);
-        }}
-        onPressSelectVideo={selectVideo}
+        onPressBack={returnToHomeView}
+        onPressSelectVideo={showSelectVideoView}
       />
       <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
         <SideControlBar
@@ -82,18 +81,21 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         <View style={{ flex: 1, alignItems: "center" }}>
           {shouldShowHomeView && (
             <HomeView
-              onPressSelectVideo={async () => await selectVideo()}
-              onPressDisableAds={async () => setShowDisableAdsView(true)}
+              onPressSelectVideo={showSelectVideoView}
+              onPressDisableAds={showDisableAdsView}
             />
           )}
           {shouldShowErrorView && (
             <ErrorView
               errorMessage={videoPlayer.errorLoadingVideo}
-              onPressSelectAnotherVideo={selectVideo}
+              onPressSelectAnotherVideo={showSelectVideoView}
             />
           )}
           {shouldShowDisableAdsView && (
             <DisableAdsView onDisableAds={() => setAreAdsDisabled(true)} />
+          )}
+          {shouldShowSelectVideoView && (
+            <SelectVideoView onSelectVideo={videoPlayer.loadVideoSource} />
           )}
           {!areAdsDisabled && !videoPlayer.hasVideo && <AdBanner />}
           {videoPlayer.hasVideo && (
@@ -237,7 +239,9 @@ const LowerControlBar = ({
       <Text
         style={{ color: "white", fontWeight: "bold", fontSize: 17, margin: 5 }}
       >
-        {millisecondsToTime(currentVideoPositionInMillis, videoDuration)}
+        {isAtLeastAnHour(videoDuration)
+          ? millisecondsToTime(currentVideoPositionInMillis)
+          : millisecondsToTimeWithoutHours(currentVideoPositionInMillis)}
       </Text>
       <TimeBar
         disabled={shouldDisableControls}

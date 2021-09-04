@@ -1,6 +1,10 @@
 import { act, within } from "@testing-library/react-native";
-import { mockDocumentPicker } from "../mocks/mock-document-picker";
-import { asyncPressEvent, getButtonByChildTestId } from "../test-utils";
+import { mockMediaLibrary } from "../mocks/mock-media-library";
+import {
+  asyncPressEvent,
+  getButtonByChildTestId,
+  getButtonByText,
+} from "../test-utils";
 
 export const startWatchingVideoFromUpperControlBar = async ({
   screen,
@@ -12,13 +16,24 @@ export const startWatchingVideoFromUpperControlBar = async ({
   videoPlayerMocks.play.mockClear();
   videoPlayerMocks.getStatus.mockClear();
   videoPlayerMocks.setPosition.mockClear();
-  mockDocumentPicker.returnWithASelectedFile(mockVideoFilepath);
+  mockMediaLibrary.returnWithASelectedFile(mockVideoFilepath);
 
   // Press button to pick a video
   await asyncPressEvent(
     getButtonByChildTestId(
       within(screen.getByTestId("upperControlBar")),
       "folderVideoIcon"
+    )
+  );
+
+  // Confirm we are taken to the "select a video" page
+  expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+  // Select the first video option
+  await asyncPressEvent(
+    getButtonByText(
+      within(screen.getByTestId("selectVideoView")),
+      mockVideoFilepath
     )
   );
 
@@ -31,7 +46,7 @@ export const startWatchingVideoFromUpperControlBar = async ({
   // confirm video is loaded and starts playing
   expect(videoPlayerMocks.load).toHaveBeenCalledTimes(1);
   expect(videoPlayerMocks.load).toHaveBeenCalledWith(
-    { name: mockVideoFilepath, uri: mockVideoFilepath },
+    { filename: mockVideoFilepath, uri: mockVideoFilepath },
     {
       primaryOptions: {
         isLooping: true,
@@ -42,8 +57,9 @@ export const startWatchingVideoFromUpperControlBar = async ({
       },
     }
   );
+
   // getStatus is called to set the videos duration in state
-  expect(videoPlayerMocks.getStatus).toHaveBeenCalledTimes(1);
+  expect(videoPlayerMocks.getStatus).toHaveBeenCalled();
 
   expect(videoPlayerMocks.play).toHaveBeenCalledTimes(1);
 };
