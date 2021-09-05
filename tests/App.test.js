@@ -207,6 +207,7 @@ describe("App", () => {
   describe("Selecting a video", () => {
     it("Opens the 'select a video' view when the 'load a video' button is press on the 'home' view", async () => {
       mockUseVideoPlayerRefs();
+      mockMediaLibrary.returnWithASelectedFile("file");
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -227,6 +228,7 @@ describe("App", () => {
 
     it("Opens the 'select a video' view when the button on the upper control bar is pressed", async () => {
       mockUseVideoPlayerRefs();
+      mockMediaLibrary.returnWithASelectedFile("file");
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -242,6 +244,33 @@ describe("App", () => {
 
       // Confirm we are taken to the "select a video" page
       expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+    });
+
+    it("Opens the 'select a video' view and shows a loading indicator which loading the video file names", async (done) => {
+      mockUseVideoPlayerRefs();
+      const { mockGetAssetsAsync } =
+        mockMediaLibrary.returnWithASelectedFile("file");
+
+      // Fake a delay in fetching the video file paths
+      mockGetAssetsAsync.mockImplementation(async () => await delay(60_000));
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm the loading indicator on the 'select a video' view is shown
+      expect(screen.getByTestId("selectVideoViewLoading")).toBeTruthy();
+
+      done();
     });
 
     it("Shows a list of videos to watch on the 'select a video' view", async () => {
@@ -1473,8 +1502,6 @@ describe("App", () => {
       // confirm the home view is now visible
       expect(screen.getByTestId("homeView")).toBeTruthy();
     });
-
-    it.todo("handles errors while unloading videos");
   });
 
   describe("Viewing the error view", () => {

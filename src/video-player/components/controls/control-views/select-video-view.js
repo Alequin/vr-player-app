@@ -2,7 +2,7 @@ import * as MediaLibrary from "expo-media-library";
 import isEmpty from "lodash/isEmpty";
 import orderBy from "lodash/orderBy";
 import React, { useEffect, useState } from "react";
-import { FlatList, View } from "react-native";
+import { ActivityIndicator, FlatList, View } from "react-native";
 import { Button } from "../../../../button";
 import { Icon } from "../../../../icon";
 import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
@@ -14,12 +14,10 @@ import {
 import { ControlViewText } from "./control-view-text";
 
 export const SelectVideoView = ({ onSelectVideo, videoSortInstructions }) => {
-  const [videoOptions, setVideoOptions] = useState([]);
+  const [videoOptions, setVideoOptions] = useState(null);
 
   useEffect(() => {
-    const hasAlreadyLoadedVideoOptions = !isEmpty(videoOptions);
-
-    const loadedVideoOptions = hasAlreadyLoadedVideoOptions
+    const loadedVideoOptions = videoOptions
       ? Promise.resolve(videoOptions)
       : MediaLibrary.getPermissionsAsync().then(async (canUseMediaLibrary) => {
           if (!canUseMediaLibrary.granted) {
@@ -48,6 +46,16 @@ export const SelectVideoView = ({ onSelectVideo, videoSortInstructions }) => {
       );
     });
   }, [videoSortInstructions, isEmpty(videoOptions)]);
+
+  if (!videoOptions)
+    return (
+      <ActivityIndicator
+        testID="selectVideoViewLoading"
+        size="large"
+        color="#00ff00"
+        style={{ height: "100%" }}
+      />
+    );
 
   return (
     <FlatList

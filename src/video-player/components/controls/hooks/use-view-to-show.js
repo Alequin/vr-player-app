@@ -33,17 +33,10 @@ export const useViewToShow = (videoPlayer) => {
   ]);
 
   useEffect(() => {
-    const backhander = BackHandler.addEventListener(
-      "hardwareBackPress",
-      async () => {
-        if (!viewStates.shouldShowHomeView) {
-          await returnToHomeView();
-          return true;
-        }
-
-        return false;
-      }
-    );
+    const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!viewStates.shouldShowHomeView) returnToHomeView();
+      return !viewStates.shouldShowHomeView;
+    });
     return () => backhander.remove();
   }, [returnToHomeView, viewStates.shouldShowHomeView]);
 
