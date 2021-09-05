@@ -1,7 +1,6 @@
-import { useCallback } from "react";
-import { useEffect, useState } from "react";
-import { BackHandler } from "react-native";
 import filter from "lodash/filter";
+import { useCallback, useEffect, useState } from "react";
+import { BackHandler } from "react-native";
 
 export const useViewToShow = (videoPlayer) => {
   const [showDisableAdsView, setShowDisableAdsView] = useState(false);

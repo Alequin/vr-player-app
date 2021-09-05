@@ -1,5 +1,4 @@
-import { useState, useCallback } from "react";
-import { useEffect } from "react/cjs/react.development";
+import { useState, useCallback, useEffect } from "react";
 import { videoSortOrder } from "../../../async-storage";
 
 const SORT_INSTRUCTIONS = [
