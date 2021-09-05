@@ -9,6 +9,7 @@ jest.mock("../secrets.json", () => ({
 
 import { act, cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
+import * as MediaLibrary from "expo-media-library";
 import { last } from "lodash";
 import React from "React";
 import { Alert } from "react-native";
@@ -18,10 +19,7 @@ import { delay } from "../src/delay";
 import { logError } from "../src/logger";
 import { minutesToMilliseconds } from "../src/minutes-to-milliseconds";
 import * as asyncStorage from "../src/video-player/async-storage";
-import {
-  millisecondsToTime,
-  millisecondsToTimeWithoutHours,
-} from "../src/video-player/components/utils";
+import { millisecondsToTimeWithoutHours } from "../src/video-player/components/utils";
 import * as hasEnoughTimePastToShowInterstitialAd from "../src/video-player/hooks/has-enough-time-past-to-show-interstitial-ad";
 import {
   EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE,
@@ -203,8 +201,8 @@ describe("App", () => {
     });
   });
 
-  describe("Opening a video from the home view", () => {
-    it("Opens the 'select a video' view when the 'load a video' button is press", async () => {
+  describe("Selecting a video", () => {
+    it("Opens the 'select a video' view when the 'load a video' button is press on the 'home' view", async () => {
       mockUseVideoPlayerRefs();
 
       const screen = await asyncRender(<App />);
@@ -224,6 +222,347 @@ describe("App", () => {
       expect(screen.getByTestId("selectVideoView")).toBeTruthy();
     });
 
+    it("Opens the 'select a video' view when the button on the upper control bar is pressed", async () => {
+      mockUseVideoPlayerRefs();
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      );
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+    });
+
+    it("Shows a list of videos to watch on the 'select a video' view", async () => {
+      mockUseVideoPlayerRefs();
+
+      const { mockGetAssetsAsync } =
+        mockMediaLibrary.returnWithMultipleFileOptions([
+          {
+            uri: `path/to/file-short.mp4`,
+            filename: `file-short.mp4`,
+            duration: 30,
+            modificationTime: new Date("2020-09-01"),
+          },
+          {
+            uri: `path/to/file-mid.mp4`,
+            filename: `file-mid.mp4`,
+            duration: 630, // 10 minutes 30 seconds
+            modificationTime: new Date("2020-08-15"),
+          },
+          {
+            uri: `path/to/file-long.mp4`,
+            filename: `file-long.mp4`,
+            duration: 7800, // 2 hours 10 minutes
+            modificationTime: new Date("2020-07-23"),
+          },
+        ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      const selectVideoView = screen.getByTestId("selectVideoView");
+      expect(selectVideoView).toBeTruthy();
+
+      // Confirm the video files are requested
+      expect(mockGetAssetsAsync).toHaveBeenCalledTimes(1);
+      expect(mockGetAssetsAsync).toHaveBeenCalledWith({
+        mediaType: MediaLibrary.MediaType.video,
+        sortBy: MediaLibrary.SortBy.modificationTime,
+      });
+
+      // Confirm the short videos button is visible
+      const shortVideoButton = getButtonByText(
+        within(selectVideoView),
+        `file-short.mp4`
+      );
+
+      expect(shortVideoButton).toBeTruthy();
+      expect(within(shortVideoButton).queryByTestId("videoIcon")).toBeTruthy();
+      expect(within(shortVideoButton).queryByText("00:30")).toBeTruthy();
+      expect(within(shortVideoButton).queryByText("Sept 1 2020")).toBeTruthy();
+
+      // Confirm the mid videos button is visible
+      const midVideoButton = getButtonByText(
+        within(selectVideoView),
+        `file-mid.mp4`
+      );
+
+      expect(midVideoButton).toBeTruthy();
+      expect(within(midVideoButton).queryByTestId("videoIcon")).toBeTruthy();
+      expect(within(midVideoButton).queryByText("10:30")).toBeTruthy();
+      expect(within(midVideoButton).queryByText("Aug 15 2020")).toBeTruthy();
+
+      // Confirm the long videos button is visible
+      const longVideoButton = getButtonByText(
+        within(selectVideoView),
+        `file-long.mp4`
+      );
+
+      expect(longVideoButton).toBeTruthy();
+      expect(within(longVideoButton).queryByTestId("videoIcon")).toBeTruthy();
+      expect(within(longVideoButton).queryByText("02:10:00")).toBeTruthy();
+      expect(within(longVideoButton).queryByText("Jul 23 2020")).toBeTruthy();
+    });
+
+    describe("It shows the correct shorthand for each month", () => {
+      it.each([
+        ["2020-01-01", "Jan"],
+        ["2020-02-01", "Feb"],
+        ["2020-03-01", "Mar"],
+        ["2020-04-01", "Apr"],
+        ["2020-05-01", "May"],
+        ["2020-06-01", "Jun"],
+        ["2020-07-01", "Jul"],
+        ["2020-08-01", "Aug"],
+        ["2020-09-01", "Sept"],
+        ["2020-10-01", "Oct"],
+        ["2020-11-01", "Nov"],
+        ["2020-12-01", "Dec"],
+      ])(
+        "It shows the correct shorthand for the month when the date is %s",
+        async (actualDate, expectedShorthandForMonth) => {
+          mockUseVideoPlayerRefs();
+
+          mockMediaLibrary.returnWithMultipleFileOptions([
+            {
+              uri: `path/to/file.mp4`,
+              filename: `file.mp4`,
+              duration: 30,
+              modificationTime: new Date(actualDate),
+            },
+          ]);
+
+          const screen = await asyncRender(<App />);
+          const homeView = screen.getByTestId("homeView");
+          expect(homeView).toBeTruthy();
+
+          const loadViewButton = getButtonByText(
+            within(homeView),
+            "Select a video to watch"
+          );
+          expect(loadViewButton).toBeTruthy();
+
+          // Press button to pick a video
+          await asyncPressEvent(loadViewButton);
+
+          // Confirm we are taken to the "select a video" page
+          const selectVideoView = screen.getByTestId("selectVideoView");
+          expect(selectVideoView).toBeTruthy();
+
+          expect(
+            within(
+              getButtonByText(within(selectVideoView), `file.mp4`)
+            ).queryByText(`${expectedShorthandForMonth} 1 2020`)
+          ).toBeTruthy();
+        }
+      );
+    });
+
+    it("Does not show the year if it is the current year", async () => {
+      mockUseVideoPlayerRefs();
+
+      const modificationTime = new Date();
+      modificationTime.setMonth(0);
+      modificationTime.setDate(1);
+
+      mockMediaLibrary.returnWithMultipleFileOptions([
+        {
+          uri: `path/to/file.mp4`,
+          filename: `file.mp4`,
+          duration: 30,
+          modificationTime: modificationTime.getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      const selectVideoView = screen.getByTestId("selectVideoView");
+      expect(selectVideoView).toBeTruthy();
+
+      expect(
+        within(
+          getButtonByText(within(selectVideoView), `file.mp4`)
+        ).queryByText(`Jan 1`)
+      ).toBeTruthy();
+    });
+
+    it("Can start playing a video after the user selects one", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+    });
+
+    it("Can start playing a video after the user selects one", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+    });
+
+    it("Encodes file uri's which include a '#' character to avoid loading issues", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.returnWithASelectedFile("path/to/file#1.mp4");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      // Play the video and confirm the correct functions are called
+      const loadViewButton = getButtonByText(
+        within(screen.getByTestId("homeView")),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeDefined();
+
+      // Press button to load video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Select the first video option
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file#1.mp4"
+        )
+      );
+
+      expect(mocks.load).toHaveBeenCalledWith(
+        { filename: "path/to/file#1.mp4", uri: "path/to/file%231.mp4" },
+        {
+          primaryOptions: {
+            isLooping: true,
+          },
+          secondaryOptions: {
+            isMuted: true,
+            isLooping: true,
+          },
+        }
+      );
+    });
+
+    it("Checks if the user has given permission to use the media library and requests access if they have not", async () => {
+      mockUseVideoPlayerRefs();
+      const { mockGetPermissionsAsync, mockRequestPermissionsAsync } =
+        mockMediaLibrary.withoutPermissions("path/to/file#1.mp4");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Confirm permissions where checked
+      expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(1);
+      // Confirm permission was requested
+      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
+      // Confirm a video button is shown
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file#1.mp4"
+        )
+      ).toBeTruthy();
+    });
+
+    it("Checks if the user has given permission to use the media library and does not requests access if they have", async () => {
+      mockUseVideoPlayerRefs();
+      const { mockGetPermissionsAsync, mockRequestPermissionsAsync } =
+        mockMediaLibrary.returnWithASelectedFile("path/to/file#1.mp4");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Confirm permissions where checked
+      expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(1);
+      // Confirm permission was not requested
+      expect(mockRequestPermissionsAsync).not.toHaveBeenCalled();
+      // Confirm a video button is shown
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          "path/to/file#1.mp4"
+        )
+      ).toBeTruthy();
+    });
+  });
+
+  describe("Opening a video from the home view", () => {
     it("Opens an interstitial ad when the 'load a video' button is press", async () => {
       mockUseVideoPlayerRefs();
       mockMediaLibrary.returnWithASelectedFile("path/to/file");

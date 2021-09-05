@@ -16,23 +16,24 @@ export const SelectVideoView = ({ onSelectVideo }) => {
 
   useEffect(() => {
     MediaLibrary.getPermissionsAsync().then(async (canUseMediaLibrary) => {
-      if (!canUseMediaLibrary.granted) {
+      if (!canUseMediaLibrary.granted)
         await MediaLibrary.requestPermissionsAsync();
-      }
 
       const firstPageOfVideos = await MediaLibrary.getAssetsAsync({
-        mediaType: [MediaLibrary.MediaType.video],
+        mediaType: MediaLibrary.MediaType.video,
         sortBy: MediaLibrary.SortBy.modificationTime,
       });
 
       setVideoOptions(
         firstPageOfVideos.assets.map((asset) => ({
           ...asset,
+          // Fix loading issues with uri's that include '#'
           uri: asset.uri.replace("#", "%23"),
         }))
       );
     });
   }, []);
+
   return (
     <FlatList
       testID="selectVideoView"
@@ -131,6 +132,6 @@ const videoCreationDate = (fileModificationDateObject) => {
   const year = fileModificationDateObject.getFullYear();
   const currentYear = new Date().getFullYear();
 
-  if (currentYear === year) return `${month} ${date} `;
+  if (currentYear === year) return `${month} ${date}`;
   return `${month} ${date} ${year}`;
 };
