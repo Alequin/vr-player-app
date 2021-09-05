@@ -1,4 +1,6 @@
 import * as MediaLibrary from "expo-media-library";
+import isEmpty from "lodash/isEmpty";
+import orderBy from "lodash/orderBy";
 import React, { useEffect, useState } from "react";
 import { FlatList, View } from "react-native";
 import { Button } from "../../../../button";
@@ -11,28 +13,41 @@ import {
 } from "../../utils";
 import { ControlViewText } from "./control-view-text";
 
-export const SelectVideoView = ({ onSelectVideo }) => {
+export const SelectVideoView = ({ onSelectVideo, videoSortInstructions }) => {
   const [videoOptions, setVideoOptions] = useState([]);
 
   useEffect(() => {
-    MediaLibrary.getPermissionsAsync().then(async (canUseMediaLibrary) => {
-      if (!canUseMediaLibrary.granted)
-        await MediaLibrary.requestPermissionsAsync();
+    const hasAlreadyLoadedVideoOptions = !isEmpty(videoOptions);
 
-      const firstPageOfVideos = await MediaLibrary.getAssetsAsync({
-        mediaType: MediaLibrary.MediaType.video,
-        sortBy: MediaLibrary.SortBy.modificationTime,
-      });
+    const loadedVideoOptions = hasAlreadyLoadedVideoOptions
+      ? Promise.resolve(videoOptions)
+      : MediaLibrary.getPermissionsAsync().then(async (canUseMediaLibrary) => {
+          if (!canUseMediaLibrary.granted) {
+            await MediaLibrary.requestPermissionsAsync();
+          }
 
+          const firstPageOfVideos = await MediaLibrary.getAssetsAsync({
+            mediaType: MediaLibrary.MediaType.video,
+            sortBy: MediaLibrary.SortBy.modificationTime,
+          });
+
+          return firstPageOfVideos.assets.map((asset) => ({
+            ...asset,
+            // Fix loading issues with uri's that include '#'
+            uri: asset.uri.replace("#", "%23"),
+          }));
+        });
+
+    loadedVideoOptions.then((newVideoOptions) => {
       setVideoOptions(
-        firstPageOfVideos.assets.map((asset) => ({
-          ...asset,
-          // Fix loading issues with uri's that include '#'
-          uri: asset.uri.replace("#", "%23"),
-        }))
+        orderBy(
+          newVideoOptions,
+          videoSortInstructions.key,
+          videoSortInstructions.order
+        )
       );
     });
-  }, []);
+  }, [videoSortInstructions, isEmpty(videoOptions)]);
 
   return (
     <FlatList
@@ -41,7 +56,7 @@ export const SelectVideoView = ({ onSelectVideo }) => {
       keyExtractor={({ uri }) => uri}
       numColumns={2}
       renderItem={({ item }) => (
-        <FileButton
+        <VideoButton
           uri={item.uri}
           filename={item.filename}
           durationInSeconds={item.duration}
@@ -54,7 +69,7 @@ export const SelectVideoView = ({ onSelectVideo }) => {
   );
 };
 
-const FileButton = ({
+const VideoButton = ({
   uri,
   filename,
   durationInSeconds,
@@ -65,6 +80,7 @@ const FileButton = ({
 
   return (
     <View
+      testID="videoButton"
       style={{ width: "50%", justifyContent: "center", alignItems: "center" }}
     >
       <Button

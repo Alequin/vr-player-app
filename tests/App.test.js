@@ -55,6 +55,9 @@ describe("App", () => {
     jest.spyOn(asyncStorage.playerMode, "load").mockResolvedValue(undefined);
     jest.spyOn(asyncStorage.resizeMode, "load").mockResolvedValue(undefined);
     jest
+      .spyOn(asyncStorage.videoSortOrder, "load")
+      .mockResolvedValue(undefined);
+    jest
       .spyOn(asyncStorage.adsDisabledTime, "load")
       .mockResolvedValue(undefined);
     jest.clearAllMocks();
@@ -559,6 +562,274 @@ describe("App", () => {
           "path/to/file#1.mp4"
         )
       ).toBeTruthy();
+    });
+
+    it("Gives the options to sort the the video buttons and change how they are sorted", async () => {
+      mockUseVideoPlayerRefs();
+
+      mockMediaLibrary.returnWithMultipleFileOptions([
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 7800,
+          modificationTime: new Date("2020-08-15"),
+        },
+        {
+          uri: `path/to/file-newest.mp4`,
+          filename: `file-newest.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01"),
+        },
+
+        {
+          uri: `path/to/file-oldest.mp4`,
+          filename: `file-oldest.mp4`,
+          duration: 630,
+          modificationTime: new Date("2020-07-23"),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      const selectVideoView = screen.getByTestId("selectVideoView");
+      expect(selectVideoView).toBeTruthy();
+
+      // Confirm the sort button is available and defaults to "Newest to oldest"
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("upperControlBar")),
+          "Newest to oldest"
+        )
+      ).toBeTruthy();
+
+      // Confirm the initial order is "Newest to oldest"
+      const sortedByNewestToOldest = within(
+        screen.getByTestId("selectVideoView")
+      ).queryAllByTestId("videoButton");
+
+      expect(
+        within(sortedByNewestToOldest[0]).queryByText(`file-newest.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByNewestToOldest[1]).queryByText(`file-mid.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByNewestToOldest[2]).queryByText(`file-oldest.mp4`)
+      ).toBeTruthy();
+
+      // Press the button to change the order to "Oldest to newest"
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("upperControlBar")),
+          "Newest to oldest"
+        )
+      );
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("upperControlBar")),
+          "Oldest to newest"
+        )
+      ).toBeTruthy();
+
+      // Confirm the new order is "Oldest to newest"
+      const sortedByOldestToNewest = within(
+        screen.getByTestId("selectVideoView")
+      ).queryAllByTestId("videoButton");
+
+      expect(
+        within(sortedByOldestToNewest[0]).queryByText(`file-oldest.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByOldestToNewest[1]).queryByText(`file-mid.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByOldestToNewest[2]).queryByText(`file-newest.mp4`)
+      ).toBeTruthy();
+
+      // Press the button to change the order to "A to Z"
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("upperControlBar")),
+          "Oldest to newest"
+        )
+      );
+      expect(
+        getButtonByText(within(screen.getByTestId("upperControlBar")), "A to Z")
+      ).toBeTruthy();
+
+      // Confirm the new order is "A to Z"
+      const sortedByAToZ = within(
+        screen.getByTestId("selectVideoView")
+      ).queryAllByTestId("videoButton");
+
+      expect(within(sortedByAToZ[0]).queryByText(`file-mid.mp4`)).toBeTruthy();
+      expect(
+        within(sortedByAToZ[1]).queryByText(`file-newest.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByAToZ[2]).queryByText(`file-oldest.mp4`)
+      ).toBeTruthy();
+
+      // Press the button to change the order to "Z to A"
+      await asyncPressEvent(
+        getButtonByText(within(screen.getByTestId("upperControlBar")), "A to Z")
+      );
+      expect(
+        getButtonByText(within(screen.getByTestId("upperControlBar")), "Z to A")
+      ).toBeTruthy();
+
+      // Confirm the new order is "Z to A"
+      const sortedByZToA = within(
+        screen.getByTestId("selectVideoView")
+      ).queryAllByTestId("videoButton");
+
+      expect(
+        within(sortedByZToA[0]).queryByText(`file-oldest.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByZToA[1]).queryByText(`file-newest.mp4`)
+      ).toBeTruthy();
+      expect(within(sortedByZToA[2]).queryByText(`file-mid.mp4`)).toBeTruthy();
+
+      // Press the button to change the order to "Longest to shortest"
+      await asyncPressEvent(
+        getButtonByText(within(screen.getByTestId("upperControlBar")), "Z to A")
+      );
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("upperControlBar")),
+          "Longest to shortest"
+        )
+      ).toBeTruthy();
+
+      // Confirm the new order is "Longest to shortest"
+      const sortedByLongestToShortest = within(
+        screen.getByTestId("selectVideoView")
+      ).queryAllByTestId("videoButton");
+
+      expect(
+        within(sortedByLongestToShortest[0]).queryByText(`file-mid.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByLongestToShortest[1]).queryByText(`file-oldest.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByLongestToShortest[2]).queryByText(`file-newest.mp4`)
+      ).toBeTruthy();
+
+      // Press the button to change the order to "Shortest to longest"
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("upperControlBar")),
+          "Longest to shortest"
+        )
+      );
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("upperControlBar")),
+          "Shortest to longest"
+        )
+      ).toBeTruthy();
+
+      // Confirm the new order is "Shortest to longest"
+      const sortedByShortestToLongest = within(
+        screen.getByTestId("selectVideoView")
+      ).queryAllByTestId("videoButton");
+
+      expect(
+        within(sortedByShortestToLongest[0]).queryByText(`file-newest.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByShortestToLongest[1]).queryByText(`file-oldest.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByShortestToLongest[2]).queryByText(`file-mid.mp4`)
+      ).toBeTruthy();
+
+      // Press the button to change the order back to the initial "Newest to oldest"
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("upperControlBar")),
+          "Shortest to longest"
+        )
+      );
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("upperControlBar")),
+          "Newest to oldest"
+        )
+      ).toBeTruthy();
+
+      // Confirm the new order is "Newest to oldest"
+      const sortedByNewestToOldestAgain = within(
+        screen.getByTestId("selectVideoView")
+      ).queryAllByTestId("videoButton");
+
+      expect(
+        within(sortedByNewestToOldestAgain[0]).queryByText(`file-newest.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByNewestToOldestAgain[1]).queryByText(`file-mid.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(sortedByNewestToOldestAgain[2]).queryByText(`file-oldest.mp4`)
+      ).toBeTruthy();
+    });
+
+    it("Loads the last known video sort order and saves a new one when it changes", async () => {
+      mockUseVideoPlayerRefs();
+
+      mockMediaLibrary.returnWithASelectedFile(`path/to/file-mid.mp4`);
+
+      // Mock a saved video sort order
+      jest.spyOn(asyncStorage.videoSortOrder, "load").mockResolvedValue(3);
+      jest.spyOn(asyncStorage.videoSortOrder, "save");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      const selectVideoView = screen.getByTestId("selectVideoView");
+      expect(selectVideoView).toBeTruthy();
+
+      // Confirm the sort order was loaded
+      expect(asyncStorage.videoSortOrder.load).toHaveBeenCalledTimes(1);
+
+      // Confirm the sort button is available and defaults to the saved sort order
+      expect(
+        getButtonByText(within(screen.getByTestId("upperControlBar")), "Z to A")
+      ).toBeTruthy();
+
+      // Update the sort order
+      await asyncPressEvent(
+        getButtonByText(within(screen.getByTestId("upperControlBar")), "Z to A")
+      );
+
+      // Confirm the new sort order was saved
+      expect(asyncStorage.videoSortOrder.save).toHaveBeenCalledTimes(1);
+      expect(asyncStorage.videoSortOrder.save).toHaveBeenCalledWith(4);
     });
   });
 
@@ -1112,45 +1383,6 @@ describe("App", () => {
         logErrorMock.mockReset();
       });
 
-      it("Shows the error page when attempting to open a video but there is an issue unloading the previous video", async () => {
-        const { mocks } = mockUseVideoPlayerRefs();
-        const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-
-        const screen = await asyncRender(<App />);
-
-        // Pick a new video
-        await startWatchingVideoFromUpperControlBar({
-          screen,
-          videoPlayerMocks: mocks,
-          getInterstitialDidCloseCallback,
-        });
-
-        // Pick another video as unload is only called if we have a video
-        mocks.unload.mockRejectedValue(null);
-        await asyncPressEvent(
-          getButtonByChildTestId(
-            within(screen.getByTestId("upperControlBar")),
-            "folderVideoIcon"
-          )
-        );
-
-        // Confirm we are taken to the "select a video" page
-        expect(screen.getByTestId("selectVideoView")).toBeTruthy();
-
-        // Select the first video option
-        mockMediaLibrary.returnWithASelectedFile("path/to/file");
-        await asyncPressEvent(
-          getButtonByText(
-            within(screen.getByTestId("selectVideoView")),
-            "path/to/file"
-          )
-        );
-
-        // Check the error page is shown due to the error when unloading the first video
-        const errorView = screen.getByTestId("errorView");
-        expect(errorView).toBeTruthy();
-      });
-
       it("Shows the error page when attempting to open a video from the upper control bar but there is an issue loading the new video", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
         mockMediaLibrary.returnWithASelectedFile("path/to/file");
@@ -1241,6 +1473,8 @@ describe("App", () => {
       // confirm the home view is now visible
       expect(screen.getByTestId("homeView")).toBeTruthy();
     });
+
+    it.todo("handles errors while unloading videos");
   });
 
   describe("Viewing the error view", () => {

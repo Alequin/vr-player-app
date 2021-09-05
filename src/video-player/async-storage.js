@@ -16,3 +16,5 @@ export const adsDisabledTime = newStorageItem("AD_DISABLE_TIME");
 export const playerMode = newStorageItem("PLAYER_MODE");
 
 export const resizeMode = newStorageItem("RESIZE_MODE");
+
+export const videoSortOrder = newStorageItem("VIDEO_SORT_ORDER");

@@ -36,8 +36,12 @@ export const useViewToShow = (videoPlayer) => {
     const backhander = BackHandler.addEventListener(
       "hardwareBackPress",
       async () => {
-        if (!viewStates.shouldShowHomeView) await returnToHomeView();
-        return !viewStates.shouldShowHomeView;
+        if (!viewStates.shouldShowHomeView) {
+          await returnToHomeView();
+          return true;
+        }
+
+        return false;
       }
     );
     return () => backhander.remove();
@@ -66,8 +70,10 @@ const getViewStates = (
   showSelectVideoView
 ) => {
   const shouldShowErrorView = errorLoadingVideo;
-  const shouldShowDisableAdsView = showDisableAdsView && !shouldShowErrorView;
-  const shouldShowSelectVideoView = showSelectVideoView && !shouldShowErrorView;
+  const shouldShowDisableAdsView =
+    showDisableAdsView && !shouldShowErrorView && !hasVideo;
+  const shouldShowSelectVideoView =
+    showSelectVideoView && !shouldShowErrorView && !hasVideo;
   const shouldShowHomeView =
     !hasVideo &&
     !shouldShowErrorView &&

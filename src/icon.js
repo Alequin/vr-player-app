@@ -1,12 +1,12 @@
-import {
-  Entypo,
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons,
-  Octicons,
-  SimpleLineIcons,
-} from "@expo/vector-icons";
+import Entypo from "@expo/vector-icons/Entypo";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import Octicons from "@expo/vector-icons/Octicons";
+import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
+
 import camelCase from "lodash/camelCase";
 import React from "react";
 import { View } from "react-native";
@@ -58,6 +58,7 @@ const ICON_OPTIONS = {
   forward: customIcon(MaterialIcons, "forward-10"),
   replay: customIcon(MaterialIcons, "replay-10"),
   video: customIcon(Entypo, "video"),
+  sortOrder: customIcon(FontAwesome, "sort-amount-asc"),
 };
 
 const TestIdElement = (props) => <View {...props} />;

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
+import { Button } from "../../../button";
 import { Icon } from "../../../icon";
 import { isAtLeastAnHour } from "../../../is-at-least-an-hour";
 import { ControlBar } from "../control-bar";
@@ -12,11 +13,13 @@ import {
   toggleResizeModeButtonIconName,
 } from "../utils";
 import { AdBanner } from "./control-views/ad-banner";
+import { ControlViewText } from "./control-views/control-view-text";
 import { DisableAdsView } from "./control-views/disable-ads-view";
 import { ErrorView } from "./control-views/error-view";
 import { HomeView } from "./control-views/home-view";
 import { SelectVideoView } from "./control-views/select-video-view";
 import { useCanShowAds } from "./hooks/use-can-show-ads";
+import { useSelectVideoSortOrder } from "./hooks/use-select-video-sort-order";
 import { useShowControls } from "./hooks/use-show-controls";
 import { useViewToShow } from "./hooks/use-view-to-show";
 import { SideControlBar } from "./side-control-bar";
@@ -28,6 +31,8 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   const [shouldUseManualPosition, setShouldUseManualPosition] = useState(false);
   const [shouldResume, setShouldResume] = useState(false);
   const { fadeAnim, showControls } = useShowControls(videoPlayer);
+  const { videoSortInstructions, toggleVideoSortInstructions } =
+    useSelectVideoSortOrder();
 
   const {
     shouldShowErrorView,
@@ -58,7 +63,11 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         shouldDisableControls={shouldShowHomeView}
         onPressAnyControls={showControls}
         onPressBack={returnToHomeView}
-        onPressSelectVideo={showSelectVideoView}
+        videoSortOrderDescription={videoSortInstructions.description}
+        onPressSelectVideo={!shouldShowSelectVideoView && showSelectVideoView}
+        onPressChangeVideoSortOrder={
+          shouldShowSelectVideoView && toggleVideoSortInstructions
+        }
       />
       <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
         <SideControlBar
@@ -95,7 +104,10 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             <DisableAdsView onDisableAds={() => setAreAdsDisabled(true)} />
           )}
           {shouldShowSelectVideoView && (
-            <SelectVideoView onSelectVideo={videoPlayer.loadVideoSource} />
+            <SelectVideoView
+              videoSortInstructions={videoSortInstructions}
+              onSelectVideo={videoPlayer.loadVideoSource}
+            />
           )}
           {!areAdsDisabled && !videoPlayer.hasVideo && <AdBanner />}
           {videoPlayer.hasVideo && (
@@ -182,8 +194,10 @@ export const Controls = ({ videoPlayer, zIndex }) => {
 const UpperControlBar = ({
   onPressBack,
   onPressAnyControls,
-  onPressSelectVideo,
   shouldDisableControls,
+  videoSortOrderDescription,
+  onPressSelectVideo,
+  onPressChangeVideoSortOrder,
 }) => {
   return (
     <ControlBar testID="upperControlBar">
@@ -195,13 +209,39 @@ const UpperControlBar = ({
         }}
         disabled={shouldDisableControls}
       />
-      <ControlBarIconButton
-        name="folderVideo"
-        onPress={() => {
-          onPressSelectVideo();
-          onPressAnyControls();
-        }}
-      />
+      {onPressSelectVideo && (
+        <ControlBarIconButton
+          name="folderVideo"
+          onPress={() => {
+            onPressSelectVideo();
+            onPressAnyControls();
+          }}
+        />
+      )}
+      {onPressChangeVideoSortOrder && (
+        <Button
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            minWidth: "25%",
+          }}
+          onPress={() => {
+            onPressChangeVideoSortOrder();
+            onPressAnyControls();
+          }}
+        >
+          <ControlViewText style={{ margin: 5 }}>
+            {videoSortOrderDescription}
+          </ControlViewText>
+          <Icon
+            name="sortOrder"
+            size={22}
+            color="white"
+            style={{ margin: 5 }}
+          />
+        </Button>
+      )}
     </ControlBar>
   );
 };
