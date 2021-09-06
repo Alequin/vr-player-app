@@ -13,15 +13,10 @@ import React from "React";
 import { App } from "../App";
 import * as asyncStorage from "../src/video-player/async-storage";
 import { mockAdMobInterstitial } from "./mocks/mock-ad-mob";
-import { mockDocumentPicker } from "./mocks/mock-document-picker";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
+import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 import { startWatchingVideoFromUpperControlBar } from "./scenarios/start-watching-video-from-the upper-control-bar";
-import {
-  asyncPressEvent,
-  asyncRender,
-  enableAllErrorLogs,
-  getButtonByText,
-} from "./test-utils";
+import { asyncRender, enableAllErrorLogs, getButtonByText } from "./test-utils";
 
 describe("Paid version of the app ", () => {
   beforeEach(() => {
@@ -58,28 +53,25 @@ describe("Paid version of the app ", () => {
 
   describe("Opening a video from the home view", () => {
     it("Does not open an interstitial ad when the 'load a video' button is press if the app is paid for", async () => {
-      mockUseVideoPlayerRefs();
-      mockDocumentPicker.returnWithASelectedFile("path/to/file");
-      mockAdMobInterstitial();
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
       expect(homeView).toBeTruthy();
 
-      const loadViewButton = getButtonByText(
-        within(homeView),
-        "Select a video to watch"
-      );
-      expect(loadViewButton).toBeTruthy();
+      // Start watching a video
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
 
-      // Does not sets the unit ad id
+      // Never sets the unit ad id
       expect(AdMobInterstitial.setAdUnitID).not.toHaveBeenCalled();
 
-      // Does not request an ad
+      // Never request an ad
       expect(AdMobInterstitial.requestAdAsync).not.toHaveBeenCalled();
-
-      // Press button to pick a video
-      await asyncPressEvent(loadViewButton);
 
       // Does not show an ad
       expect(AdMobInterstitial.showAdAsync).not.toHaveBeenCalled();
@@ -93,17 +85,17 @@ describe("Paid version of the app ", () => {
 
       const screen = await asyncRender(<App />);
 
-      // Does not set the unit ad id
-      expect(AdMobInterstitial.setAdUnitID).not.toHaveBeenCalled();
-
-      // Does not request an ad
-      expect(AdMobInterstitial.requestAdAsync).not.toHaveBeenCalled();
-
       await startWatchingVideoFromUpperControlBar({
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
       });
+
+      // Does not set the unit ad id
+      expect(AdMobInterstitial.setAdUnitID).not.toHaveBeenCalled();
+
+      // Does not request an ad
+      expect(AdMobInterstitial.requestAdAsync).not.toHaveBeenCalled();
 
       // Shows an ad
       expect(AdMobInterstitial.showAdAsync).not.toHaveBeenCalledTimes(1);
