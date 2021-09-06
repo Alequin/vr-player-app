@@ -358,6 +358,92 @@ describe("App", () => {
       expect(within(longVideoButton).queryByText("Jul 23 2020")).toBeTruthy();
     });
 
+    it("Disables all lower bar controls while on the select a video view", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("file");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Confirm all buttons are disabled
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      expect(lowerControlBar).toBeTruthy();
+
+      const playButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "playIcon"
+      );
+
+      expect(buttonProps(playButton).disabled).toBeTruthy();
+
+      const playerTypeButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "screenDesktopIcon"
+      );
+      expect(buttonProps(playerTypeButton).disabled).toBeTruthy();
+
+      const screenStretchButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "screenNormalIcon"
+      );
+      expect(buttonProps(screenStretchButton).disabled).toBeTruthy();
+
+      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      expect(timeBar.props.disabled).toBeTruthy();
+    });
+
+    it("Disables all side bar controls while on the select a video view", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("file");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Confirm buttons are disabled
+      const sideBarLeft = screen.getByTestId("sidebarLeft");
+      expect(sideBarLeft).toBeTruthy();
+
+      const replaySidebarButton = getButtonByChildTestId(
+        within(sideBarLeft),
+        "replay10Icon"
+      );
+      expect(buttonProps(replaySidebarButton).disabled).toBeTruthy();
+
+      const sideBarRight = screen.getByTestId("sidebarRight");
+      expect(sideBarRight).toBeTruthy();
+      const forwardSidebarButton = getButtonByChildTestId(
+        within(sideBarRight),
+        "forward10Icon"
+      );
+      expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
+    });
+
     describe("It shows the correct shorthand for each month", () => {
       it.each([
         ["2020-01-01", "Jan"],
@@ -1762,7 +1848,7 @@ describe("App", () => {
       expect(mocks.play).toHaveBeenCalledTimes(1);
     });
 
-    it("Disables all lower bar controls while on the home page", async () => {
+    it("Disables all lower bar controls while on the error view", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
 
       const screen = await asyncRender(<App />);
@@ -1802,7 +1888,7 @@ describe("App", () => {
       expect(timeBar.props.disabled).toBeTruthy();
     });
 
-    it("Disables all side bar controls while on the home page", async () => {
+    it("Disables all side bar controls while on the error view", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
 
       const screen = await asyncRender(<App />);
