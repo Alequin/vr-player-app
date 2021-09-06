@@ -16,7 +16,7 @@ export const startWatchingVideoFromUpperControlBar = async ({
   videoPlayerMocks.play.mockClear();
   videoPlayerMocks.getStatus.mockClear();
   videoPlayerMocks.setPosition.mockClear();
-  mockMediaLibrary.returnWithASelectedFile(mockVideoFilepath);
+  mockMediaLibrary.singleAsset(mockVideoFilepath);
 
   // Press button to pick a video
   await asyncPressEvent(

@@ -1,62 +1,18 @@
 import * as MediaLibrary from "expo-media-library";
-import isEmpty from "lodash/isEmpty";
 import orderBy from "lodash/orderBy";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, View } from "react-native";
-import { Button } from "../../../../button";
-import { Icon } from "../../../../icon";
-import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
-import { secondsToMilliseconds } from "../../../../minutes-to-milliseconds";
+import React, { useCallback, useState } from "react";
+import { FlatList, View } from "react-native";
+import { Button } from "../../../../../button";
+import { Icon } from "../../../../../icon";
+import { isAtLeastAnHour } from "../../../../../is-at-least-an-hour";
+import { secondsToMilliseconds } from "../../../../../minutes-to-milliseconds";
 import {
   millisecondsToTime,
   millisecondsToTimeWithoutHours,
-} from "../../utils";
-import { ControlViewText } from "./control-view-text";
+} from "../../../utils";
+import { ControlViewText } from "../control-view-text";
 
-export const SelectVideoView = ({ onSelectVideo, videoSortInstructions }) => {
-  const [videoOptions, setVideoOptions] = useState(null);
-
-  useEffect(() => {
-    const loadedVideoOptions = videoOptions
-      ? Promise.resolve(videoOptions)
-      : MediaLibrary.getPermissionsAsync().then(async (canUseMediaLibrary) => {
-          if (!canUseMediaLibrary.granted) {
-            await MediaLibrary.requestPermissionsAsync();
-          }
-
-          const firstPageOfVideos = await MediaLibrary.getAssetsAsync({
-            mediaType: MediaLibrary.MediaType.video,
-            sortBy: MediaLibrary.SortBy.modificationTime,
-          });
-
-          return firstPageOfVideos.assets.map((asset) => ({
-            ...asset,
-            // Fix loading issues with uri's that include '#'
-            uri: asset.uri.replace("#", "%23"),
-          }));
-        });
-
-    loadedVideoOptions.then((newVideoOptions) => {
-      setVideoOptions(
-        orderBy(
-          newVideoOptions,
-          videoSortInstructions.key,
-          videoSortInstructions.order
-        )
-      );
-    });
-  }, [videoSortInstructions, isEmpty(videoOptions)]);
-
-  if (!videoOptions)
-    return (
-      <ActivityIndicator
-        testID="selectVideoViewLoading"
-        size="large"
-        color="#00ff00"
-        style={{ height: "100%" }}
-      />
-    );
-
+export const ListOfVideos = ({ videoOptions, onSelectVideo }) => {
   return (
     <FlatList
       testID="selectVideoView"

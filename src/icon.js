@@ -59,6 +59,7 @@ const ICON_OPTIONS = {
   replay: customIcon(MaterialIcons, "replay-10"),
   video: customIcon(Entypo, "video"),
   sortOrder: customIcon(FontAwesome, "sort-amount-asc"),
+  shieldKey: customIcon(MaterialCommunityIcons, "shield-key"),
 };
 
 const TestIdElement = (props) => <View {...props} />;

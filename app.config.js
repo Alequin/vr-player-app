@@ -16,7 +16,7 @@ export default {
     package: isPayedVersion
       ? "com.just_for_fun.watch_in_vr"
       : "com.just_for_fun.watch_in_vr_free",
-    permissions: [], // Use minimum permissions (https://docs.expo.dev/versions/latest/config/app/#permissions)
+    permissions: ["WRITE_EXTERNAL_STORAGE"], // Use minimum permissions (https://docs.expo.dev/versions/latest/config/app/#permissions)
     versionCode: version,
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",

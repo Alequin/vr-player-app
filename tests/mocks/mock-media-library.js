@@ -3,38 +3,15 @@ jest.genMockFromModule("expo-media-library");
 import * as MediaLibrary from "expo-media-library";
 
 export const mockMediaLibrary = {
-  returnWithoutSelectingAFile: (filePath) => {
+  singleAsset: (filePath) => {
     return {
-      mockGetPermissionsAsync: jest
-        .spyOn(MediaLibrary, "getPermissionsAsync")
-        .mockResolvedValue({ granted: true }),
-      mockRequestPermissionsAsync: jest.spyOn(
-        MediaLibrary,
-        "requestPermissionsAsync"
-      ),
-      mockGetAssetsAsync: jest
-        .spyOn(MediaLibrary, "getAssetsAsync")
-        .mockResolvedValue({
-          assets: [
-            {
-              uri: filePath,
-              filename: filePath,
-              durationInMinutes: 10,
-              modificationTime: new Date("2021-01-01").getTime(),
-            },
-          ],
-        }),
-    };
-  },
-  // TODO rename
-  returnWithASelectedFile: (filePath) => {
-    return {
-      mockGetPermissionsAsync: jest
-        .spyOn(MediaLibrary, "getPermissionsAsync")
-        .mockResolvedValue({ granted: true }),
       mockRequestPermissionsAsync: jest
         .spyOn(MediaLibrary, "requestPermissionsAsync")
-        .mockResolvedValue(undefined),
+        .mockResolvedValue({
+          granted: true,
+          status: "granted",
+          canAskAgain: true,
+        }),
       mockGetAssetsAsync: jest
         .spyOn(MediaLibrary, "getAssetsAsync")
         .mockResolvedValue({
@@ -49,11 +26,15 @@ export const mockMediaLibrary = {
         }),
     };
   },
-  returnWithMultipleFileOptions: (mockAssets) => {
+  multipleAssets: (mockAssets) => {
     return {
       mockGetPermissionsAsync: jest
         .spyOn(MediaLibrary, "getPermissionsAsync")
-        .mockResolvedValue({ granted: true }),
+        .mockResolvedValue({
+          granted: true,
+          status: "granted",
+          canAskAgain: true,
+        }),
 
       mockGetAssetsAsync: jest
         .spyOn(MediaLibrary, "getAssetsAsync")
@@ -62,25 +43,25 @@ export const mockMediaLibrary = {
         }),
     };
   },
-  withoutPermissions: (filePath) => {
+  undeterminedPermissions: () => {
     return {
-      mockGetPermissionsAsync: jest
-        .spyOn(MediaLibrary, "getPermissionsAsync")
-        .mockResolvedValue({ granted: false }),
       mockRequestPermissionsAsync: jest
         .spyOn(MediaLibrary, "requestPermissionsAsync")
-        .mockResolvedValue(undefined),
-      mockGetAssetsAsync: jest
-        .spyOn(MediaLibrary, "getAssetsAsync")
         .mockResolvedValue({
-          assets: [
-            {
-              uri: filePath,
-              filename: filePath,
-              durationInMinutes: 10,
-              modificationTime: new Date("2021-01-01").getTime(),
-            },
-          ],
+          granted: false,
+          status: "undetermined",
+          canAskAgain: true,
+        }),
+    };
+  },
+  rejectedPermissions: () => {
+    return {
+      mockRequestPermissionsAsync: jest
+        .spyOn(MediaLibrary, "requestPermissionsAsync")
+        .mockResolvedValue({
+          granted: false,
+          status: "denied",
+          canAskAgain: false,
         }),
     };
   },

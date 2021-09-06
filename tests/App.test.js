@@ -6,6 +6,9 @@ jest.mock("../secrets.json", () => ({
   googleMobileAdsAppId: "ca-app-pub-5186020037332344~5459192428",
   isPayedVersion: false,
 }));
+jest.mock("expo-linking", () => ({
+  openSettings: jest.fn(),
+}));
 
 import { act, cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
@@ -49,6 +52,7 @@ import {
   silenceAllErrorLogs,
   videoPlayerProps,
 } from "./test-utils";
+import * as Linking from "expo-linking";
 
 describe("App", () => {
   beforeEach(() => {
@@ -207,7 +211,7 @@ describe("App", () => {
   describe("Selecting a video", () => {
     it("Opens the 'select a video' view when the 'load a video' button is press on the 'home' view", async () => {
       mockUseVideoPlayerRefs();
-      mockMediaLibrary.returnWithASelectedFile("file");
+      mockMediaLibrary.singleAsset("file");
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -228,7 +232,7 @@ describe("App", () => {
 
     it("Opens the 'select a video' view when the button on the upper control bar is pressed", async () => {
       mockUseVideoPlayerRefs();
-      mockMediaLibrary.returnWithASelectedFile("file");
+      mockMediaLibrary.singleAsset("file");
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -248,8 +252,7 @@ describe("App", () => {
 
     it("Opens the 'select a video' view and shows a loading indicator which loading the video file names", async (done) => {
       mockUseVideoPlayerRefs();
-      const { mockGetAssetsAsync } =
-        mockMediaLibrary.returnWithASelectedFile("file");
+      const { mockGetAssetsAsync } = mockMediaLibrary.singleAsset("file");
 
       // Fake a delay in fetching the video file paths
       mockGetAssetsAsync.mockImplementation(async () => await delay(60_000));
@@ -276,27 +279,26 @@ describe("App", () => {
     it("Shows a list of videos to watch on the 'select a video' view", async () => {
       mockUseVideoPlayerRefs();
 
-      const { mockGetAssetsAsync } =
-        mockMediaLibrary.returnWithMultipleFileOptions([
-          {
-            uri: `path/to/file-short.mp4`,
-            filename: `file-short.mp4`,
-            duration: 30,
-            modificationTime: new Date("2020-09-01"),
-          },
-          {
-            uri: `path/to/file-mid.mp4`,
-            filename: `file-mid.mp4`,
-            duration: 630, // 10 minutes 30 seconds
-            modificationTime: new Date("2020-08-15"),
-          },
-          {
-            uri: `path/to/file-long.mp4`,
-            filename: `file-long.mp4`,
-            duration: 7800, // 2 hours 10 minutes
-            modificationTime: new Date("2020-07-23"),
-          },
-        ]);
+      const { mockGetAssetsAsync } = mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01"),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15"),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23"),
+        },
+      ]);
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -375,7 +377,7 @@ describe("App", () => {
         async (actualDate, expectedShorthandForMonth) => {
           mockUseVideoPlayerRefs();
 
-          mockMediaLibrary.returnWithMultipleFileOptions([
+          mockMediaLibrary.multipleAssets([
             {
               uri: `path/to/file.mp4`,
               filename: `file.mp4`,
@@ -417,7 +419,7 @@ describe("App", () => {
       modificationTime.setMonth(0);
       modificationTime.setDate(1);
 
-      mockMediaLibrary.returnWithMultipleFileOptions([
+      mockMediaLibrary.multipleAssets([
         {
           uri: `path/to/file.mp4`,
           filename: `file.mp4`,
@@ -484,7 +486,7 @@ describe("App", () => {
 
     it("Encodes file uri's which include a '#' character to avoid loading issues", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.returnWithASelectedFile("path/to/file#1.mp4");
+      mockMediaLibrary.singleAsset("path/to/file#1.mp4");
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -525,10 +527,10 @@ describe("App", () => {
       );
     });
 
-    it("Checks if the user has given permission to use the media library and requests access if they have not", async () => {
+    it("Checks if the user has given permission to use the media library and requests they give permission if they have not", async () => {
       mockUseVideoPlayerRefs();
-      const { mockGetPermissionsAsync, mockRequestPermissionsAsync } =
-        mockMediaLibrary.withoutPermissions("path/to/file#1.mp4");
+      const { mockRequestPermissionsAsync } =
+        mockMediaLibrary.undeterminedPermissions();
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -543,26 +545,87 @@ describe("App", () => {
       // Press button to pick a video
       await asyncPressEvent(loadViewButton);
 
-      // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
-
-      // Confirm permissions where checked
-      expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(1);
-      // Confirm permission was requested
+      // Confirm permissions have been requested from the user
       expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
-      // Confirm a video button is shown
+
+      // Confirm we are taken to the "select a video need permission" page
+      const page = screen.getByTestId("selectVideoViewNeedPermission");
+      expect(page).toBeTruthy();
+
+      // Confirm a button is shown asking the user to give permission
+      const permissionsButton = getButtonByText(
+        within(page),
+        "You will need to grant the app permission to view media files"
+      );
+
+      expect(permissionsButton).toBeTruthy();
       expect(
-        getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
-          "path/to/file#1.mp4"
+        within(permissionsButton).queryByText("before a video can be selected")
+      ).toBeTruthy();
+      expect(
+        within(permissionsButton).queryByText(
+          "Press to give permission to access media files"
         )
       ).toBeTruthy();
+
+      // Press the button to request permissions again
+      await asyncPressEvent(permissionsButton);
+      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(2);
+    });
+
+    it("Directs the user to update permissions from the mobile settings page if permissions cannot be requested again", async () => {
+      mockUseVideoPlayerRefs();
+      const { mockRequestPermissionsAsync } =
+        mockMediaLibrary.rejectedPermissions();
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm permissions have been requested from the user
+      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
+
+      // Confirm we are taken to the "select a video need permission" page
+      const page = screen.getByTestId("selectVideoViewNeedPermission");
+      expect(page).toBeTruthy();
+
+      // Confirm a button is shown asking the user to give permission
+      const permissionsButton = getButtonByText(
+        within(page),
+        "You will need to grant the app permission to view media files"
+      );
+
+      expect(permissionsButton).toBeTruthy();
+      expect(
+        within(permissionsButton).queryByText("before a video can be selected")
+      ).toBeTruthy();
+      expect(
+        within(permissionsButton).queryByText(
+          "Press to view the settings page and update permissions"
+        )
+      ).toBeTruthy();
+
+      // Press the button to send the user to the settings page to update permissions
+      await asyncPressEvent(permissionsButton);
+      expect(Linking.openSettings).toHaveBeenCalledTimes(1);
+
+      // Returns to the home page after to so the user can try to select a video again after returning from the settings
+      expect(screen.queryByTestId("homeView")).toBeTruthy();
     });
 
     it("Checks if the user has given permission to use the media library and does not requests access if they have", async () => {
       mockUseVideoPlayerRefs();
-      const { mockGetPermissionsAsync, mockRequestPermissionsAsync } =
-        mockMediaLibrary.returnWithASelectedFile("path/to/file#1.mp4");
+      const { mockRequestPermissionsAsync } =
+        mockMediaLibrary.singleAsset("path/to/file#1.mp4");
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -581,9 +644,8 @@ describe("App", () => {
       expect(screen.getByTestId("selectVideoView")).toBeTruthy();
 
       // Confirm permissions where checked
-      expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(1);
-      // Confirm permission was not requested
-      expect(mockRequestPermissionsAsync).not.toHaveBeenCalled();
+      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
+
       // Confirm a video button is shown
       expect(
         getButtonByText(
@@ -596,7 +658,7 @@ describe("App", () => {
     it("Gives the options to sort the the video buttons and change how they are sorted", async () => {
       mockUseVideoPlayerRefs();
 
-      mockMediaLibrary.returnWithMultipleFileOptions([
+      mockMediaLibrary.multipleAssets([
         {
           uri: `path/to/file-mid.mp4`,
           filename: `file-mid.mp4`,
@@ -820,7 +882,7 @@ describe("App", () => {
     it("Loads the last known video sort order and saves a new one when it changes", async () => {
       mockUseVideoPlayerRefs();
 
-      mockMediaLibrary.returnWithASelectedFile(`path/to/file-mid.mp4`);
+      mockMediaLibrary.singleAsset(`path/to/file-mid.mp4`);
 
       // Mock a saved video sort order
       jest.spyOn(asyncStorage.videoSortOrder, "load").mockResolvedValue(3);
@@ -865,7 +927,7 @@ describe("App", () => {
   describe("Opening a video from the home view", () => {
     it("Opens an interstitial ad when the 'load a video' button is press", async () => {
       mockUseVideoPlayerRefs();
-      mockMediaLibrary.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.singleAsset("path/to/file");
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -912,7 +974,7 @@ describe("App", () => {
 
     it("Does not open an interstitial ad when the 'load a video' button is press if ads are disabled", async () => {
       mockUseVideoPlayerRefs();
-      mockMediaLibrary.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.singleAsset("path/to/file");
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -1243,7 +1305,7 @@ describe("App", () => {
         .mockReturnValue(true);
 
       // Press button to pick another video
-      mockMediaLibrary.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.singleAsset("path/to/file");
       await asyncPressEvent(
         getButtonByChildTestId(
           within(screen.getByTestId("upperControlBar")),
@@ -1414,7 +1476,7 @@ describe("App", () => {
 
       it("Shows the error page when attempting to open a video from the upper control bar but there is an issue loading the new video", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        mockMediaLibrary.returnWithASelectedFile("path/to/file");
+        mockMediaLibrary.singleAsset("path/to/file");
         mocks.load.mockRejectedValue(null);
 
         const screen = await asyncRender(<App />);
@@ -1582,7 +1644,7 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockMediaLibrary.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.singleAsset("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
@@ -1633,7 +1695,7 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockMediaLibrary.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.singleAsset("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
@@ -1663,7 +1725,7 @@ describe("App", () => {
 
     it("Does not open an interstitial ad when the 'load a video' button is press if ads are disabled", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.singleAsset("path/to/file");
       mockAdMobInterstitial();
 
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
@@ -1853,7 +1915,7 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockMediaLibrary.returnWithASelectedFile("path/to/file");
+      mockMediaLibrary.singleAsset("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"

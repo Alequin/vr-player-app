@@ -17,7 +17,7 @@ import { ControlViewText } from "./control-views/control-view-text";
 import { DisableAdsView } from "./control-views/disable-ads-view";
 import { ErrorView } from "./control-views/error-view";
 import { HomeView } from "./control-views/home-view";
-import { SelectVideoView } from "./control-views/select-video-view";
+import { SelectVideoView } from "./control-views/select-video-view/select-video-view";
 import { useCanShowAds } from "./hooks/use-can-show-ads";
 import { useSelectVideoSortOrder } from "./hooks/use-select-video-sort-order";
 import { useShowControls } from "./hooks/use-show-controls";
@@ -107,6 +107,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             <SelectVideoView
               videoSortInstructions={videoSortInstructions}
               onSelectVideo={videoPlayer.loadVideoSource}
+              returnToHomeView={returnToHomeView}
             />
           )}
           {!areAdsDisabled && !videoPlayer.hasVideo && <AdBanner />}
