@@ -1650,6 +1650,44 @@ describe("App", () => {
       // confirm the home view is now visible
       expect(screen.getByTestId("homeView")).toBeTruthy();
     });
+
+    it("Unmounts and remounts the main container to reset the app if there is an issue unloading the video", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+
+      mocks.unload.mockRejectedValue(new Error("mock unload error"));
+
+      const screen = await asyncRender(<App />);
+
+      await startWatchingVideoFromUpperControlBar({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+      });
+
+      // confirm the main container is mounted
+      expect(screen.queryByTestId("mainContainer")).toBeTruthy();
+
+      // Return to home view with the back button to unload the video
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      );
+
+      silenceAllErrorLogs();
+
+      // confirm the main container is unmounted
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+      );
+
+      // confirm the main container is mounted again
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).toBeTruthy()
+      );
+    });
   });
 
   describe("Viewing the error view", () => {

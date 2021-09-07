@@ -96,12 +96,12 @@ export const DisableAdsView = ({ onDisableAds }) => {
         >
           <ControlPageIcon name="hourglass" />
           {areAdsDisabled ? (
-            <ControlViewText style={{ textAlign: "center" }}>
+            <ControlViewText>
               Ads are already disabled. Add more time by watching another short
               ad
             </ControlViewText>
           ) : (
-            <ControlViewText style={{ textAlign: "center" }}>
+            <ControlViewText>
               Watch a short ad and disable all other ads for 20 minutes
             </ControlViewText>
           )}

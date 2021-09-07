@@ -9,6 +9,7 @@ export const ControlViewText = (props) => (
         color: "white",
         fontSize: 16,
         marginVertical: 5,
+        textAlign: "center",
       },
       props.style,
     ]}

@@ -34,6 +34,7 @@ export const usePairedVideosPlayers = () => {
   const [hasVideo, setHasVideo] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [errorLoadingVideo, setErrorLoadingVideo] = useState(false);
+  const [errorUnloadingVideo, setErrorUnloadingVideo] = useState(false);
 
   const [currentVideoPositionInMillis, setCurrentVideoPositionInMillis] =
     useState(0);
@@ -79,7 +80,13 @@ export const usePairedVideosPlayers = () => {
 
   const unloadVideo = useCallback(async () => {
     if (!hasVideo) return;
-    await videoPlayer.unload();
+    try {
+      await videoPlayer.unload();
+    } catch (error) {
+      logError(error);
+      setErrorUnloadingVideo(error);
+      return;
+    }
 
     setVideoDuration(0);
     setHasVideo(null);
@@ -135,6 +142,7 @@ export const usePairedVideosPlayers = () => {
     leftPlayer: videoPlayer.refs.primaryVideo,
     rightPlayer: videoPlayer.refs.secondaryVideo,
     errorLoadingVideo,
+    errorUnloadingVideo,
     videoPlayerMode,
     videoResizeMode,
     play,
