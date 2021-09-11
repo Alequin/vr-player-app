@@ -1,8 +1,7 @@
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useCallback, useEffect } from "react/cjs/react.development";
 import { BlankScreen } from "./src/blank-screen";
 import { VideoPlayer } from "./src/video-player/video-player";
 

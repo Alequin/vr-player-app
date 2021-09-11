@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
-import { useEffect } from "react/cjs/react.development";
 import { Controls } from "./components/controls/controls";
 import { DualVideoView } from "./components/dual-video-view";
 import { VideoPlayerMask as ScreenMask } from "./components/screen-mask";
