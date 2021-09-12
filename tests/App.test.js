@@ -35,6 +35,7 @@ import {
 } from "../src/video-player/hooks/use-paired-video-players";
 import { mockAdMobInterstitial, mockAdMobRewarded } from "./mocks/mock-ad-mob";
 import { mockAdsAreDisabled } from "./mocks/mock-ads-are-disabled";
+import { mockAppStateChangeCallback } from "./mocks/mock-app-state-change-callback";
 import { mockBackHandlerCallback } from "./mocks/mock-back-handler-callback";
 import { mockLogError } from "./mocks/mock-logger";
 import { mockMediaLibrary } from "./mocks/mock-media-library";
@@ -139,6 +140,37 @@ describe("App", () => {
       // Press the button to send the user to the settings page to update permissions
       await asyncPressEvent(permissionsButton);
       expect(Linking.openSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it("Checks the media library permissions given by the user when the app state changes from 'background' to 'active'", async () => {
+      mockUseVideoPlayerRefs();
+      const { mockGetPermissionsAsync } =
+        mockMediaLibrary.undeterminedPermissions();
+      const getAppStateCallback = mockAppStateChangeCallback();
+
+      const screen = await asyncRender(<App />);
+
+      // The permission status is checked initially
+      expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(1);
+
+      // Confirm a button is shown asking the user to give permission
+      const permissionsButton = getButtonByText(
+        screen,
+        "You will need to grant the app permission to view media files"
+      );
+      expect(permissionsButton).toBeTruthy();
+
+      // Update app state so the app is in the background
+      await act(async () => getAppStateCallback()("background"));
+
+      // Confirm no more checks have been made since the initial check
+      expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(1);
+
+      // Update app state so the app is active again
+      await act(async () => getAppStateCallback()("active"));
+
+      // Confirm the permissions status is checked again after app becomes active
+      expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(2);
     });
 
     it("Shows a button to load a video", async () => {
@@ -1074,6 +1106,7 @@ describe("App", () => {
     it("plays video from the home view when one is selected", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -1084,6 +1117,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
     });
 
@@ -1096,6 +1130,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { setAdUnitID, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file");
 
         setAdUnitID.mockRejectedValue("fake setAdUnitID error");
 
@@ -1110,6 +1145,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
       });
 
@@ -1117,6 +1153,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { requestAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file.mp4");
 
         requestAdAsync.mockRejectedValue("fake requestAdAsync error");
 
@@ -1131,6 +1168,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file.mp4",
         });
       });
 
@@ -1138,6 +1176,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { getIsReadyAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file.mp4");
 
         getIsReadyAsync.mockRejectedValue("fake getIsReadyAsync error");
 
@@ -1152,6 +1191,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file.mp4",
         });
 
         // an error occurs

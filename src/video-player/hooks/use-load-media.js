@@ -1,7 +1,6 @@
 import * as MediaLibrary from "expo-media-library";
 import orderBy from "lodash/orderBy";
 import { useEffect, useMemo, useState } from "react";
-import * as asyncStorage from "../async-storage";
 
 export const useLoadMedia = (hasPermission, videoSortInstructions) => {
   const [videoOptions, setVideoOptions] = useState(null);
@@ -16,7 +15,6 @@ export const useLoadMedia = (hasPermission, videoSortInstructions) => {
     }).then(async (videos) => {
       if (hasUnmounted) return;
 
-      asyncStorage.selectVideListCache.save(videos);
       setVideoOptions(
         videos.assets.map((asset) => ({
           ...asset,

@@ -1,4 +1,3 @@
-import * as Linking from "expo-linking";
 import React, { useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { Button } from "../../../button";
@@ -101,11 +100,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           {shouldShowRequestPermissionsView && (
             <RequestPermissionsView
               shouldDirectUserToSettings={!canAskPermissionInApp}
-              onPress={async () => {
-                if (canAskPermissionInApp)
-                  return askForMediaLibraryPermission();
-                await Linking.openSettings();
-              }}
+              onPress={askForMediaLibraryPermission}
             />
           )}
           {shouldShowHomeView && (

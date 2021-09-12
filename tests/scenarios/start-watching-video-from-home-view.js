@@ -1,12 +1,11 @@
 import { act, within } from "@testing-library/react-native";
-import { mockMediaLibrary } from "../mocks/mock-media-library";
 import { asyncPressEvent, getButtonByText } from "../test-utils";
 
 export const startWatchingVideoFromHomeView = async ({
   screen,
   videoPlayerMocks,
   getInterstitialDidCloseCallback,
-  mockVideoFilepath = "path/to/file",
+  mockVideoFilepath,
 }) => {
   videoPlayerMocks.load.mockClear();
   videoPlayerMocks.play.mockClear();
@@ -26,12 +25,12 @@ export const startWatchingVideoFromHomeView = async ({
   expect(screen.getByTestId("selectVideoView")).toBeTruthy();
 
   // Select the first video option
-  await asyncPressEvent(
-    getButtonByText(
-      within(screen.getByTestId("selectVideoView")),
-      mockVideoFilepath
-    )
+  const selectVideoButton = getButtonByText(
+    within(screen.getByTestId("selectVideoView")),
+    mockVideoFilepath
   );
+  expect(selectVideoButton).toBeTruthy();
+  await asyncPressEvent(selectVideoButton);
 
   // Fire callback to start playing the video
   const fireDidCloseCallback = getInterstitialDidCloseCallback();

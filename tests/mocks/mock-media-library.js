@@ -5,6 +5,13 @@ import * as MediaLibrary from "expo-media-library";
 export const mockMediaLibrary = {
   grantedPermission: () => {
     return {
+      mockGetPermissionsAsync: jest
+        .spyOn(MediaLibrary, "getPermissionsAsync")
+        .mockResolvedValue({
+          granted: true,
+          status: "granted",
+          canAskAgain: true,
+        }),
       mockRequestPermissionsAsync: jest
         .spyOn(MediaLibrary, "requestPermissionsAsync")
         .mockResolvedValue({
@@ -16,6 +23,13 @@ export const mockMediaLibrary = {
   },
   singleAsset: (filePath) => {
     return {
+      mockGetPermissionsAsync: jest
+        .spyOn(MediaLibrary, "getPermissionsAsync")
+        .mockResolvedValue({
+          granted: true,
+          status: "granted",
+          canAskAgain: true,
+        }),
       mockRequestPermissionsAsync: jest
         .spyOn(MediaLibrary, "requestPermissionsAsync")
         .mockResolvedValue({
@@ -46,6 +60,13 @@ export const mockMediaLibrary = {
           status: "granted",
           canAskAgain: true,
         }),
+      mockGetPermissionsAsync: jest
+        .spyOn(MediaLibrary, "getPermissionsAsync")
+        .mockResolvedValue({
+          granted: true,
+          status: "granted",
+          canAskAgain: true,
+        }),
 
       mockGetAssetsAsync: jest
         .spyOn(MediaLibrary, "getAssetsAsync")
@@ -56,6 +77,13 @@ export const mockMediaLibrary = {
   },
   undeterminedPermissions: () => {
     return {
+      mockGetPermissionsAsync: jest
+        .spyOn(MediaLibrary, "getPermissionsAsync")
+        .mockResolvedValue({
+          granted: false,
+          status: "granted",
+          canAskAgain: true,
+        }),
       mockRequestPermissionsAsync: jest
         .spyOn(MediaLibrary, "requestPermissionsAsync")
         .mockResolvedValue({
@@ -67,6 +95,13 @@ export const mockMediaLibrary = {
   },
   rejectedPermissions: () => {
     return {
+      mockGetPermissionsAsync: jest
+        .spyOn(MediaLibrary, "getPermissionsAsync")
+        .mockResolvedValue({
+          granted: false,
+          status: "granted",
+          canAskAgain: false,
+        }),
       mockRequestPermissionsAsync: jest
         .spyOn(MediaLibrary, "requestPermissionsAsync")
         .mockResolvedValue({
