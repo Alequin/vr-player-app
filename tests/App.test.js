@@ -1254,7 +1254,7 @@ describe("App", () => {
           getInterstitialDidCloseCallback,
         });
 
-        expect(logError).toHaveBeenCalledTimes(0);
+        expect(logError).not.toHaveBeenCalled();
       });
     });
 
@@ -1556,7 +1556,7 @@ describe("App", () => {
           getInterstitialDidCloseCallback,
         });
 
-        expect(logError).toHaveBeenCalledTimes(0);
+        expect(logError).not.toHaveBeenCalled();
       });
     });
 
@@ -2890,7 +2890,7 @@ describe("App", () => {
       await act(async () => onSeekStart(seekStartPosition));
 
       // Pauses the video after starting to seek the video position
-      expect(mocks.pause).toHaveBeenCalledTimes(0);
+      expect(mocks.pause).not.toHaveBeenCalled();
     });
 
     it("resumes the video after seeking with the timebar if it was playing in the beginning", async () => {
@@ -2976,7 +2976,7 @@ describe("App", () => {
       await act(async () => onSeekComplete(10_000));
 
       // Does not start playing the video again
-      expect(mocks.play).toHaveBeenCalledTimes(0);
+      expect(mocks.play).not.toHaveBeenCalled();
     });
   });
 
@@ -3382,7 +3382,7 @@ describe("App", () => {
       // Confirm the video does not start playing again
       await waitForExpect(async () => {
         expect(mocks.setPosition).toHaveBeenCalledTimes(1);
-        expect(mocks.play).toHaveBeenCalledTimes(0);
+        expect(mocks.play).not.toHaveBeenCalled();
       });
     });
 
@@ -3437,7 +3437,7 @@ describe("App", () => {
       // Confirm the video does not start playing again
       await waitForExpect(async () => {
         expect(mocks.setPosition).toHaveBeenCalledTimes(1);
-        expect(mocks.play).toHaveBeenCalledTimes(0);
+        expect(mocks.play).not.toHaveBeenCalled();
       });
     });
 
@@ -3843,7 +3843,7 @@ describe("App", () => {
 
       // Reward ad is displayed but loading is not required
       expect(mockRewardAds.getIsReadyAsync).toHaveBeenCalledTimes(1);
-      expect(mockRewardAds.requestAdAsync).toHaveBeenCalledTimes(0);
+      expect(mockRewardAds.requestAdAsync).not.toHaveBeenCalled();
       expect(mockRewardAds.showAdAsync).toHaveBeenCalledTimes(1);
     });
 
