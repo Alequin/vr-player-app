@@ -10,5 +10,5 @@ export const useAppState = () => {
     return () => AppState.removeEventListener("change", updateAppState);
   }, []);
 
-  return { appState, isAppActive: appState === "active" };
+  return { isAppActive: appState === "active" };
 };

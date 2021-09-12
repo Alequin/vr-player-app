@@ -13,6 +13,7 @@ import React from "React";
 import { App } from "../App";
 import * as asyncStorage from "../src/video-player/async-storage";
 import { mockAdMobInterstitial } from "./mocks/mock-ad-mob";
+import "./mocks/mock-app-state";
 import { mockMediaLibrary } from "./mocks/mock-media-library";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";

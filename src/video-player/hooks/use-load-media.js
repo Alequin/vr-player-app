@@ -1,12 +1,14 @@
 import * as MediaLibrary from "expo-media-library";
 import orderBy from "lodash/orderBy";
 import { useEffect, useMemo, useState } from "react";
+import { useAppState } from "./use-app-state";
 
 export const useLoadMedia = (hasPermission, videoSortInstructions) => {
+  const { isAppActive } = useAppState();
   const [videoOptions, setVideoOptions] = useState(null);
 
   useEffect(() => {
-    if (!hasPermission) return;
+    if (!hasPermission || !isAppActive) return;
 
     let hasUnmounted = false;
     MediaLibrary.getAssetsAsync({
@@ -24,7 +26,7 @@ export const useLoadMedia = (hasPermission, videoSortInstructions) => {
       );
     });
     return () => (hasUnmounted = true);
-  }, [hasPermission]);
+  }, [hasPermission, isAppActive]);
 
   return useMemo(
     () =>

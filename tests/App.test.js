@@ -35,7 +35,7 @@ import {
 } from "../src/video-player/hooks/use-paired-video-players";
 import { mockAdMobInterstitial, mockAdMobRewarded } from "./mocks/mock-ad-mob";
 import { mockAdsAreDisabled } from "./mocks/mock-ads-are-disabled";
-import { mockAppStateChangeCallback } from "./mocks/mock-app-state-change-callback";
+import * as mockAppState from "./mocks/mock-app-state";
 import { mockBackHandlerCallback } from "./mocks/mock-back-handler-callback";
 import { mockLogError } from "./mocks/mock-logger";
 import { mockMediaLibrary } from "./mocks/mock-media-library";
@@ -146,7 +146,7 @@ describe("App", () => {
       mockUseVideoPlayerRefs();
       const { mockGetPermissionsAsync } =
         mockMediaLibrary.undeterminedPermissions();
-      const getAppStateCallback = mockAppStateChangeCallback();
+      const updateAppState = mockAppState.mockAppStateUpdate();
 
       const screen = await asyncRender(<App />);
 
@@ -161,16 +161,62 @@ describe("App", () => {
       expect(permissionsButton).toBeTruthy();
 
       // Update app state so the app is in the background
-      await act(async () => getAppStateCallback()("background"));
+      await updateAppState("background");
 
       // Confirm no more checks have been made since the initial check
       expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(1);
 
       // Update app state so the app is active again
-      await act(async () => getAppStateCallback()("active"));
+      await updateAppState("active");
 
       // Confirm the permissions status is checked again after app becomes active
       expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(2);
+    });
+
+    it("Requests a list of the videos on the phone", async () => {
+      mockUseVideoPlayerRefs();
+
+      const { mockGetAssetsAsync } = mockMediaLibrary.singleAsset(
+        `path/to/file-short.mp4`
+      );
+
+      await asyncRender(<App />);
+
+      // Confirm the video files are requested
+      expect(mockGetAssetsAsync).toHaveBeenCalledTimes(1);
+      expect(mockGetAssetsAsync).toHaveBeenCalledWith({
+        mediaType: MediaLibrary.MediaType.video,
+        first: 100000,
+      });
+    });
+
+    it("Requests a list of the videos on the phone again whenever the ", async () => {
+      mockUseVideoPlayerRefs();
+      const updateAppState = mockAppState.mockAppStateUpdate();
+
+      const { mockGetAssetsAsync } = mockMediaLibrary.singleAsset(
+        `path/to/file-short.mp4`
+      );
+
+      await asyncRender(<App />);
+
+      // Confirm the video files are requested
+      expect(mockGetAssetsAsync).toHaveBeenCalledTimes(1);
+      expect(mockGetAssetsAsync).toHaveBeenCalledWith({
+        mediaType: MediaLibrary.MediaType.video,
+        first: 100000,
+      });
+
+      // Send app to background
+      await updateAppState("background");
+
+      // Confirm requests for files has not increased
+      expect(mockGetAssetsAsync).toHaveBeenCalledTimes(1);
+
+      await updateAppState("active");
+
+      // Confirm another request for files was made
+      expect(mockGetAssetsAsync).toHaveBeenCalledTimes(2);
     });
 
     it("Shows a button to load a video", async () => {
