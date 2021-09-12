@@ -12,10 +12,10 @@ import {
 } from "../../../utils";
 import { ControlViewText } from "../control-view-text";
 
-export const ListOfVideos = ({ videoOptions, onSelectVideo }) => {
+export const ListOfVideos = ({ testID, videoOptions, onSelectVideo }) => {
   return (
     <FlatList
-      testID="selectVideoView"
+      testID={testID}
       data={videoOptions}
       keyExtractor={({ uri }) => uri}
       numColumns={2}

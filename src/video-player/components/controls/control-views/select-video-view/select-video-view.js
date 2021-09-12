@@ -10,30 +10,16 @@ export const SelectVideoView = ({
   videoSortInstructions,
   returnToHomeView,
 }) => {
-  const {
-    videoOptions,
-    loadVideoOptions,
-    orderVideoOptions,
-    mediaLibraryPermissions,
-  } = useLoadMedia();
+  const { videoOptions, refreshVideoOptions, mediaLibraryPermissions } =
+    useLoadMedia(videoSortInstructions);
 
-  useEffect(() => {
-    loadVideoOptions().then(async () =>
-      orderVideoOptions(videoSortInstructions)
-    );
-  }, []);
-
-  useEffect(() => {
-    orderVideoOptions(videoSortInstructions);
-  }, [videoSortInstructions, Boolean(videoOptions)]);
-
-  if (mediaLibraryPermissions && !mediaLibraryPermissions.granted)
+  if (mediaLibraryPermissions && !mediaLibraryPermissions.granted) {
     return (
       <RequestPermissionsButton
         testID="selectVideoViewNeedPermission"
         shouldDirectUserToSettings={!mediaLibraryPermissions.canAskAgain}
         onPress={async () => {
-          if (mediaLibraryPermissions.canAskAgain) await loadVideoOptions();
+          if (mediaLibraryPermissions.canAskAgain) refreshVideoOptions();
           else {
             returnToHomeView();
             await Linking.openSettings();
@@ -41,8 +27,8 @@ export const SelectVideoView = ({
         }}
       />
     );
-
-  if (!videoOptions)
+  }
+  if (!videoOptions) {
     return (
       <ActivityIndicator
         testID="selectVideoViewLoading"
@@ -51,8 +37,13 @@ export const SelectVideoView = ({
         style={{ height: "100%" }}
       />
     );
+  }
 
   return (
-    <ListOfVideos videoOptions={videoOptions} onSelectVideo={onSelectVideo} />
+    <ListOfVideos
+      testID="selectVideoView"
+      videoOptions={videoOptions}
+      onSelectVideo={onSelectVideo}
+    />
   );
 };

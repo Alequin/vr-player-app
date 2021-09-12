@@ -16,9 +16,9 @@ export const useViewToShow = (videoPlayer) => {
   if (isMoreThanOneKeyTruthy(viewStates))
     throw new Error("Only one control view should be visible at any one time");
 
-  const returnToHomeView = useCallback(async () => {
+  const returnToHomeView = useCallback(() => {
     // Unload a video if one is active to close the video player
-    if (videoPlayer.hasVideo) await videoPlayer.unloadVideo();
+    if (videoPlayer.hasVideo) videoPlayer.unloadVideo();
     // Clear any errors to close the error page
     if (viewStates.shouldShowErrorView) videoPlayer.clearError();
     // Set all stateful views to false
@@ -31,25 +31,50 @@ export const useViewToShow = (videoPlayer) => {
     showSelectVideoView,
   ]);
 
+  const goToDisableAdsView = useCallback(() => {
+    returnToHomeView();
+    setShowDisableAdsView(true);
+  }, [returnToHomeView]);
+
+  const goToSelectVideoView = useCallback(() => {
+    returnToHomeView();
+    setSelectVideoView(true);
+  }, [returnToHomeView]);
+
+  const onBackEvent = useCallback(() => {
+    // return to video select page if a video is playing
+    if (videoPlayer.hasVideo) {
+      goToSelectVideoView();
+      return true;
+    }
+    // return to home view in all other situations
+    if (!videoPlayer.hasVideo && !viewStates.shouldShowHomeView) {
+      returnToHomeView();
+      return true;
+    }
+
+    return false;
+  }, [
+    returnToHomeView,
+    goToSelectVideoView,
+    viewStates.shouldShowHomeView,
+    videoPlayer.hasVideo,
+  ]);
+
   useEffect(() => {
-    const backhander = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (!viewStates.shouldShowHomeView) returnToHomeView();
-      return !viewStates.shouldShowHomeView;
-    });
+    const backhander = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackEvent
+    );
     return () => backhander.remove();
-  }, [returnToHomeView, viewStates.shouldShowHomeView]);
+  }, [onBackEvent]);
 
   return {
     ...viewStates,
     returnToHomeView,
-    showDisableAdsView: useCallback(async () => {
-      await returnToHomeView();
-      setShowDisableAdsView(true);
-    }, [returnToHomeView]),
-    showSelectVideoView: useCallback(async () => {
-      await returnToHomeView();
-      setSelectVideoView(true);
-    }, [returnToHomeView]),
+    goToDisableAdsView,
+    goToSelectVideoView,
+    onBackEvent,
   };
 };
 

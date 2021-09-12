@@ -39,9 +39,10 @@ export const Controls = ({ videoPlayer, zIndex }) => {
     shouldShowDisableAdsView,
     shouldShowSelectVideoView,
     shouldShowHomeView,
-    showDisableAdsView,
-    showSelectVideoView,
+    goToDisableAdsView,
+    goToSelectVideoView,
     returnToHomeView,
+    onBackEvent,
   } = useViewToShow(videoPlayer);
 
   const shouldDisableVideoControls =
@@ -62,9 +63,9 @@ export const Controls = ({ videoPlayer, zIndex }) => {
       <UpperControlBar
         shouldDisableControls={shouldShowHomeView}
         onPressAnyControls={showControls}
-        onPressBack={returnToHomeView}
+        onPressBack={onBackEvent}
         videoSortOrderDescription={videoSortInstructions.description}
-        onPressSelectVideo={!shouldShowSelectVideoView && showSelectVideoView}
+        onPressSelectVideo={!shouldShowSelectVideoView && goToSelectVideoView}
         onPressChangeVideoSortOrder={
           shouldShowSelectVideoView && toggleVideoSortInstructions
         }
@@ -90,14 +91,14 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         <View style={{ flex: 1, alignItems: "center" }}>
           {shouldShowHomeView && (
             <HomeView
-              onPressSelectVideo={showSelectVideoView}
-              onPressDisableAds={showDisableAdsView}
+              onPressSelectVideo={goToSelectVideoView}
+              onPressDisableAds={goToDisableAdsView}
             />
           )}
           {shouldShowErrorView && (
             <ErrorView
               errorMessage={videoPlayer.errorLoadingVideo}
-              onPressSelectAnotherVideo={showSelectVideoView}
+              onPressSelectAnotherVideo={goToSelectVideoView}
             />
           )}
           {shouldShowDisableAdsView && (

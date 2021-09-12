@@ -10,7 +10,7 @@ jest.mock("expo-linking", () => ({
   openSettings: jest.fn(),
 }));
 
-import { act, cleanup, within } from "@testing-library/react-native";
+import { act, cleanup, waitFor, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as MediaLibrary from "expo-media-library";
 import { last } from "lodash";
@@ -1231,16 +1231,22 @@ describe("App", () => {
         // an error occurs
         expect(logError).toHaveBeenCalledWith("fake requestAdAsync error");
 
-        // Return to home view
-        const backButton = getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
-          "iosArrowBackIcon"
+        // Return to 'select a video' view
+        await asyncPressEvent(
+          getButtonByChildTestId(
+            within(screen.getByTestId("upperControlBar")),
+            "iosArrowBackIcon"
+          )
         );
-        expect(backButton).toBeTruthy();
-        await asyncPressEvent(backButton);
+        // Return to home view
+        await asyncPressEvent(
+          getButtonByChildTestId(
+            within(screen.getByTestId("upperControlBar")),
+            "iosArrowBackIcon"
+          )
+        );
 
         // View video again without issues
-
         logError.mockClear();
         await startWatchingVideoFromHomeView({
           screen,
@@ -1527,16 +1533,22 @@ describe("App", () => {
         // an error occurs
         expect(logError).toHaveBeenCalledWith("fake requestAdAsync error");
 
-        // Return to home view
-        const backButton = getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
-          "iosArrowBackIcon"
+        // Return to 'select a video' view
+        await asyncPressEvent(
+          getButtonByChildTestId(
+            within(screen.getByTestId("upperControlBar")),
+            "iosArrowBackIcon"
+          )
         );
-        expect(backButton).toBeTruthy();
-        await asyncPressEvent(backButton);
+        // Return to home view
+        await asyncPressEvent(
+          getButtonByChildTestId(
+            within(screen.getByTestId("upperControlBar")),
+            "iosArrowBackIcon"
+          )
+        );
 
         // View video again without issues
-
         logError.mockClear();
         await startWatchingVideoFromUpperControlBar({
           screen,
@@ -1594,7 +1606,7 @@ describe("App", () => {
   });
 
   describe("Unloading a video and returning to the home view", () => {
-    it("Is able to unload a video and return to the home view when the back button is pressed", async () => {
+    it("Is able to unload a video and return to the 'select a video' view when the back button is pressed", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
 
@@ -1606,8 +1618,8 @@ describe("App", () => {
         getInterstitialDidCloseCallback,
       });
 
-      // confirm the home view is not visible
-      expect(screen.queryByTestId("homeView")).toBe(null);
+      // confirm the 'select a video' view is not visible
+      expect(screen.queryByTestId("selectVideoView")).toBe(null);
 
       // Return to home view with the back button
       await asyncPressEvent(
@@ -1620,11 +1632,11 @@ describe("App", () => {
       // confirm video is unloaded
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
-      // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeTruthy();
+      // confirm the 'select a video' view is now visible
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
     });
 
-    it("Is able to unload a video and return to the home view when the hardware back button is pressed", async () => {
+    it("Is able to unload a video and return to the 'select a video' view when the hardware back button is pressed", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
       const getMockBackHandlerCallback = mockBackHandlerCallback();
@@ -1637,8 +1649,8 @@ describe("App", () => {
         getInterstitialDidCloseCallback,
       });
 
-      // confirm the home view is not visible
-      expect(screen.queryByTestId("homeView")).toBe(null);
+      // confirm the 'select a video' view is not visible
+      expect(screen.queryByTestId("selectVideoView")).toBe(null);
 
       // fire the event for the hardware back button
       const backHandlerCallback = getMockBackHandlerCallback();
@@ -1647,8 +1659,8 @@ describe("App", () => {
       // confirm video is unloaded
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
-      // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeTruthy();
+      // confirm the 'select a video' view is now visible
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
     });
 
     it("Unmounts and remounts the main container to reset the app if there is an issue unloading the video", async () => {
@@ -2231,6 +2243,7 @@ describe("App", () => {
     it("Unloads the video and returns to the home view when the back button is pressed", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2252,8 +2265,8 @@ describe("App", () => {
       // Video is unloaded
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
-      // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeTruthy();
+      // confirm the select video view is now visible
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
     });
 
     it("Can start playing a new video while watching a video using the upper control bar", async () => {
