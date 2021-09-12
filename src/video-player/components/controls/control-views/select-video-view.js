@@ -1,21 +1,30 @@
-import * as MediaLibrary from "expo-media-library";
-import orderBy from "lodash/orderBy";
-import React, { useCallback, useState } from "react";
-import { FlatList, View } from "react-native";
-import { Button } from "../../../../../button";
-import { Icon } from "../../../../../icon";
-import { isAtLeastAnHour } from "../../../../../is-at-least-an-hour";
-import { secondsToMilliseconds } from "../../../../../minutes-to-milliseconds";
+import React from "react";
+import { ActivityIndicator, FlatList, View } from "react-native";
+import { Button } from "../../../../button";
+import { Icon } from "../../../../icon";
+import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
+import { secondsToMilliseconds } from "../../../../minutes-to-milliseconds";
 import {
   millisecondsToTime,
   millisecondsToTimeWithoutHours,
-} from "../../../utils";
-import { ControlViewText } from "../control-view-text";
+} from "../../utils";
+import { ControlViewText } from "./control-view-text";
 
-export const ListOfVideos = ({ testID, videoOptions, onSelectVideo }) => {
+export const SelectVideoView = ({ videoOptions, onSelectVideo }) => {
+  if (!videoOptions) {
+    return (
+      <ActivityIndicator
+        testID="selectVideoViewLoading"
+        size="large"
+        color="#00ff00"
+        style={{ height: "100%" }}
+      />
+    );
+  }
+
   return (
     <FlatList
-      testID={testID}
+      testID="selectVideoView"
       data={videoOptions}
       keyExtractor={({ uri }) => uri}
       numColumns={2}

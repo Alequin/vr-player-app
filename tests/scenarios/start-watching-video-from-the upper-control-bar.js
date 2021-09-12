@@ -1,5 +1,4 @@
 import { act, within } from "@testing-library/react-native";
-import { mockMediaLibrary } from "../mocks/mock-media-library";
 import {
   asyncPressEvent,
   getButtonByChildTestId,
@@ -16,7 +15,6 @@ export const startWatchingVideoFromUpperControlBar = async ({
   videoPlayerMocks.play.mockClear();
   videoPlayerMocks.getStatus.mockClear();
   videoPlayerMocks.setPosition.mockClear();
-  mockMediaLibrary.singleAsset(mockVideoFilepath);
 
   // Press button to pick a video
   await asyncPressEvent(

@@ -1,8 +1,10 @@
+import * as Linking from "expo-linking";
 import React, { useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { Button } from "../../../button";
 import { Icon } from "../../../icon";
 import { isAtLeastAnHour } from "../../../is-at-least-an-hour";
+import { useLoadMedia } from "../../hooks/use-load-media";
 import { ControlBar } from "../control-bar";
 import { ControlBarIconButton } from "../control-bar-icon-button";
 import { TimeBar } from "../time-bar";
@@ -17,33 +19,40 @@ import { ControlViewText } from "./control-views/control-view-text";
 import { DisableAdsView } from "./control-views/disable-ads-view";
 import { ErrorView } from "./control-views/error-view";
 import { HomeView } from "./control-views/home-view";
-import { SelectVideoView } from "./control-views/select-video-view/select-video-view";
+import { RequestPermissionsView } from "./control-views/request-permissions-view";
+import { SelectVideoView } from "./control-views/select-video-view";
 import { useCanShowAds } from "./hooks/use-can-show-ads";
+import { useMediaLibraryPermissions } from "./hooks/use-media-library-permissions";
 import { useSelectVideoSortOrder } from "./hooks/use-select-video-sort-order";
 import { useShowControls } from "./hooks/use-show-controls";
 import { useViewToShow } from "./hooks/use-view-to-show";
 import { SideControlBar } from "./side-control-bar";
 
 export const Controls = ({ videoPlayer, zIndex }) => {
+  const { hasPermission, canAskPermissionInApp, askForMediaLibraryPermission } =
+    useMediaLibraryPermissions();
+
+  const { videoSortInstructions, toggleVideoSortInstructions } =
+    useSelectVideoSortOrder();
+  const videoOptions = useLoadMedia(hasPermission, videoSortInstructions);
+
   const { areAdsDisabled, setAreAdsDisabled } = useCanShowAds();
 
   const [manualPositionInMillis, setManualPositionInMillis] = useState(null);
   const [shouldUseManualPosition, setShouldUseManualPosition] = useState(false);
   const [shouldResume, setShouldResume] = useState(false);
   const { fadeAnim, showControls } = useShowControls(videoPlayer);
-  const { videoSortInstructions, toggleVideoSortInstructions } =
-    useSelectVideoSortOrder();
 
   const {
+    shouldShowRequestPermissionsView,
     shouldShowErrorView,
     shouldShowDisableAdsView,
     shouldShowSelectVideoView,
     shouldShowHomeView,
     goToDisableAdsView,
     goToSelectVideoView,
-    returnToHomeView,
     onBackEvent,
-  } = useViewToShow(videoPlayer);
+  } = useViewToShow(videoPlayer, hasPermission);
 
   const shouldDisableVideoControls =
     shouldShowErrorView || !videoPlayer.hasVideo;
@@ -89,6 +98,16 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           <Icon name="replay" color="white" size={30} />
         </SideControlBar>
         <View style={{ flex: 1, alignItems: "center" }}>
+          {shouldShowRequestPermissionsView && (
+            <RequestPermissionsView
+              shouldDirectUserToSettings={!canAskPermissionInApp}
+              onPress={async () => {
+                if (canAskPermissionInApp)
+                  return askForMediaLibraryPermission();
+                await Linking.openSettings();
+              }}
+            />
+          )}
           {shouldShowHomeView && (
             <HomeView
               onPressSelectVideo={goToSelectVideoView}
@@ -106,9 +125,8 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           )}
           {shouldShowSelectVideoView && (
             <SelectVideoView
-              videoSortInstructions={videoSortInstructions}
+              videoOptions={videoOptions}
               onSelectVideo={videoPlayer.loadVideoSource}
-              returnToHomeView={returnToHomeView}
             />
           )}
           {!areAdsDisabled && !videoPlayer.hasVideo && <AdBanner />}

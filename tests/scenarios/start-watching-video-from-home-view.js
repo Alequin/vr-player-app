@@ -12,13 +12,12 @@ export const startWatchingVideoFromHomeView = async ({
   videoPlayerMocks.play.mockClear();
   videoPlayerMocks.getStatus.mockClear();
   videoPlayerMocks.setPosition.mockClear();
-  mockMediaLibrary.singleAsset(mockVideoFilepath);
 
   const loadViewButton = getButtonByText(
     within(screen.getByTestId("homeView")),
     "Select a video to watch"
   );
-  expect(loadViewButton).toBeDefined();
+  expect(loadViewButton).toBeTruthy();
 
   // Press button to load video
   await asyncPressEvent(loadViewButton);

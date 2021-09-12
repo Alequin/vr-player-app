@@ -3,6 +3,17 @@ jest.genMockFromModule("expo-media-library");
 import * as MediaLibrary from "expo-media-library";
 
 export const mockMediaLibrary = {
+  grantedPermission: () => {
+    return {
+      mockRequestPermissionsAsync: jest
+        .spyOn(MediaLibrary, "requestPermissionsAsync")
+        .mockResolvedValue({
+          granted: true,
+          status: "granted",
+          canAskAgain: true,
+        }),
+    };
+  },
   singleAsset: (filePath) => {
     return {
       mockRequestPermissionsAsync: jest

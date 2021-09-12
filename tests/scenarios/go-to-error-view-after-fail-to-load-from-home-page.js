@@ -7,7 +7,6 @@ export const goToErrorViewAfterFailToLoadFromHomePage = async ({
   videoPlayerMocks,
   mockVideoFilepath = "path/to/file",
 }) => {
-  mockMediaLibrary.singleAsset(mockVideoFilepath);
   videoPlayerMocks.load.mockRejectedValue(null);
 
   // Pick a new video

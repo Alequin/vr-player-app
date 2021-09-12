@@ -1,19 +1,18 @@
 import React from "react";
 import { View } from "react-native";
-import { Button } from "../../../../../button";
-import { ControlPageIcon } from "../../../control-page-icon";
-import { ControlViewText } from "../control-view-text";
+import { Button } from "../../../../button";
+import { ControlPageIcon } from "../../control-page-icon";
+import { ControlViewText } from "./control-view-text";
 
-export const RequestPermissionsButton = ({
-  testID,
+export const RequestPermissionsView = ({
   onPress,
   shouldDirectUserToSettings,
 }) => {
   return (
     <View
-      testID={testID}
+      testID="requestPermissionsView"
       style={{
-        height: "100%",
+        flex: 1,
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -28,7 +27,7 @@ export const RequestPermissionsButton = ({
         <ControlViewText>
           You will need to grant the app permission to view media files
         </ControlViewText>
-        <ControlViewText>before a video can be selected</ControlViewText>
+        <ControlViewText>in order to select videos to watch</ControlViewText>
         <ControlPageIcon
           name="shieldKey"
           size={38}

@@ -2,13 +2,14 @@ import filter from "lodash/filter";
 import { useCallback, useEffect, useState } from "react";
 import { BackHandler } from "react-native";
 
-export const useViewToShow = (videoPlayer) => {
+export const useViewToShow = (videoPlayer, hasPermission) => {
   const [showDisableAdsView, setShowDisableAdsView] = useState(false);
 
   const [showSelectVideoView, setSelectVideoView] = useState(false);
 
   const viewStates = getViewStates(
     videoPlayer,
+    hasPermission,
     showDisableAdsView,
     showSelectVideoView
   );
@@ -71,7 +72,6 @@ export const useViewToShow = (videoPlayer) => {
 
   return {
     ...viewStates,
-    returnToHomeView,
     goToDisableAdsView,
     goToSelectVideoView,
     onBackEvent,
@@ -83,10 +83,13 @@ const isMoreThanOneKeyTruthy = (...values) =>
 
 const getViewStates = (
   { hasVideo, errorLoadingVideo },
+  hasPermission,
   showDisableAdsView,
   showSelectVideoView
 ) => {
-  const shouldShowErrorView = errorLoadingVideo;
+  const shouldShowRequestPermissionsView = !hasPermission;
+  const shouldShowErrorView =
+    errorLoadingVideo && !shouldShowRequestPermissionsView;
   const shouldShowDisableAdsView =
     showDisableAdsView && !shouldShowErrorView && !hasVideo;
   const shouldShowSelectVideoView =
@@ -95,9 +98,11 @@ const getViewStates = (
     !hasVideo &&
     !shouldShowErrorView &&
     !showDisableAdsView &&
-    !showSelectVideoView;
+    !showSelectVideoView &&
+    !shouldShowRequestPermissionsView;
 
   return {
+    shouldShowRequestPermissionsView,
     shouldShowErrorView,
     shouldShowDisableAdsView,
     shouldShowSelectVideoView,

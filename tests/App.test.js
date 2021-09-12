@@ -10,8 +10,9 @@ jest.mock("expo-linking", () => ({
   openSettings: jest.fn(),
 }));
 
-import { act, cleanup, waitFor, within } from "@testing-library/react-native";
+import { act, cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
+import * as Linking from "expo-linking";
 import * as MediaLibrary from "expo-media-library";
 import { last } from "lodash";
 import React from "React";
@@ -52,7 +53,6 @@ import {
   silenceAllErrorLogs,
   videoPlayerProps,
 } from "./test-utils";
-import * as Linking from "expo-linking";
 
 describe("App", () => {
   beforeEach(() => {
@@ -65,6 +65,8 @@ describe("App", () => {
       .spyOn(asyncStorage.adsDisabledTime, "load")
       .mockResolvedValue(undefined);
     jest.clearAllMocks();
+
+    mockMediaLibrary.grantedPermission();
   });
 
   afterEach(() => {
@@ -73,6 +75,72 @@ describe("App", () => {
   });
 
   describe("First opening the app", () => {
+    it("Checks if the user has given permission to use the media library and requests they give permission if they have not", async () => {
+      mockUseVideoPlayerRefs();
+      const { mockRequestPermissionsAsync } =
+        mockMediaLibrary.undeterminedPermissions();
+
+      const screen = await asyncRender(<App />);
+
+      // Confirm permissions have been requested from the user
+      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
+
+      // Confirm a button is shown asking the user to give permission
+      const permissionsButton = getButtonByText(
+        screen,
+        "You will need to grant the app permission to view media files"
+      );
+
+      expect(permissionsButton).toBeTruthy();
+      expect(
+        within(permissionsButton).queryByText(
+          "in order to select videos to watch"
+        )
+      ).toBeTruthy();
+      expect(
+        within(permissionsButton).queryByText(
+          "Press to give permission to access media files"
+        )
+      ).toBeTruthy();
+
+      // Press the button to request permissions again
+      await asyncPressEvent(permissionsButton);
+      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(2);
+    });
+
+    it("Directs the user to update permissions from the mobile settings page if permissions cannot be requested again within the app", async () => {
+      mockUseVideoPlayerRefs();
+      const { mockRequestPermissionsAsync } =
+        mockMediaLibrary.rejectedPermissions();
+
+      const screen = await asyncRender(<App />);
+
+      // Confirm permissions have been requested from the user
+      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
+
+      // Confirm a button is shown asking the user to give permission
+      const permissionsButton = getButtonByText(
+        screen,
+        "You will need to grant the app permission to view media files"
+      );
+
+      expect(permissionsButton).toBeTruthy();
+      expect(
+        within(permissionsButton).queryByText(
+          "in order to select videos to watch"
+        )
+      ).toBeTruthy();
+      expect(
+        within(permissionsButton).queryByText(
+          "Press to view the settings page and update permissions"
+        )
+      ).toBeTruthy();
+
+      // Press the button to send the user to the settings page to update permissions
+      await asyncPressEvent(permissionsButton);
+      expect(Linking.openSettings).toHaveBeenCalledTimes(1);
+    });
+
     it("Shows a button to load a video", async () => {
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -250,7 +318,7 @@ describe("App", () => {
       expect(screen.getByTestId("selectVideoView")).toBeTruthy();
     });
 
-    it("Opens the 'select a video' view and shows a loading indicator which loading the video file names", async (done) => {
+    it("Opens the 'select a video' view and shows a loading indicator while loading the video file names", async (done) => {
       mockUseVideoPlayerRefs();
       const { mockGetAssetsAsync } = mockMediaLibrary.singleAsset("file");
 
@@ -321,7 +389,7 @@ describe("App", () => {
       expect(mockGetAssetsAsync).toHaveBeenCalledTimes(1);
       expect(mockGetAssetsAsync).toHaveBeenCalledWith({
         mediaType: MediaLibrary.MediaType.video,
-        sortBy: MediaLibrary.SortBy.modificationTime,
+        first: 100000,
       });
 
       // Confirm the short videos button is visible
@@ -541,6 +609,7 @@ describe("App", () => {
     it("Can start playing a video after the user selects one", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file");
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -551,12 +620,14 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file",
       });
     });
 
     it("Can start playing a video after the user selects one", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file");
 
       const screen = await asyncRender(<App />);
       const homeView = screen.getByTestId("homeView");
@@ -567,6 +638,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file",
       });
     });
 
@@ -611,101 +683,6 @@ describe("App", () => {
           },
         }
       );
-    });
-
-    it("Checks if the user has given permission to use the media library and requests they give permission if they have not", async () => {
-      mockUseVideoPlayerRefs();
-      const { mockRequestPermissionsAsync } =
-        mockMediaLibrary.undeterminedPermissions();
-
-      const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
-      expect(homeView).toBeTruthy();
-
-      const loadViewButton = getButtonByText(
-        within(homeView),
-        "Select a video to watch"
-      );
-      expect(loadViewButton).toBeTruthy();
-
-      // Press button to pick a video
-      await asyncPressEvent(loadViewButton);
-
-      // Confirm permissions have been requested from the user
-      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
-
-      // Confirm we are taken to the "select a video need permission" page
-      const page = screen.getByTestId("selectVideoViewNeedPermission");
-      expect(page).toBeTruthy();
-
-      // Confirm a button is shown asking the user to give permission
-      const permissionsButton = getButtonByText(
-        within(page),
-        "You will need to grant the app permission to view media files"
-      );
-
-      expect(permissionsButton).toBeTruthy();
-      expect(
-        within(permissionsButton).queryByText("before a video can be selected")
-      ).toBeTruthy();
-      expect(
-        within(permissionsButton).queryByText(
-          "Press to give permission to access media files"
-        )
-      ).toBeTruthy();
-
-      // Press the button to request permissions again
-      await asyncPressEvent(permissionsButton);
-      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(2);
-    });
-
-    it("Directs the user to update permissions from the mobile settings page if permissions cannot be requested again", async () => {
-      mockUseVideoPlayerRefs();
-      const { mockRequestPermissionsAsync } =
-        mockMediaLibrary.rejectedPermissions();
-
-      const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
-      expect(homeView).toBeTruthy();
-
-      const loadViewButton = getButtonByText(
-        within(homeView),
-        "Select a video to watch"
-      );
-      expect(loadViewButton).toBeTruthy();
-
-      // Press button to pick a video
-      await asyncPressEvent(loadViewButton);
-
-      // Confirm permissions have been requested from the user
-      expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
-
-      // Confirm we are taken to the "select a video need permission" page
-      const page = screen.getByTestId("selectVideoViewNeedPermission");
-      expect(page).toBeTruthy();
-
-      // Confirm a button is shown asking the user to give permission
-      const permissionsButton = getButtonByText(
-        within(page),
-        "You will need to grant the app permission to view media files"
-      );
-
-      expect(permissionsButton).toBeTruthy();
-      expect(
-        within(permissionsButton).queryByText("before a video can be selected")
-      ).toBeTruthy();
-      expect(
-        within(permissionsButton).queryByText(
-          "Press to view the settings page and update permissions"
-        )
-      ).toBeTruthy();
-
-      // Press the button to send the user to the settings page to update permissions
-      await asyncPressEvent(permissionsButton);
-      expect(Linking.openSettings).toHaveBeenCalledTimes(1);
-
-      // Returns to the home page after to so the user can try to select a video again after returning from the settings
-      expect(screen.queryByTestId("homeView")).toBeTruthy();
     });
 
     it("Checks if the user has given permission to use the media library and does not requests access if they have", async () => {
@@ -1185,6 +1162,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { showAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file");
 
         showAdAsync.mockRejectedValue("fake showAdAsync error");
 
@@ -1199,6 +1177,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
 
         // an error occurs
@@ -1209,6 +1188,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { requestAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file");
 
         requestAdAsync.mockResolvedValueOnce();
         requestAdAsync.mockRejectedValueOnce("fake requestAdAsync error");
@@ -1226,6 +1206,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
 
         // an error occurs
@@ -1252,6 +1233,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
 
         expect(logError).not.toHaveBeenCalled();
@@ -1272,12 +1254,14 @@ describe("App", () => {
 
       it("Shows the error page when attempting to open a video from the home view but there is an issue loading the new video", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
+        mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
         const screen = await asyncRender(<App />);
 
         await goToErrorViewAfterFailToLoadFromHomePage({
           screen,
           videoPlayerMocks: mocks,
+          mockVideoFilepath: "./fake/file/path.jpeg",
         });
       });
     });
@@ -1304,6 +1288,7 @@ describe("App", () => {
     it("Is able to load and play a video with the button on the upper control bar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file");
 
       const screen = await asyncRender(<App />);
 
@@ -1311,12 +1296,14 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file",
       });
     });
 
     it("shows an interstitial ad when opening a video", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file");
 
       const screen = await asyncRender(<App />);
 
@@ -1324,6 +1311,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file",
       });
 
       // Shows an ad
@@ -1333,6 +1321,7 @@ describe("App", () => {
     it("Does not show an interstitial ad when opening a video if ads are disabled", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file");
 
       mockAdsAreDisabled();
 
@@ -1341,6 +1330,7 @@ describe("App", () => {
       await startWatchingVideoFromUpperControlBar({
         screen,
         videoPlayerMocks: mocks,
+        mockVideoFilepath: "path/to/file",
       });
 
       // Shows an ad
@@ -1377,6 +1367,7 @@ describe("App", () => {
     it("shows another ad if enough time passes between showing the first and second ad", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file");
 
       const screen = await asyncRender(<App />);
 
@@ -1384,6 +1375,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file",
       });
 
       // Shows an ad
@@ -1397,7 +1389,6 @@ describe("App", () => {
         .mockReturnValue(true);
 
       // Press button to pick another video
-      mockMediaLibrary.singleAsset("path/to/file");
       await asyncPressEvent(
         getButtonByChildTestId(
           within(screen.getByTestId("upperControlBar")),
@@ -1437,6 +1428,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { getInterstitialDidCloseCallback, setAdUnitID } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file");
 
         setAdUnitID.mockRejectedValue("fake setAdUnitID error");
 
@@ -1449,6 +1441,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
       });
 
@@ -1456,6 +1449,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { getInterstitialDidCloseCallback, requestAdAsync } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file");
 
         requestAdAsync.mockRejectedValue("fake requestAdAsync error");
 
@@ -1468,6 +1462,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
       });
 
@@ -1475,6 +1470,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { getIsReadyAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file");
 
         getIsReadyAsync.mockRejectedValue("fake getIsReadyAsync error");
 
@@ -1484,6 +1480,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
 
         // an error occurs
@@ -1494,6 +1491,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { showAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file");
 
         showAdAsync.mockRejectedValue("fake showAdAsync error");
 
@@ -1503,6 +1501,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
 
         // an error occurs
@@ -1513,6 +1512,7 @@ describe("App", () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { requestAdAsync, getInterstitialDidCloseCallback } =
           mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file");
 
         requestAdAsync.mockResolvedValueOnce();
         requestAdAsync.mockRejectedValueOnce("fake requestAdAsync error");
@@ -1528,6 +1528,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
 
         // an error occurs
@@ -1554,6 +1555,7 @@ describe("App", () => {
           screen,
           videoPlayerMocks: mocks,
           getInterstitialDidCloseCallback,
+          mockVideoFilepath: "path/to/file",
         });
 
         expect(logError).not.toHaveBeenCalled();
@@ -1717,6 +1719,7 @@ describe("App", () => {
 
     it("Shows the expected message on the error view", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
       const screen = await asyncRender(<App />);
 
@@ -1741,6 +1744,7 @@ describe("App", () => {
 
     it("Shows a button to open a new video on the error view", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
       const screen = await asyncRender(<App />);
 
@@ -1765,6 +1769,7 @@ describe("App", () => {
     it("Can start playing a new video from the error page", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("./fake/file/path");
 
       const screen = await asyncRender(<App />);
 
@@ -1772,7 +1777,7 @@ describe("App", () => {
       await goToErrorViewAfterFailToLoadFromHomePage({
         screen,
         videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
+        mockVideoFilepath: "./fake/file/path",
       });
 
       // Reset mocks before attempting to open a new video
@@ -1780,7 +1785,6 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockMediaLibrary.singleAsset("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
@@ -1794,7 +1798,7 @@ describe("App", () => {
       await asyncPressEvent(
         getButtonByText(
           within(screen.getByTestId("selectVideoView")),
-          "path/to/file"
+          "./fake/file/path"
         )
       );
 
@@ -1810,6 +1814,7 @@ describe("App", () => {
     it("Opens an interstitial ad when a new video is loaded", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("./fake/file/path");
 
       const screen = await asyncRender(<App />);
 
@@ -1817,7 +1822,7 @@ describe("App", () => {
       await goToErrorViewAfterFailToLoadFromHomePage({
         screen,
         videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
+        mockVideoFilepath: "./fake/file/path",
       });
 
       // Sets a unit ad id
@@ -1831,7 +1836,6 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockMediaLibrary.singleAsset("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
@@ -1845,7 +1849,7 @@ describe("App", () => {
       await asyncPressEvent(
         getButtonByText(
           within(screen.getByTestId("selectVideoView")),
-          "path/to/file"
+          "./fake/file/path"
         )
       );
 
@@ -1900,6 +1904,7 @@ describe("App", () => {
 
     it("Disables all lower bar controls while on the error view", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
       const screen = await asyncRender(<App />);
 
@@ -1940,6 +1945,7 @@ describe("App", () => {
 
     it("Disables all side bar controls while on the error view", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
       const screen = await asyncRender(<App />);
 
@@ -1974,6 +1980,7 @@ describe("App", () => {
     it("Can start playing a new video from the error page using the upper control bar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("./fake/file/path");
 
       const screen = await asyncRender(<App />);
 
@@ -1981,23 +1988,33 @@ describe("App", () => {
       await goToErrorViewAfterFailToLoadFromHomePage({
         screen,
         videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
+        mockVideoFilepath: "./fake/file/path",
       });
 
       // Reset mocks before attempting to open a new video
       jest.clearAllMocks();
       mocks.load.mockResolvedValue(undefined);
 
+      // return to home view
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      );
+
       // Start watching a new video from the upper control bar
       await startWatchingVideoFromUpperControlBar({
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "./fake/file/path",
       });
     });
 
     it("Returns to the error page when attempting to open a video but there is an issue loading a new video", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
       mocks.load.mockRejectedValue("fail to load");
 
@@ -2036,6 +2053,20 @@ describe("App", () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback, showAdAsync } =
         mockAdMobInterstitial();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: "./fake/file/path.jpeg",
+          filename: `path.jpeg`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01"),
+        },
+        {
+          uri: "path/to/file.mp4",
+          filename: `file.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01"),
+        },
+      ]);
 
       const screen = await asyncRender(<App />);
 
@@ -2043,7 +2074,7 @@ describe("App", () => {
       await goToErrorViewAfterFailToLoadFromHomePage({
         screen,
         videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
+        mockVideoFilepath: `path.jpeg`,
       });
 
       // Reset mocks before attempting to open a new video
@@ -2051,7 +2082,6 @@ describe("App", () => {
       jest.clearAllMocks();
 
       // Load a new video from the error page
-      mockMediaLibrary.singleAsset("path/to/file");
       const loadViewButton = getButtonByText(
         within(screen.getByTestId("errorView")),
         "Open a different video"
@@ -2065,7 +2095,7 @@ describe("App", () => {
       await asyncPressEvent(
         getButtonByText(
           within(screen.getByTestId("selectVideoView")),
-          "path/to/file"
+          `file.mp4`
         )
       );
 
@@ -2083,12 +2113,14 @@ describe("App", () => {
 
     it("Clears the error and returns to the home view when the back button is pressed after an error occurs", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
       const screen = await asyncRender(<App />);
 
       await goToErrorViewAfterFailToLoadFromHomePage({
         screen,
         videoPlayerMocks: mocks,
+        mockVideoFilepath: "./fake/file/path.jpeg",
       });
 
       // confirm the home view is not visible
@@ -2109,12 +2141,14 @@ describe("App", () => {
     it("Clears the error and returns to the home view when the hardware back button is pressed after an error occurs", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const getMockBackHandlerCallback = mockBackHandlerCallback();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
       const screen = await asyncRender(<App />);
 
       await goToErrorViewAfterFailToLoadFromHomePage({
         screen,
         videoPlayerMocks: mocks,
+        mockVideoFilepath: "./fake/file/path.jpeg",
       });
 
       // confirm the home view is not visible
@@ -2131,6 +2165,7 @@ describe("App", () => {
 
     it("Shows a banner ad on the error view", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
       const screen = await asyncRender(<App />);
 
@@ -2149,6 +2184,7 @@ describe("App", () => {
 
     it("Hide the banner ad on the error view if ads are disabled", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
       mockAdsAreDisabled();
 
@@ -2172,6 +2208,7 @@ describe("App", () => {
     it("Enables the lower control bar buttons while a video is playing", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2180,6 +2217,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Confirm all buttons are enabled
@@ -2208,9 +2246,10 @@ describe("App", () => {
       expect(timeBar.props.disabled).toBeFalsy();
     });
 
-    it("Enables all side bar controls while on the home page", async () => {
+    it("Enables all side bar controls while a video is playing", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2219,6 +2258,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Confirm buttons are enabled
@@ -2240,7 +2280,7 @@ describe("App", () => {
       expect(buttonProps(forwardSidebarButton).disabled).toBeFalsy();
     });
 
-    it("Unloads the video and returns to the home view when the back button is pressed", async () => {
+    it("Unloads the video and returns to the 'select a video' view when the back button is pressed", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
       mockMediaLibrary.singleAsset("path/to/file.mp4");
@@ -2252,6 +2292,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Return to home view with the back button
@@ -2272,6 +2313,7 @@ describe("App", () => {
     it("Can start playing a new video while watching a video using the upper control bar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2280,6 +2322,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Reset mocks before attempting to open a new video
@@ -2291,12 +2334,14 @@ describe("App", () => {
         videoPlayerMocks: mocks,
         // Ads were shown recently so don't need to call InterstitialDidClose callback
         getInterstitialDidCloseCallback: undefined,
+        mockVideoFilepath: "path/to/file.mp4",
       });
     });
 
     it("Can pause a video while one is playing", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2305,6 +2350,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Press the pause button
@@ -2322,6 +2368,7 @@ describe("App", () => {
     it("Can start playing a video after pausing it", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2330,6 +2377,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Press the pause button
@@ -2358,6 +2406,7 @@ describe("App", () => {
     it("Can swap between video player modes and save the selected value", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       jest.spyOn(asyncStorage.playerMode, "save");
 
@@ -2368,6 +2417,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Confirm the video player starts with two players showing
@@ -2426,6 +2476,7 @@ describe("App", () => {
     it("Can load the saved video player mode", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       jest
         .spyOn(asyncStorage.playerMode, "load")
@@ -2438,6 +2489,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Confirm video player is showing one player
@@ -2452,6 +2504,7 @@ describe("App", () => {
     it("Can switch video player resize modes and save the selected value", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       jest.spyOn(asyncStorage.resizeMode, "save");
 
@@ -2462,6 +2515,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Confirm the video player uses the resizeMode cover as default
@@ -2542,6 +2596,7 @@ describe("App", () => {
     it("Can load the saved resize mode", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       jest
         .spyOn(asyncStorage.resizeMode, "load")
@@ -2554,6 +2609,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Confirm the video player uses the resizeMode contain
@@ -2568,6 +2624,7 @@ describe("App", () => {
     it("Sets the expected video duration on the timebar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const expectedDuration = minutesToMilliseconds(10);
       mocks.getStatus.mockResolvedValue({
@@ -2588,6 +2645,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -2600,6 +2658,7 @@ describe("App", () => {
     it("starts the timebar at zero", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2608,6 +2667,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -2618,6 +2678,7 @@ describe("App", () => {
     it("increments the video position as time passes", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const expectedDuration = minutesToMilliseconds(10);
       let positionMillis = 0;
@@ -2644,6 +2705,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
       const lowerControlBar = screen.getByTestId("lowerControlBar");
       const timeBar = within(lowerControlBar).getByTestId("timeBar");
@@ -2677,6 +2739,7 @@ describe("App", () => {
     it("shows the hour time units if the video duration is at least an hour long", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const videoDuration = minutesToMilliseconds(60);
       mocks.getStatus.mockResolvedValue({
@@ -2697,6 +2760,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -2708,6 +2772,7 @@ describe("App", () => {
     it("increases the hours indefinitely when the video length is very long", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const oneHour = minutesToMilliseconds(60);
       const videoDuration = oneHour * 10_000;
@@ -2730,6 +2795,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -2746,6 +2812,7 @@ describe("App", () => {
     it("can update the current position by dragging the timebar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       mocks.getStatus.mockImplementation(async () => ({
         primaryStatus: { positionMillis: 0, durationMillis: 1_000_000 },
@@ -2759,6 +2826,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Pause the video to ensure the position is controlled by the timebar
@@ -2818,6 +2886,7 @@ describe("App", () => {
     it("pauses the video while seeking with the timebar if it was playing in the beginning", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       mocks.getStatus.mockImplementation(async () => ({
         primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
@@ -2831,6 +2900,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -2853,6 +2923,7 @@ describe("App", () => {
     it("does not pause the video while seeking with the timebar if it was already paused", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       mocks.getStatus.mockImplementation(async () => ({
         primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
@@ -2866,6 +2937,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Pause the video
@@ -2896,6 +2968,7 @@ describe("App", () => {
     it("resumes the video after seeking with the timebar if it was playing in the beginning", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       mocks.getStatus.mockImplementation(async () => ({
         primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
@@ -2909,6 +2982,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -2935,6 +3009,7 @@ describe("App", () => {
     it("does not resume the video after seeking with the timebar if it was already paused", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       mocks.getStatus.mockImplementation(async () => ({
         primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
@@ -2948,6 +3023,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Pause the video
@@ -2984,6 +3060,7 @@ describe("App", () => {
     it("increases the playback rate of the secondary video player when the primary player is ahead", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       mocks.getStatus.mockImplementation(async () => ({
         primaryStatus: {
@@ -3001,6 +3078,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       silenceAllErrorLogs();
@@ -3014,6 +3092,7 @@ describe("App", () => {
     it("reduces the playback rate of the secondary video after the secondary player beings to overtake the primary player", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       mocks.getStatus.mockImplementation(async () => ({
         primaryStatus: { positionMillis: 0, durationMillis: 1000, rate: 1 },
@@ -3031,6 +3110,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       silenceAllErrorLogs();
@@ -3044,6 +3124,7 @@ describe("App", () => {
     it("delays the secondary video player when the primary player is behind to allow it to catch up", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       mocks.getStatus.mockImplementation(async () => ({
         primaryStatus: { positionMillis: 0, durationMillis: 1000, rate: 1 },
@@ -3061,6 +3142,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       silenceAllErrorLogs();
@@ -3074,6 +3156,7 @@ describe("App", () => {
     it("updates the position to resync the videos when the primary video is ahead of the secondary by 100 milliseconds", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const primaryVideoPosition =
         EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE + 1;
@@ -3094,6 +3177,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       silenceAllErrorLogs();
@@ -3107,6 +3191,7 @@ describe("App", () => {
     it("updates the position to resync the videos when the secondary video is ahead of the primary by 100 milliseconds", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const primaryVideoPosition = 0;
 
@@ -3130,6 +3215,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       silenceAllErrorLogs();
@@ -3143,6 +3229,7 @@ describe("App", () => {
     it("does not attempt to resync the video players when the player positions are close", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       mocks.getStatus.mockImplementation(async () => ({
         primaryStatus: { positionMillis: 0, durationMillis: 1000, rate: 1 },
@@ -3160,6 +3247,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       silenceAllErrorLogs();
@@ -3179,6 +3267,7 @@ describe("App", () => {
     it("can use the side bar buttons to move forward and back by ten seconds", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       // This status should never actually happen
       // Fake status to stop position from being updated by time passing
@@ -3197,6 +3286,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -3241,6 +3331,7 @@ describe("App", () => {
     it("starts playing the video again when using the side bar forward button and the video was playing", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       // This status should never actually happen
       // Fake status to stop position from being updated by time passing
@@ -3259,6 +3350,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       mocks.play.mockClear();
@@ -3288,6 +3380,7 @@ describe("App", () => {
     it("starts playing the video again when using the side bar replay button and the video was playing", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       // This status should never actually happen
       // Fake status to stop position from being updated by time passing
@@ -3306,6 +3399,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       mocks.play.mockClear();
@@ -3335,6 +3429,7 @@ describe("App", () => {
     it("does not start playing the video again when using the side bar forward button and the video was paused", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       // This status should never actually happen
       // Fake status to stop position from being updated by time passing
@@ -3352,6 +3447,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Pause the video
@@ -3389,6 +3485,7 @@ describe("App", () => {
     it("does not start playing the video again when using the side bar replay button if the video was paused", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       // This status should never actually happen
       // Fake status to stop position from being updated by time passing
@@ -3407,6 +3504,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Pause the video
@@ -3444,6 +3542,7 @@ describe("App", () => {
     it("can not set a position less than 0", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       // This status should never actually happen
       // Fake status to stop position from being updated by time passing
@@ -3462,6 +3561,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -3489,6 +3589,7 @@ describe("App", () => {
     it("can not set a position greater than the videos duration", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       // This status should never actually happen
       // Fake status to stop position from being updated by time passing
@@ -3507,6 +3608,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
