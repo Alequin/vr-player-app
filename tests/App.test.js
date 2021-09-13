@@ -89,15 +89,10 @@ describe("App", () => {
       // Confirm a button is shown asking the user to give permission
       const permissionsButton = getButtonByText(
         screen,
-        "You will need to grant the app permission to view media files"
+        `You will need to grant the app permission to view media files\n\nbefore you can select videos to watch.`
       );
 
       expect(permissionsButton).toBeTruthy();
-      expect(
-        within(permissionsButton).queryByText(
-          "in order to select videos to watch"
-        )
-      ).toBeTruthy();
       expect(
         within(permissionsButton).queryByText(
           "Press to give permission to access media files"
@@ -122,15 +117,10 @@ describe("App", () => {
       // Confirm a button is shown asking the user to give permission
       const permissionsButton = getButtonByText(
         screen,
-        "You will need to grant the app permission to view media files"
+        `You will need to grant the app permission to view media files\n\nbefore you can select videos to watch.`
       );
 
       expect(permissionsButton).toBeTruthy();
-      expect(
-        within(permissionsButton).queryByText(
-          "in order to select videos to watch"
-        )
-      ).toBeTruthy();
       expect(
         within(permissionsButton).queryByText(
           "Press to view the settings page and update permissions"
@@ -156,7 +146,7 @@ describe("App", () => {
       // Confirm a button is shown asking the user to give permission
       const permissionsButton = getButtonByText(
         screen,
-        "You will need to grant the app permission to view media files"
+        `You will need to grant the app permission to view media files\n\nbefore you can select videos to watch.`
       );
       expect(permissionsButton).toBeTruthy();
 
@@ -2110,31 +2100,6 @@ describe("App", () => {
       logErrorMock.mockReset();
     });
 
-    it("Shows the expected message on the error view", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
-
-      const screen = await asyncRender(<App />);
-
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-      const errorView = screen.getByTestId("errorView");
-
-      expect(
-        within(errorView).getByText(
-          "Sorry, there was an issue playing the video"
-        )
-      );
-      expect(
-        within(errorView).getByText(
-          `Unable to play ./fake/file/path.jpeg as a video`
-        )
-      );
-    });
-
     it("Shows a button to open a new video on the error view", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
@@ -2150,12 +2115,15 @@ describe("App", () => {
 
       const loadViewButton = getButtonByText(
         within(errorView),
-        "Open a different video"
+        `Sorry, there was an issue playing the video.\n\nUnable to play ./fake/file/path.jpeg as a video`
       );
 
       expect(loadViewButton).toBeTruthy();
       expect(
-        within(loadViewButton).getByTestId("folderVideoIcon")
+        within(loadViewButton).queryByTestId("folderVideoIcon")
+      ).toBeTruthy();
+      expect(
+        within(loadViewButton).queryByText("Open a different video")
       ).toBeTruthy();
     });
 
