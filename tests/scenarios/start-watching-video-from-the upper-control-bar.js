@@ -25,12 +25,12 @@ export const startWatchingVideoFromUpperControlBar = async ({
   );
 
   // Confirm we are taken to the "select a video" page
-  expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+  expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
   // Select the first video option
   await asyncPressEvent(
     getButtonByText(
-      within(screen.getByTestId("selectVideoView")),
+      within(screen.getByTestId("selectVideoListView")),
       mockVideoFilepath
     )
   );

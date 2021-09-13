@@ -397,7 +397,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Opens the 'select a video' view when the button on the upper control bar is pressed", async () => {
@@ -417,7 +417,7 @@ describe("App", () => {
       );
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Opens the 'select a video' view and shows a loading indicator while loading the video file names", async (done) => {
@@ -441,7 +441,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm the loading indicator on the 'select a video' view is shown
-      expect(screen.getByTestId("selectVideoViewLoading")).toBeTruthy();
+      expect(screen.getByTestId("loadingIndicatorView")).toBeTruthy();
 
       done();
     });
@@ -484,7 +484,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      const selectVideoView = screen.getByTestId("selectVideoView");
+      const selectVideoView = screen.getByTestId("selectVideoListView");
       expect(selectVideoView).toBeTruthy();
 
       // Confirm the video files are requested
@@ -545,7 +545,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Confirm the expected icons on on the upper control bar
       expect(
@@ -590,7 +590,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Confirm all buttons are disabled
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -637,7 +637,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Confirm buttons are disabled
       const sideBarLeft = screen.getByTestId("sidebarLeft");
@@ -700,7 +700,7 @@ describe("App", () => {
           await asyncPressEvent(loadViewButton);
 
           // Confirm we are taken to the "select a video" page
-          const selectVideoView = screen.getByTestId("selectVideoView");
+          const selectVideoView = screen.getByTestId("selectVideoListView");
           expect(selectVideoView).toBeTruthy();
 
           expect(
@@ -742,7 +742,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      const selectVideoView = screen.getByTestId("selectVideoView");
+      const selectVideoView = screen.getByTestId("selectVideoListView");
       expect(selectVideoView).toBeTruthy();
 
       expect(
@@ -807,12 +807,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           "path/to/file#1.mp4"
         )
       );
@@ -850,7 +850,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Confirm permissions where checked
       expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
@@ -858,7 +858,7 @@ describe("App", () => {
       // Confirm a video button is shown
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           "path/to/file#1.mp4"
         )
       ).toBeTruthy();
@@ -903,7 +903,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      const selectVideoView = screen.getByTestId("selectVideoView");
+      const selectVideoView = screen.getByTestId("selectVideoListView");
       expect(selectVideoView).toBeTruthy();
 
       // Confirm the sort button is available and defaults to "Newest to oldest"
@@ -916,7 +916,7 @@ describe("App", () => {
 
       // Confirm the initial order is "Newest to oldest"
       const sortedByNewestToOldest = within(
-        screen.getByTestId("selectVideoView")
+        screen.getByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -945,7 +945,7 @@ describe("App", () => {
 
       // Confirm the new order is "Oldest to newest"
       const sortedByOldestToNewest = within(
-        screen.getByTestId("selectVideoView")
+        screen.getByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -971,7 +971,7 @@ describe("App", () => {
 
       // Confirm the new order is "A to Z"
       const sortedByAToZ = within(
-        screen.getByTestId("selectVideoView")
+        screen.getByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(within(sortedByAToZ[0]).queryByText(`file-mid.mp4`)).toBeTruthy();
@@ -992,7 +992,7 @@ describe("App", () => {
 
       // Confirm the new order is "Z to A"
       const sortedByZToA = within(
-        screen.getByTestId("selectVideoView")
+        screen.getByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1016,7 +1016,7 @@ describe("App", () => {
 
       // Confirm the new order is "Longest to shortest"
       const sortedByLongestToShortest = within(
-        screen.getByTestId("selectVideoView")
+        screen.getByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1045,7 +1045,7 @@ describe("App", () => {
 
       // Confirm the new order is "Shortest to longest"
       const sortedByShortestToLongest = within(
-        screen.getByTestId("selectVideoView")
+        screen.getByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1074,7 +1074,7 @@ describe("App", () => {
 
       // Confirm the new order is "Newest to oldest"
       const sortedByNewestToOldestAgain = within(
-        screen.getByTestId("selectVideoView")
+        screen.getByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1111,7 +1111,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      const selectVideoView = screen.getByTestId("selectVideoView");
+      const selectVideoView = screen.getByTestId("selectVideoListView");
       expect(selectVideoView).toBeTruthy();
 
       // Confirm the sort order was loaded
@@ -1171,7 +1171,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Confirm the video files are requested
       expect(firstMockGetAssetsAsync).toHaveBeenCalledTimes(1);
@@ -1179,19 +1179,19 @@ describe("App", () => {
       // Confirm the expected video options are visible
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           `file-short.mp4`
         )
       ).toBeTruthy();
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           `file-mid.mp4`
         )
       ).toBeTruthy();
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           `file-long.mp4`
         )
       ).toBeTruthy();
@@ -1233,19 +1233,19 @@ describe("App", () => {
       // Confirm the video options have updated
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           `new-file-short.mp4`
         )
       ).toBeTruthy();
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           `new-file-mid.mp4`
         )
       ).toBeTruthy();
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           `new-file-long.mp4`
         )
       ).toBeTruthy();
@@ -1280,12 +1280,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           "path/to/file"
         )
       );
@@ -1322,12 +1322,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           "path/to/file"
         )
       );
@@ -1670,12 +1670,12 @@ describe("App", () => {
       );
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           "path/to/file"
         )
       );
@@ -1863,12 +1863,12 @@ describe("App", () => {
         );
 
         // Confirm we are taken to the "select a video" page
-        expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+        expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
         // Select the first video option
         await asyncPressEvent(
           getButtonByText(
-            within(screen.getByTestId("selectVideoView")),
+            within(screen.getByTestId("selectVideoListView")),
             "path/to/file"
           )
         );
@@ -1894,7 +1894,7 @@ describe("App", () => {
       });
 
       // confirm the 'select a video' view is not visible
-      expect(screen.queryByTestId("selectVideoView")).toBe(null);
+      expect(screen.queryByTestId("selectVideoListView")).toBe(null);
 
       // Return to home view with the back button
       await asyncPressEvent(
@@ -1908,7 +1908,7 @@ describe("App", () => {
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
       // confirm the 'select a video' view is now visible
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Is able to unload a video and return to the 'select a video' view when the hardware back button is pressed", async () => {
@@ -1925,7 +1925,7 @@ describe("App", () => {
       });
 
       // confirm the 'select a video' view is not visible
-      expect(screen.queryByTestId("selectVideoView")).toBe(null);
+      expect(screen.queryByTestId("selectVideoListView")).toBe(null);
 
       // fire the event for the hardware back button
       const backHandlerCallback = getMockBackHandlerCallback();
@@ -1935,7 +1935,7 @@ describe("App", () => {
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
       // confirm the 'select a video' view is now visible
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Unmounts and remounts the main container to reset the app if there is an issue unloading the video", async () => {
@@ -2065,12 +2065,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           "./fake/file/path"
         )
       );
@@ -2116,12 +2116,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           "./fake/file/path"
         )
       );
@@ -2159,12 +2159,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           "path/to/file"
         )
       );
@@ -2342,12 +2342,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           "./fake/file/path.jpeg"
         )
       );
@@ -2396,12 +2396,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoView")),
+          within(screen.getByTestId("selectVideoListView")),
           `file.mp4`
         )
       );
@@ -2648,7 +2648,7 @@ describe("App", () => {
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
       // confirm the select video view is now visible
-      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Can start playing a new video while watching a video using the upper control bar", async () => {
