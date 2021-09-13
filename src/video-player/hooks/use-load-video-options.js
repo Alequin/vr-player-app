@@ -31,10 +31,10 @@ export const useLoadVideoOptions = (hasPermission, videoSortInstructions) => {
           : null,
       [videoOptions, videoSortInstructions?.key, videoSortInstructions?.order]
     ),
-    reloadVideoOptions: useCallback(async () => {
-      setVideoOptions(null);
-      setVideoOptions(await getVideoOptions());
-    }, []),
+    reloadVideoOptions: useCallback(
+      async () => setVideoOptions(await getVideoOptions()),
+      []
+    ),
   };
 };
 

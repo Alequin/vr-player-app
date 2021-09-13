@@ -10,7 +10,7 @@ jest.mock("expo-linking", () => ({
   openSettings: jest.fn(),
 }));
 
-import { act, cleanup, within } from "@testing-library/react-native";
+import { act, cleanup, waitFor, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as Linking from "expo-linking";
 import * as MediaLibrary from "expo-media-library";
@@ -446,6 +446,33 @@ describe("App", () => {
       done();
     });
 
+    it("Shows a fake loading indicator on the 'select a video' view for a short time when no videos are found", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.multipleAssets([]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm the loading indicator on the 'select a video' view is shown
+      expect(screen.queryByTestId("loadingIndicatorView")).toBeTruthy();
+
+      // Confirm the loading indicator is replaced by the 'no video options' view
+      silenceAllErrorLogs();
+      expect(await screen.findByTestId("noVideoOptionsView")).toBeTruthy();
+      enableAllErrorLogs();
+      expect(screen.queryByTestId("loadingIndicatorView")).not.toBeTruthy();
+    });
+
     it("Shows a list of videos to watch on the 'select a video' view", async () => {
       mockUseVideoPlayerRefs();
 
@@ -526,6 +553,99 @@ describe("App", () => {
       expect(within(longVideoButton).queryByTestId("videoIcon")).toBeTruthy();
       expect(within(longVideoButton).queryByText("02:10:00")).toBeTruthy();
       expect(within(longVideoButton).queryByText("Jul 23 2020")).toBeTruthy();
+    });
+
+    it("Shows the 'no video options' view when there are no videos on the device", async () => {
+      mockUseVideoPlayerRefs();
+
+      mockMediaLibrary.multipleAssets([]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the 'no video options' page
+      silenceAllErrorLogs();
+      const noVideoOptionsView = await screen.findByTestId(
+        "noVideoOptionsView"
+      );
+      enableAllErrorLogs();
+      expect(noVideoOptionsView).toBeTruthy();
+
+      const reloadVideosButton = getButtonByText(
+        within(noVideoOptionsView),
+        "Cannot find any videos to play.\n\nMove some onto your device to watch them in VR."
+      );
+
+      expect(reloadVideosButton).toBeTruthy();
+      expect(
+        within(reloadVideosButton).queryByTestId("refreshIcon")
+      ).toBeTruthy();
+      expect(
+        within(reloadVideosButton).queryByText("Reload video files")
+      ).toBeTruthy();
+    });
+
+    it("Reloads the video options when the button on the 'no video options' view is pressed", async () => {
+      mockUseVideoPlayerRefs();
+
+      mockMediaLibrary.multipleAssets([]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the 'no video options' page
+      silenceAllErrorLogs();
+      const noVideoOptionsView = await screen.findByTestId(
+        "noVideoOptionsView"
+      );
+      enableAllErrorLogs();
+      expect(noVideoOptionsView).toBeTruthy();
+
+      const reloadVideosButton = getButtonByText(
+        within(noVideoOptionsView),
+        "Cannot find any videos to play.\n\nMove some onto your device to watch them in VR."
+      );
+
+      expect(reloadVideosButton).toBeTruthy();
+      expect(
+        within(reloadVideosButton).queryByTestId("refreshIcon")
+      ).toBeTruthy();
+      expect(
+        within(reloadVideosButton).queryByText("Reload video files")
+      ).toBeTruthy();
+
+      // Update the options returned on request
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+      // Press the button to reload the video options
+      await asyncPressEvent(reloadVideosButton);
+
+      // Confirm the video option button is now visible
+      expect(
+        getButtonByText(
+          within(screen.queryByTestId("selectVideoListView")),
+          "path/to/file.mp4"
+        )
+      ).toBeTruthy();
     });
 
     it("Shows the expected icons on the upper control bar while on the 'select a video' view", async () => {

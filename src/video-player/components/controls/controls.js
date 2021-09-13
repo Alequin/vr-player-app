@@ -1,9 +1,11 @@
+import { isEmpty } from "lodash";
 import React, { useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { Button } from "../../../button";
 import { Icon } from "../../../icon";
 import { isAtLeastAnHour } from "../../../is-at-least-an-hour";
 import { useLoadVideoOptions } from "../../hooks/use-load-video-options";
+import { disabledElementOpacity } from "../../disabld-element-opacity";
 import { ControlBar } from "../control-bar";
 import { ControlBarIconButton } from "../control-bar-icon-button";
 import { TimeBar } from "../time-bar";
@@ -71,19 +73,58 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           : "space-between",
       }}
     >
-      <UpperControlBar
-        shouldDisableControls={shouldShowHomeView}
-        onPressAnyControls={showControls}
-        onPressBack={onBackEvent}
-        videoSortOrderDescription={videoSortInstructions.description}
-        onPressSelectVideo={!shouldShowSelectVideoView && goToSelectVideoView}
-        onPressChangeVideoSortOrder={
-          shouldShowSelectVideoView && toggleVideoSortInstructions
-        }
-        onPressReloadVideoOptions={
-          shouldShowSelectVideoView && reloadVideoOptions
-        }
-      />
+      <ControlBar testID="upperControlBar">
+        <ControlBarIconButton
+          name="backArrow"
+          onPress={() => {
+            onBackEvent();
+            showControls();
+          }}
+          disabled={shouldShowHomeView}
+        />
+        {shouldShowSelectVideoView && (
+          <Button
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onPress={() => {
+              toggleVideoSortInstructions();
+              showControls();
+            }}
+            disabled={isEmpty(videoOptions)}
+          >
+            <ControlViewText style={{ margin: 5 }}>
+              {videoSortInstructions.description}
+            </ControlViewText>
+            <Icon
+              name="sortOrder"
+              size={22}
+              color="white"
+              style={{ margin: 5 }}
+            />
+          </Button>
+        )}
+        {shouldShowSelectVideoView && (
+          <ControlBarIconButton
+            name="refresh"
+            onPress={() => {
+              reloadVideoOptions();
+              showControls();
+            }}
+          />
+        )}
+        {!shouldShowSelectVideoView && (
+          <ControlBarIconButton
+            name="folderVideo"
+            onPress={() => {
+              goToSelectVideoView();
+              showControls();
+            }}
+          />
+        )}
+      </ControlBar>
       <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
         <SideControlBar
           testID="sidebarLeft"
@@ -128,6 +169,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             <SelectVideoView
               videoOptions={videoOptions}
               onSelectVideo={videoPlayer.loadVideoSource}
+              onPressReloadVideoOptions={reloadVideoOptions}
             />
           )}
           {!areAdsDisabled && !videoPlayer.hasVideo && <AdBanner />}
@@ -212,70 +254,6 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   );
 };
 
-const UpperControlBar = ({
-  onPressBack,
-  onPressAnyControls,
-  shouldDisableControls,
-  videoSortOrderDescription,
-  onPressSelectVideo,
-  onPressChangeVideoSortOrder,
-  onPressReloadVideoOptions,
-}) => {
-  return (
-    <ControlBar testID="upperControlBar">
-      <ControlBarIconButton
-        name="backArrow"
-        onPress={() => {
-          onPressBack();
-          onPressAnyControls();
-        }}
-        disabled={shouldDisableControls}
-      />
-      {onPressSelectVideo && (
-        <ControlBarIconButton
-          name="folderVideo"
-          onPress={() => {
-            onPressSelectVideo();
-            onPressAnyControls();
-          }}
-        />
-      )}
-      {onPressChangeVideoSortOrder && (
-        <Button
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onPress={() => {
-            onPressChangeVideoSortOrder();
-            onPressAnyControls();
-          }}
-        >
-          <ControlViewText style={{ margin: 5 }}>
-            {videoSortOrderDescription}
-          </ControlViewText>
-          <Icon
-            name="sortOrder"
-            size={22}
-            color="white"
-            style={{ margin: 5 }}
-          />
-        </Button>
-      )}
-      {onPressReloadVideoOptions && (
-        <ControlBarIconButton
-          name="refresh"
-          onPress={() => {
-            onPressReloadVideoOptions();
-            onPressAnyControls();
-          }}
-        />
-      )}
-    </ControlBar>
-  );
-};
-
 const LowerControlBar = ({
   shouldDisableControls,
   isPlaying,
@@ -292,12 +270,7 @@ const LowerControlBar = ({
   togglePlayerResizeMode,
 }) => {
   return (
-    <ControlBar
-      testID="lowerControlBar"
-      style={{
-        opacity: shouldDisableControls ? 0.25 : 1,
-      }}
-    >
+    <ControlBar testID="lowerControlBar">
       <ControlBarIconButton
         disabled={shouldDisableControls}
         name={isPlaying ? "pause" : "play"}
@@ -307,7 +280,13 @@ const LowerControlBar = ({
         }}
       />
       <Text
-        style={{ color: "white", fontWeight: "bold", fontSize: 17, margin: 5 }}
+        style={{
+          color: "white",
+          fontWeight: "bold",
+          fontSize: 17,
+          margin: 5,
+          opacity: disabledElementOpacity(shouldDisableControls),
+        }}
       >
         {isAtLeastAnHour(videoDuration)
           ? millisecondsToTime(currentVideoPositionInMillis)

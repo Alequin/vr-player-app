@@ -1,6 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import { Button } from "../../../button";
+import { disabledElementOpacity } from "../../disabld-element-opacity";
 
 export const SideControlBar = ({
   testID,
@@ -13,7 +14,7 @@ export const SideControlBar = ({
   <View
     testID={testID}
     style={{
-      opacity: shouldDisableControls ? 0.25 : 1,
+      opacity: disabledElementOpacity(shouldDisableControls),
       justifyContent: "center",
       height: "100%",
     }}
