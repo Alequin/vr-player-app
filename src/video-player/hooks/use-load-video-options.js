@@ -1,4 +1,5 @@
 import * as MediaLibrary from "expo-media-library";
+import { isError } from "lodash";
 import orderBy from "lodash/orderBy";
 import { useEffect, useMemo, useState } from "react";
 import { useCallback } from "react/cjs/react.development";
@@ -31,20 +32,29 @@ export const useLoadVideoOptions = (hasPermission, videoSortInstructions) => {
           : null,
       [videoOptions, videoSortInstructions?.key, videoSortInstructions?.order]
     ),
-    reloadVideoOptions: useCallback(
-      async () => setVideoOptions(await getVideoOptions()),
-      []
-    ),
+    didLoadingVideoOptionsError: isError(videoOptions),
+    reloadVideoOptions: useCallback(async () => {
+      setVideoOptions(null);
+      setVideoOptions(await getVideoOptions());
+    }, []),
   };
 };
 
-const getVideoOptions = async () => encodeVideoUris(await getRawVideoAssets());
+const getVideoOptions = async () => {
+  const videoOptions = await getRawVideoAssets();
+  return isError(videoOptions) ? videoOptions : encodeVideoUris(videoOptions);
+};
 
-const getRawVideoAssets = async () =>
-  MediaLibrary.getAssetsAsync({
-    mediaType: MediaLibrary.MediaType.video,
-    first: 100000,
-  });
+const getRawVideoAssets = async () => {
+  try {
+    return await MediaLibrary.getAssetsAsync({
+      mediaType: MediaLibrary.MediaType.video,
+      first: 100000,
+    });
+  } catch {
+    return new Error("unable to load video options");
+  }
+};
 
 const encodeVideoUris = (videos) => {
   return videos.assets.map((asset) => ({

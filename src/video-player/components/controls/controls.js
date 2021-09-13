@@ -1,11 +1,12 @@
-import { isEmpty } from "lodash";
+import isEmpty from "lodash/isEmpty";
+import isError from "lodash/isError";
 import React, { useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { Button } from "../../../button";
 import { Icon } from "../../../icon";
 import { isAtLeastAnHour } from "../../../is-at-least-an-hour";
-import { useLoadVideoOptions } from "../../hooks/use-load-video-options";
 import { disabledElementOpacity } from "../../disabld-element-opacity";
+import { useLoadVideoOptions } from "../../hooks/use-load-video-options";
 import { ControlBar } from "../control-bar";
 import { ControlBarIconButton } from "../control-bar-icon-button";
 import { TimeBar } from "../time-bar";
@@ -18,7 +19,7 @@ import {
 import { AdBanner } from "./control-views/ad-banner";
 import { ControlViewText } from "./control-views/control-view-text";
 import { DisableAdsView } from "./control-views/disable-ads-view";
-import { ErrorView } from "./control-views/error-view";
+import { ErrorPlayingVideoView } from "./control-views/error-playing-video-view";
 import { HomeView } from "./control-views/home-view";
 import { RequestPermissionsView } from "./control-views/request-permissions-view";
 import { SelectVideoView } from "./control-views/select-video-view";
@@ -35,10 +36,8 @@ export const Controls = ({ videoPlayer, zIndex }) => {
 
   const { videoSortInstructions, toggleVideoSortInstructions } =
     useSelectVideoSortOrder();
-  const { videoOptions, reloadVideoOptions } = useLoadVideoOptions(
-    hasPermission,
-    videoSortInstructions
-  );
+  const { videoOptions, reloadVideoOptions, didLoadingVideoOptionsError } =
+    useLoadVideoOptions(hasPermission, videoSortInstructions);
 
   const { areAdsDisabled, setAreAdsDisabled } = useCanShowAds();
 
@@ -93,7 +92,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
               toggleVideoSortInstructions();
               showControls();
             }}
-            disabled={isEmpty(videoOptions)}
+            disabled={didLoadingVideoOptionsError || isEmpty(videoOptions)}
           >
             <ControlViewText style={{ margin: 5 }}>
               {videoSortInstructions.description}
@@ -157,7 +156,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             />
           )}
           {shouldShowErrorView && (
-            <ErrorView
+            <ErrorPlayingVideoView
               errorMessage={videoPlayer.errorLoadingVideo}
               onPressSelectAnotherVideo={goToSelectVideoView}
             />
@@ -168,6 +167,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           {shouldShowSelectVideoView && (
             <SelectVideoView
               videoOptions={videoOptions}
+              didLoadingVideoOptionsError={didLoadingVideoOptionsError}
               onSelectVideo={videoPlayer.loadVideoSource}
               onPressReloadVideoOptions={reloadVideoOptions}
             />

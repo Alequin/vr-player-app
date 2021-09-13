@@ -75,6 +75,27 @@ export const mockMediaLibrary = {
         }),
     };
   },
+  failToLoadAssets: (filePath) => {
+    return {
+      mockGetPermissionsAsync: jest
+        .spyOn(MediaLibrary, "getPermissionsAsync")
+        .mockResolvedValue({
+          granted: true,
+          status: "granted",
+          canAskAgain: true,
+        }),
+      mockRequestPermissionsAsync: jest
+        .spyOn(MediaLibrary, "requestPermissionsAsync")
+        .mockResolvedValue({
+          granted: true,
+          status: "granted",
+          canAskAgain: true,
+        }),
+      mockGetAssetsAsync: jest
+        .spyOn(MediaLibrary, "getAssetsAsync")
+        .mockRejectedValue(new Error("error loading assets")),
+    };
+  },
   undeterminedPermissions: () => {
     return {
       mockGetPermissionsAsync: jest

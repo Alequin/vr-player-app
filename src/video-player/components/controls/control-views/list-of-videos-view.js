@@ -14,6 +14,7 @@ export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
   return (
     <FlatList
       testID="selectVideoListView"
+      style={{ width: "100%" }}
       data={videoOptions}
       keyExtractor={({ uri }) => uri}
       numColumns={2}

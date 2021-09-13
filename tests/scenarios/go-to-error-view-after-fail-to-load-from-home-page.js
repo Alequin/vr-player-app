@@ -29,6 +29,6 @@ export const goToErrorViewAfterFailToLoadFromHomePage = async ({
   );
 
   // Check the error page is shown due to the error
-  const errorView = screen.getByTestId("errorView");
+  const errorView = screen.getByTestId("errorPlayingVideoView");
   expect(errorView).toBeTruthy();
 };

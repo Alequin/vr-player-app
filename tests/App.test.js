@@ -10,7 +10,7 @@ jest.mock("expo-linking", () => ({
   openSettings: jest.fn(),
 }));
 
-import { act, cleanup, waitFor, within } from "@testing-library/react-native";
+import { act, cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
 import * as Linking from "expo-linking";
 import * as MediaLibrary from "expo-media-library";
@@ -625,6 +625,92 @@ describe("App", () => {
       ).toBeTruthy();
 
       // Update the options returned on request
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+      // Press the button to reload the video options
+      await asyncPressEvent(reloadVideosButton);
+
+      // Confirm the video option button is now visible
+      expect(
+        getButtonByText(
+          within(screen.queryByTestId("selectVideoListView")),
+          "path/to/file.mp4"
+        )
+      ).toBeTruthy();
+    });
+
+    it("Shows an error page with a reload button when the video options fail to load", async () => {
+      mockUseVideoPlayerRefs();
+
+      mockMediaLibrary.failToLoadAssets();
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "error loading video options" View
+      silenceAllErrorLogs();
+      const errorLoadingOptionsView = await screen.findByTestId(
+        "errorLoadingVideoOptionsView"
+      );
+      enableAllErrorLogs();
+      expect(errorLoadingOptionsView).toBeTruthy();
+
+      const reloadVideosButton = getButtonByText(
+        within(errorLoadingOptionsView),
+        "Sorry, there was an issue while looking for videos to play.\n\nReload to try again."
+      );
+
+      expect(reloadVideosButton).toBeTruthy();
+      expect(
+        within(reloadVideosButton).queryByTestId("refreshIcon")
+      ).toBeTruthy();
+      expect(
+        within(reloadVideosButton).queryByText("Reload video files")
+      ).toBeTruthy();
+    });
+
+    it("Reloads the video options when the button on the 'error loading video options' view is pressed", async () => {
+      mockUseVideoPlayerRefs();
+
+      mockMediaLibrary.failToLoadAssets();
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "error loading video options" View
+      silenceAllErrorLogs();
+      const errorLoadingOptionsView = await screen.findByTestId(
+        "errorLoadingVideoOptionsView"
+      );
+      enableAllErrorLogs();
+      expect(errorLoadingOptionsView).toBeTruthy();
+
+      const reloadVideosButton = getButtonByText(
+        within(errorLoadingOptionsView),
+        "Sorry, there was an issue while looking for videos to play.\n\nReload to try again."
+      );
+      expect(reloadVideosButton).toBeTruthy();
+
+      // Update the options returned on request without error
       mockMediaLibrary.singleAsset("path/to/file.mp4");
       // Press the button to reload the video options
       await asyncPressEvent(reloadVideosButton);
@@ -1984,7 +2070,7 @@ describe("App", () => {
         );
 
         // Check the error page is shown due to the error
-        const errorView = screen.getByTestId("errorView");
+        const errorView = screen.getByTestId("errorPlayingVideoView");
         expect(errorView).toBeTruthy();
       });
     });
@@ -2111,7 +2197,7 @@ describe("App", () => {
         videoPlayerMocks: mocks,
         mockVideoFilepath: "./fake/file/path.jpeg",
       });
-      const errorView = screen.getByTestId("errorView");
+      const errorView = screen.getByTestId("errorPlayingVideoView");
 
       const loadViewButton = getButtonByText(
         within(errorView),
@@ -2147,7 +2233,7 @@ describe("App", () => {
 
       // Load a new video from the error page
       const loadViewButton = getButtonByText(
-        within(screen.getByTestId("errorView")),
+        within(screen.getByTestId("errorPlayingVideoView")),
         "Open a different video"
       );
       await asyncPressEvent(loadViewButton);
@@ -2198,7 +2284,7 @@ describe("App", () => {
 
       // Load a new video from the error page
       const loadViewButton = getButtonByText(
-        within(screen.getByTestId("errorView")),
+        within(screen.getByTestId("errorPlayingVideoView")),
         "Open a different video"
       );
       await asyncPressEvent(loadViewButton);
@@ -2276,7 +2362,7 @@ describe("App", () => {
       });
 
       // Confirm the view we are on
-      expect(screen.getByTestId("errorView")).toBeTruthy();
+      expect(screen.getByTestId("errorPlayingVideoView")).toBeTruthy();
 
       // Confirm all buttons are disabled
       const lowerControlBar = screen.getByTestId("lowerControlBar");
@@ -2317,7 +2403,7 @@ describe("App", () => {
       });
 
       // Confirm the view we are on
-      expect(screen.getByTestId("errorView")).toBeTruthy();
+      expect(screen.getByTestId("errorPlayingVideoView")).toBeTruthy();
 
       // Confirm buttons are disabled
       const sideBarLeft = screen.getByTestId("sidebarLeft");
@@ -2351,7 +2437,7 @@ describe("App", () => {
       });
 
       // Confirm the view we are on
-      expect(screen.getByTestId("errorView")).toBeTruthy();
+      expect(screen.getByTestId("errorPlayingVideoView")).toBeTruthy();
 
       // Confirm the expected icons on on the upper control bar
       expect(
@@ -2424,7 +2510,7 @@ describe("App", () => {
 
       // Load a new video from the error page
       const loadViewButton = getButtonByText(
-        within(screen.getByTestId("errorView")),
+        within(screen.getByTestId("errorPlayingVideoView")),
         "Open a different video"
       );
       await asyncPressEvent(loadViewButton);
@@ -2441,7 +2527,7 @@ describe("App", () => {
       );
 
       // Stay on the error page due to another error
-      expect(screen.getByTestId("errorView")).toBeTruthy();
+      expect(screen.getByTestId("errorPlayingVideoView")).toBeTruthy();
     });
 
     it("Shows an ad when opening a video after the first attempt to open a video results in error, even if there is no delay between the two attempts to open the video", async () => {
@@ -2478,7 +2564,7 @@ describe("App", () => {
 
       // Load a new video from the error page
       const loadViewButton = getButtonByText(
-        within(screen.getByTestId("errorView")),
+        within(screen.getByTestId("errorPlayingVideoView")),
         "Open a different video"
       );
       await asyncPressEvent(loadViewButton);
@@ -2571,7 +2657,7 @@ describe("App", () => {
       });
 
       // Confirm the current view
-      expect(screen.getByTestId("errorView"));
+      expect(screen.getByTestId("errorPlayingVideoView"));
 
       // Check ad banner is visible
       expect(screen.queryByTestId("bannerAd")).toBeTruthy();
@@ -2592,7 +2678,7 @@ describe("App", () => {
       });
 
       // Confirm the current view
-      expect(screen.getByTestId("errorView"));
+      expect(screen.getByTestId("errorPlayingVideoView"));
 
       // Check ad banner is not visible
       expect(screen.queryByTestId("bannerAd")).not.toBeTruthy();
