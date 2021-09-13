@@ -304,6 +304,30 @@ describe("App", () => {
       expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
     });
 
+    it("Shows the expected icons on the upper control bar while on the home view", async () => {
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      // Confirm the expected icons on on the upper control bar
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      ).toBeTruthy();
+
+      expect(
+        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
+      ).toHaveLength(2);
+    });
+
     it("Disables the back button on the upper bar controls while on the home page", async () => {
       const screen = await asyncRender(<App />);
 
@@ -502,6 +526,50 @@ describe("App", () => {
       expect(within(longVideoButton).queryByTestId("videoIcon")).toBeTruthy();
       expect(within(longVideoButton).queryByText("02:10:00")).toBeTruthy();
       expect(within(longVideoButton).queryByText("Jul 23 2020")).toBeTruthy();
+    });
+
+    it("Shows the expected icons on the upper control bar while on the 'select a video' view", async () => {
+      mockMediaLibrary.singleAsset("file");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Confirm the expected icons on on the upper control bar
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "sortAmountAscIcon"
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "refreshIcon"
+        )
+      ).toBeTruthy();
+
+      expect(
+        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
+      ).toHaveLength(3);
     });
 
     it("Disables all lower bar controls while on the select a video view", async () => {
@@ -1062,6 +1130,125 @@ describe("App", () => {
       // Confirm the new sort order was saved
       expect(asyncStorage.videoSortOrder.save).toHaveBeenCalledTimes(1);
       expect(asyncStorage.videoSortOrder.save).toHaveBeenCalledWith(4);
+    });
+
+    it("Reloads the list of videos when the refresh button is pressed", async () => {
+      mockUseVideoPlayerRefs();
+
+      const { mockGetAssetsAsync: firstMockGetAssetsAsync } =
+        mockMediaLibrary.multipleAssets([
+          {
+            uri: `path/to/file-short.mp4`,
+            filename: `file-short.mp4`,
+            duration: 30,
+            modificationTime: new Date("2020-09-01"),
+          },
+          {
+            uri: `path/to/file-mid.mp4`,
+            filename: `file-mid.mp4`,
+            duration: 630, // 10 minutes 30 seconds
+            modificationTime: new Date("2020-08-15"),
+          },
+          {
+            uri: `path/to/file-long.mp4`,
+            filename: `file-long.mp4`,
+            duration: 7800, // 2 hours 10 minutes
+            modificationTime: new Date("2020-07-23"),
+          },
+        ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.getByTestId("selectVideoView")).toBeTruthy();
+
+      // Confirm the video files are requested
+      expect(firstMockGetAssetsAsync).toHaveBeenCalledTimes(1);
+
+      // Confirm the expected video options are visible
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          `file-short.mp4`
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          `file-mid.mp4`
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          `file-long.mp4`
+        )
+      ).toBeTruthy();
+
+      // Update the video options that will be returned
+      const { mockGetAssetsAsync: secondMockGetAssetsAsync } =
+        mockMediaLibrary.multipleAssets([
+          {
+            uri: `path/to/new-file-short.mp4`,
+            filename: `new-file-short.mp4`,
+            duration: 30,
+            modificationTime: new Date("2020-09-01"),
+          },
+          {
+            uri: `path/to/new-file-mid.mp4`,
+            filename: `new-file-mid.mp4`,
+            duration: 630, // 10 minutes 30 seconds
+            modificationTime: new Date("2020-08-15"),
+          },
+          {
+            uri: `path/to/new-file-long.mp4`,
+            filename: `new-file-long.mp4`,
+            duration: 7800, // 2 hours 10 minutes
+            modificationTime: new Date("2020-07-23"),
+          },
+        ]);
+
+      // Reload the video options
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "refreshIcon"
+        )
+      );
+
+      // Confirm the video files are requested again
+      expect(secondMockGetAssetsAsync).toHaveBeenCalledTimes(2);
+
+      // Confirm the video options have updated
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          `new-file-short.mp4`
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          `new-file-mid.mp4`
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("selectVideoView")),
+          `new-file-long.mp4`
+        )
+      ).toBeTruthy();
     });
   });
 
@@ -2063,6 +2250,40 @@ describe("App", () => {
       expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
     });
 
+    it("Shows the expected icons on the upper control bar while playing a video", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
+
+      const screen = await asyncRender(<App />);
+
+      await goToErrorViewAfterFailToLoadFromHomePage({
+        screen,
+        videoPlayerMocks: mocks,
+        mockVideoFilepath: "./fake/file/path.jpeg",
+      });
+
+      // Confirm the view we are on
+      expect(screen.getByTestId("errorView")).toBeTruthy();
+
+      // Confirm the expected icons on on the upper control bar
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      ).toBeTruthy();
+
+      expect(
+        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
+      ).toHaveLength(2);
+    });
+
     it("Can start playing a new video from the error page using the upper control bar", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
@@ -2364,6 +2585,40 @@ describe("App", () => {
         "forward10Icon"
       );
       expect(buttonProps(forwardSidebarButton).disabled).toBeFalsy();
+    });
+
+    it("Shows the expected icons on the upper control bar while playing a video", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      // Confirm the expected icons on on the upper control bar
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      ).toBeTruthy();
+
+      expect(
+        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
+      ).toHaveLength(2);
     });
 
     it("Unloads the video and returns to the 'select a video' view when the back button is pressed", async () => {
@@ -3790,6 +4045,39 @@ describe("App", () => {
           /^Ads are disabled for \d\d:\d\d$/
         )
       ).toBeTruthy();
+    });
+
+    it("Shows the expected icons on the upper control bar while on the 'disable ads' view", async () => {
+      const screen = await asyncRender(<App />);
+
+      const disableAdsButton = getButtonByText(
+        within(screen.getByTestId("homeView")),
+        "Disable ads"
+      );
+      expect(disableAdsButton).toBeTruthy();
+
+      // Visit the disable ads view
+      await asyncPressEvent(disableAdsButton);
+
+      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+
+      // Confirm the expected icons on on the upper control bar
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      ).toBeTruthy();
+
+      expect(
+        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
+      ).toHaveLength(2);
     });
 
     it("Disables all lower bar controls while on the disable ads view", async () => {

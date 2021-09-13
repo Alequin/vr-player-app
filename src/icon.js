@@ -1,4 +1,5 @@
 import Entypo from "@expo/vector-icons/Entypo";
+import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -6,7 +7,6 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Octicons from "@expo/vector-icons/Octicons";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
-
 import camelCase from "lodash/camelCase";
 import React from "react";
 import { View } from "react-native";
@@ -60,6 +60,9 @@ const ICON_OPTIONS = {
   video: customIcon(Entypo, "video"),
   sortOrder: customIcon(FontAwesome, "sort-amount-asc"),
   shieldKey: customIcon(MaterialCommunityIcons, "shield-key"),
+  refresh: customIcon(Feather, "refresh-ccw", {
+    testIdOverride: "refresh",
+  }),
 };
 
 const TestIdElement = (props) => <View {...props} />;

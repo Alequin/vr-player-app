@@ -3,7 +3,7 @@ import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { Button } from "../../../button";
 import { Icon } from "../../../icon";
 import { isAtLeastAnHour } from "../../../is-at-least-an-hour";
-import { useLoadMedia } from "../../hooks/use-load-media";
+import { useLoadVideoOptions } from "../../hooks/use-load-video-options";
 import { ControlBar } from "../control-bar";
 import { ControlBarIconButton } from "../control-bar-icon-button";
 import { TimeBar } from "../time-bar";
@@ -33,7 +33,10 @@ export const Controls = ({ videoPlayer, zIndex }) => {
 
   const { videoSortInstructions, toggleVideoSortInstructions } =
     useSelectVideoSortOrder();
-  const videoOptions = useLoadMedia(hasPermission, videoSortInstructions);
+  const { videoOptions, reloadVideoOptions } = useLoadVideoOptions(
+    hasPermission,
+    videoSortInstructions
+  );
 
   const { areAdsDisabled, setAreAdsDisabled } = useCanShowAds();
 
@@ -76,6 +79,9 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         onPressSelectVideo={!shouldShowSelectVideoView && goToSelectVideoView}
         onPressChangeVideoSortOrder={
           shouldShowSelectVideoView && toggleVideoSortInstructions
+        }
+        onPressReloadVideoOptions={
+          shouldShowSelectVideoView && reloadVideoOptions
         }
       />
       <View style={{ width: "100%", flex: 1, flexDirection: "row" }}>
@@ -213,6 +219,7 @@ const UpperControlBar = ({
   videoSortOrderDescription,
   onPressSelectVideo,
   onPressChangeVideoSortOrder,
+  onPressReloadVideoOptions,
 }) => {
   return (
     <ControlBar testID="upperControlBar">
@@ -238,8 +245,7 @@ const UpperControlBar = ({
           style={{
             flexDirection: "row",
             alignItems: "center",
-            justifyContent: "flex-end",
-            minWidth: "25%",
+            justifyContent: "center",
           }}
           onPress={() => {
             onPressChangeVideoSortOrder();
@@ -256,6 +262,15 @@ const UpperControlBar = ({
             style={{ margin: 5 }}
           />
         </Button>
+      )}
+      {onPressReloadVideoOptions && (
+        <ControlBarIconButton
+          name="refresh"
+          onPress={() => {
+            onPressReloadVideoOptions();
+            onPressAnyControls();
+          }}
+        />
       )}
     </ControlBar>
   );
