@@ -1,7 +1,6 @@
 import * as VideoThumbnails from "expo-video-thumbnails";
-
 import React, { useEffect, useState } from "react";
-import { FlatList, Image, View } from "react-native";
+import { FlatList, Image, useWindowDimensions, View } from "react-native";
 import { Button } from "../../../../button";
 import { Icon } from "../../../../icon";
 import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
@@ -13,13 +12,16 @@ import {
 import { ControlViewText } from "./control-view-text";
 
 export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
+  const window = useWindowDimensions();
+  const columnCount = window.width > 480 ? 2 : 1;
+
   return (
     <FlatList
       testID="selectVideoListView"
       style={{ width: "100%" }}
       data={videoOptions}
       keyExtractor={({ uri }) => uri}
-      numColumns={2}
+      numColumns={columnCount}
       renderItem={({ item }) => (
         <VideoButton
           uri={item.uri}
@@ -27,6 +29,7 @@ export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
           durationInSeconds={item.duration}
           modificationTime={item.modificationTime}
           onSelectVideo={onSelectVideo}
+          columnCount={columnCount}
         />
       )}
       item
@@ -40,6 +43,7 @@ const VideoButton = ({
   durationInSeconds,
   modificationTime,
   onSelectVideo,
+  columnCount,
 }) => {
   const durationInMilliseconds = secondsToMilliseconds(durationInSeconds);
 
@@ -48,7 +52,11 @@ const VideoButton = ({
   return (
     <View
       testID="videoButton"
-      style={{ width: "50%", justifyContent: "center", alignItems: "center" }}
+      style={{
+        width: columnCount === 1 ? "100%" : "50%",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
     >
       <Button
         onPress={() => onSelectVideo({ uri, filename })}
