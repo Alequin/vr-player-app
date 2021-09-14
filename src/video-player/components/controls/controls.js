@@ -1,5 +1,4 @@
 import isEmpty from "lodash/isEmpty";
-import isError from "lodash/isError";
 import React, { useState } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { Button } from "../../../button";
@@ -19,7 +18,6 @@ import {
 import { AdBanner } from "./control-views/ad-banner";
 import { ControlViewText } from "./control-views/control-view-text";
 import { DisableAdsView } from "./control-views/disable-ads-view";
-import { ErrorPlayingVideoView } from "./control-views/error-playing-video-view";
 import { HomeView } from "./control-views/home-view";
 import { RequestPermissionsView } from "./control-views/request-permissions-view";
 import { SelectVideoView } from "./control-views/select-video-view";
@@ -48,7 +46,6 @@ export const Controls = ({ videoPlayer, zIndex }) => {
 
   const {
     shouldShowRequestPermissionsView,
-    shouldShowErrorView,
     shouldShowDisableAdsView,
     shouldShowSelectVideoView,
     shouldShowHomeView,
@@ -57,8 +54,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
     onBackEvent,
   } = useViewToShow(videoPlayer, hasPermission);
 
-  const shouldDisableVideoControls =
-    shouldShowErrorView || !videoPlayer.hasVideo;
+  const shouldDisableVideoControls = !videoPlayer.hasVideo;
 
   return (
     <Animated.View
@@ -67,9 +63,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         opacity: fadeAnim,
         height: "100%",
         width: "100%",
-        justifyContent: videoPlayer.errorLoadingVideo
-          ? "flex-start"
-          : "space-between",
+        justifyContent: "space-between",
       }}
     >
       <ControlBar testID="upperControlBar">
@@ -131,13 +125,9 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           shouldDisableControls={shouldDisableVideoControls}
           onPress={async () => {
             showControls();
-            const shouldPause = videoPlayer.isPlaying;
-            const newPosition =
-              videoPlayer.currentVideoPositionInMillis - 10000;
-
-            if (shouldPause) await videoPlayer.pause();
-            await videoPlayer.setPosition(newPosition);
-            if (shouldPause) await videoPlayer.play();
+            await videoPlayer.setPosition(
+              videoPlayer.currentVideoPositionInMillis - 10000
+            );
           }}
         >
           <Icon name="replay" color="white" size={30} />
@@ -153,12 +143,6 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             <HomeView
               onPressSelectVideo={goToSelectVideoView}
               onPressDisableAds={goToDisableAdsView}
-            />
-          )}
-          {shouldShowErrorView && (
-            <ErrorPlayingVideoView
-              errorMessage={videoPlayer.errorLoadingVideo}
-              onPressSelectAnotherVideo={goToSelectVideoView}
             />
           )}
           {shouldShowDisableAdsView && (
@@ -196,13 +180,9 @@ export const Controls = ({ videoPlayer, zIndex }) => {
           shouldDisableControls={shouldDisableVideoControls}
           onPress={async () => {
             showControls();
-            const shouldPause = videoPlayer.isPlaying;
-            const newPosition =
-              videoPlayer.currentVideoPositionInMillis + 10000;
-
-            if (shouldPause) await videoPlayer.pause();
-            await videoPlayer.setPosition(newPosition);
-            if (shouldPause) await videoPlayer.play();
+            await videoPlayer.setPosition(
+              videoPlayer.currentVideoPositionInMillis + 10000
+            );
           }}
         >
           <Icon name="forward" color="white" size={30} />
@@ -222,30 +202,31 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         }
         videoPlayerMode={videoPlayer.videoPlayerMode}
         videoResizeMode={videoPlayer.videoResizeMode}
-        onPressPlay={() =>
+        onPressPlay={async () =>
           videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
         }
-        onSeekVideoPositionStart={(newPosition) => {
+        onSeekVideoPositionStart={async (newPosition) => {
           setShouldUseManualPosition(true);
 
           setManualPositionInMillis(newPosition);
 
           if (videoPlayer.isPlaying) {
-            videoPlayer.pause();
             setShouldResume(true);
+            await videoPlayer.pause();
           }
         }}
-        onSeekVideoPosition={(newPosition) => {
-          setManualPositionInMillis(newPosition);
-        }}
+        onSeekVideoPosition={(newPosition) =>
+          setManualPositionInMillis(newPosition)
+        }
         onSeekVideoPositionComplete={async (newPosition) => {
           setManualPositionInMillis(newPosition);
-          await videoPlayer.setPosition(newPosition);
+          const { error } = await videoPlayer.setPosition(newPosition);
+          if (error) return;
 
           setShouldUseManualPosition(false);
 
-          if (shouldResume) videoPlayer.play();
           setShouldResume(false);
+          if (shouldResume) await videoPlayer.play();
         }}
         togglePlayerMode={async () => videoPlayer.toggleVideoPlayerMode()}
         togglePlayerResizeMode={async () => videoPlayer.toggleResizeMode()}

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, ToastAndroid, View } from "react-native";
 import { Controls } from "./components/controls/controls";
 import { DualVideoView } from "./components/dual-video-view";
 import { VideoPlayerMask as ScreenMask } from "./components/screen-mask";
@@ -17,9 +17,12 @@ export const VideoPlayer = ({ resetApp }) => {
   const videoPlayer = usePairedVideosPlayers();
 
   useEffect(() => {
-    // In certain error cases, fail fast and reset the app
-    if (videoPlayer.errorUnloadingVideo) resetApp();
-  }, [videoPlayer.errorUnloadingVideo]);
+    if (videoPlayer.error) {
+      // fail fast and reset the app in the case of a video player error
+      showErrorMessage(videoPlayer.errorUnloadingVideo);
+      resetApp();
+    }
+  }, [videoPlayer.error]);
 
   return (
     <View style={styles.container} testID="mainContainer">
@@ -37,6 +40,9 @@ export const VideoPlayer = ({ resetApp }) => {
     </View>
   );
 };
+
+const showErrorMessage = (message) =>
+  ToastAndroid.show(`Sorry, ${message}. Please try again`, 3000);
 
 const styles = StyleSheet.create({
   container: {

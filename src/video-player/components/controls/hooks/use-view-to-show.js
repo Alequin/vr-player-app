@@ -20,17 +20,10 @@ export const useViewToShow = (videoPlayer, hasPermission) => {
   const returnToHomeView = useCallback(() => {
     // Unload a video if one is active to close the video player
     if (videoPlayer.hasVideo) videoPlayer.unloadVideo();
-    // Clear any errors to close the error page
-    if (viewStates.shouldShowErrorView) videoPlayer.clearError();
     // Set all stateful views to false
     if (showDisableAdsView) setShowDisableAdsView(false);
     if (showSelectVideoView) setSelectVideoView(false);
-  }, [
-    videoPlayer.hasVideo,
-    viewStates.shouldShowErrorView,
-    showDisableAdsView,
-    showSelectVideoView,
-  ]);
+  }, [videoPlayer.hasVideo, showDisableAdsView, showSelectVideoView]);
 
   const goToDisableAdsView = useCallback(() => {
     returnToHomeView();
@@ -82,28 +75,23 @@ const isMoreThanOneKeyTruthy = (...values) =>
   filter(values, Boolean).length > 1;
 
 const getViewStates = (
-  { hasVideo, errorLoadingVideo },
+  { hasVideo },
   hasPermission,
   showDisableAdsView,
   showSelectVideoView
 ) => {
   const shouldShowRequestPermissionsView = !hasPermission;
-  const shouldShowErrorView =
-    errorLoadingVideo && !shouldShowRequestPermissionsView;
-  const shouldShowDisableAdsView =
-    showDisableAdsView && !shouldShowErrorView && !hasVideo;
-  const shouldShowSelectVideoView =
-    showSelectVideoView && !shouldShowErrorView && !hasVideo;
+
+  const shouldShowDisableAdsView = showDisableAdsView && !hasVideo;
+  const shouldShowSelectVideoView = showSelectVideoView && !hasVideo;
   const shouldShowHomeView =
     !hasVideo &&
-    !shouldShowErrorView &&
     !showDisableAdsView &&
     !showSelectVideoView &&
     !shouldShowRequestPermissionsView;
 
   return {
     shouldShowRequestPermissionsView,
-    shouldShowErrorView,
     shouldShowDisableAdsView,
     shouldShowSelectVideoView,
     shouldShowHomeView,

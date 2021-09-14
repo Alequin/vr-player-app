@@ -33,8 +33,7 @@ export const usePairedVideosPlayers = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [errorLoadingVideo, setErrorLoadingVideo] = useState(false);
-  const [errorUnloadingVideo, setErrorUnloadingVideo] = useState(false);
+  const [error, setError] = useState(false);
 
   const [currentVideoPositionInMillis, setCurrentVideoPositionInMillis] =
     useState(0);
@@ -47,9 +46,11 @@ export const usePairedVideosPlayers = () => {
         setIsLoading(false);
         setIsPlaying(true);
         await videoPlayer.play();
+        return { error: null };
       } catch (error) {
         logError(error);
-        setErrorLoadingVideo("There was an issue trying to start the video");
+        setError("there was an issue trying to start the video");
+        return { error };
       }
     }
   }, [hasVideo, videoPlayer.play, setPosition, currentVideoPositionInMillis]);
@@ -59,20 +60,30 @@ export const usePairedVideosPlayers = () => {
       try {
         setIsPlaying(false);
         await videoPlayer.pause();
+        setPosition(currentVideoPositionInMillis);
+        return { error: null };
       } catch (error) {
         logError(error);
-        setErrorLoadingVideo("There was an issue trying to pause the video");
+        setError("there was an issue trying to pause the video");
+        return { error };
       }
     }
-  }, [hasVideo, videoPlayer.pause]);
+  }, [hasVideo, videoPlayer.pause, currentVideoPositionInMillis, setPosition]);
 
   const setPosition = useCallback(
     async (position) => {
       const positionToSet =
         position && Math.max(Math.min(position, videoDuration), 0);
-      if (hasVideo && !isNil(positionToSet)) {
+      if (!hasVideo || isNil(positionToSet)) return;
+
+      try {
         await videoPlayer.setPosition(positionToSet);
         setCurrentVideoPositionInMillis(positionToSet);
+        return { error: null };
+      } catch (error) {
+        logError(error);
+        setError("there was an issue trying to update the video position");
+        return { error };
       }
     },
     [hasVideo, videoPlayer.setPosition, videoDuration]
@@ -82,16 +93,17 @@ export const usePairedVideosPlayers = () => {
     if (!hasVideo) return;
     try {
       await videoPlayer.unload();
+
+      setVideoDuration(0);
+      setHasVideo(null);
+      setIsPlaying(false);
+      setCurrentVideoPositionInMillis(0);
+      return { error: null };
     } catch (error) {
       logError(error);
-      setErrorUnloadingVideo(error);
-      return;
+      setError("there was an issue removing the current video");
+      return { error };
     }
-
-    setVideoDuration(0);
-    setHasVideo(null);
-    setIsPlaying(false);
-    setCurrentVideoPositionInMillis(0);
   }, [videoPlayer.unload, hasVideo]);
 
   useEffect(() => {
@@ -141,10 +153,10 @@ export const usePairedVideosPlayers = () => {
     videoDuration,
     leftPlayer: videoPlayer.refs.primaryVideo,
     rightPlayer: videoPlayer.refs.secondaryVideo,
-    errorLoadingVideo,
-    errorUnloadingVideo,
+    errorUnloadingVideo: error,
     videoPlayerMode,
     videoResizeMode,
+    error,
     play,
     pause,
     setPosition,
@@ -152,7 +164,6 @@ export const usePairedVideosPlayers = () => {
     unloadVideo,
     toggleVideoPlayerMode,
     toggleResizeMode,
-    clearError: useCallback(() => setErrorLoadingVideo(false), []),
     loadVideoSource: useCallback(
       async (newFileObject) => {
         if (newFileObject.type === "cancel") return;
@@ -180,15 +191,11 @@ export const usePairedVideosPlayers = () => {
           setVideoDuration(durationMillis);
 
           await showInterstitialAd();
+
+          setCurrentVideoPositionInMillis(0);
         } catch (error) {
           logError(error);
-          setErrorLoadingVideo(
-            `Unable to play ${newFileObject.filename} as a video`
-          );
-          setHasVideo(false);
-          setVideoDuration(0);
-        } finally {
-          setCurrentVideoPositionInMillis(0);
+          setError(`unable to load ${newFileObject.filename}`);
         }
       },
       [unloadVideo, videoPlayer.load, showInterstitialAd]

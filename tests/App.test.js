@@ -16,7 +16,7 @@ import * as Linking from "expo-linking";
 import * as MediaLibrary from "expo-media-library";
 import { last } from "lodash";
 import React from "React";
-import { Alert } from "react-native";
+import { Alert, ToastAndroid } from "react-native";
 import waitForExpect from "wait-for-expect";
 import { App } from "../App";
 import { delay } from "../src/delay";
@@ -41,7 +41,6 @@ import { mockLogError } from "./mocks/mock-logger";
 import { mockMediaLibrary } from "./mocks/mock-media-library";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
 import { mockVideoThumbnails } from "./mocks/mock-video-thumbnails";
-import { goToErrorViewAfterFailToLoadFromHomePage } from "./scenarios/go-to-error-view-after-fail-to-load-from-home-page";
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 import { startWatchingVideoFromUpperControlBar } from "./scenarios/start-watching-video-from-the upper-control-bar";
 import {
@@ -69,6 +68,7 @@ describe("App", () => {
     jest.clearAllMocks();
 
     mockMediaLibrary.grantedPermission();
+    jest.spyOn(ToastAndroid, "show").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -1803,17 +1803,50 @@ describe("App", () => {
         logErrorMock.mockReset();
       });
 
-      it("Shows the error page when attempting to open a video from the home view but there is an issue loading the new video", async () => {
+      it("Shows an error message and remounts the app when there is an issue loading a video", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
+        mocks.load.mockRejectedValue(null);
         mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
 
         const screen = await asyncRender(<App />);
 
-        await goToErrorViewAfterFailToLoadFromHomePage({
-          screen,
-          videoPlayerMocks: mocks,
-          mockVideoFilepath: "./fake/file/path.jpeg",
-        });
+        // Pick a new video
+        await asyncPressEvent(
+          getButtonByText(
+            within(screen.getByTestId("homeView")),
+            "Select a video to watch"
+          )
+        );
+
+        // Confirm we are taken to the "select a video" page
+        expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+
+        // Select the first video option
+        await asyncPressEvent(
+          getButtonByText(
+            within(screen.getByTestId("selectVideoListView")),
+            "./fake/file/path.jpeg"
+          )
+        );
+
+        // Confirm expected error message is shown
+        expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+        expect(ToastAndroid.show).toHaveBeenCalledWith(
+          `Sorry, unable to load ./fake/file/path.jpeg. Please try again`,
+          3000
+        );
+
+        silenceAllErrorLogs();
+
+        // confirm the main container is unmounted
+        await waitForExpect(() =>
+          expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        );
+
+        // confirm the main container is mounted again
+        await waitForExpect(() =>
+          expect(screen.queryByTestId("mainContainer")).toBeTruthy()
+        );
       });
     });
   });
@@ -2125,7 +2158,7 @@ describe("App", () => {
         logErrorMock.mockReset();
       });
 
-      it("Shows the error page when attempting to open a video from the upper control bar but there is an issue loading the new video", async () => {
+      it("Shows an error message and remounts the app when there is an issue loading a video from the upper control bar", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
         mockMediaLibrary.singleAsset("path/to/file");
         mocks.load.mockRejectedValue(null);
@@ -2151,17 +2184,33 @@ describe("App", () => {
           )
         );
 
-        // Check the error page is shown due to the error
-        const errorView = screen.getByTestId("errorPlayingVideoView");
-        expect(errorView).toBeTruthy();
+        // Confirm expected error message is shown
+        expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+        expect(ToastAndroid.show).toHaveBeenCalledWith(
+          `Sorry, unable to load path/to/file. Please try again`,
+          3000
+        );
+
+        silenceAllErrorLogs();
+
+        // confirm the main container is unmounted
+        await waitForExpect(() =>
+          expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        );
+
+        // confirm the main container is mounted again
+        await waitForExpect(() =>
+          expect(screen.queryByTestId("mainContainer")).toBeTruthy()
+        );
       });
     });
   });
 
-  describe("Unloading a video and returning to the home view", () => {
+  describe("Unloading a video and returning to the 'select a video' view", () => {
     it("Is able to unload a video and return to the 'select a video' view when the back button is pressed", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2169,12 +2218,13 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // confirm the 'select a video' view is not visible
       expect(screen.queryByTestId("selectVideoListView")).toBe(null);
 
-      // Return to home view with the back button
+      // Return to the 'select a video' view
       await asyncPressEvent(
         getButtonByChildTestId(
           within(screen.getByTestId("upperControlBar")),
@@ -2193,6 +2243,7 @@ describe("App", () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
       const getMockBackHandlerCallback = mockBackHandlerCallback();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2200,6 +2251,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // confirm the 'select a video' view is not visible
@@ -2216,11 +2268,10 @@ describe("App", () => {
       expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
     });
 
-    it("Unmounts and remounts the main container to reset the app if there is an issue unloading the video", async () => {
+    it("Is able to unload a video and return to the 'select a video' view when the upper control bar 'select a video' button is pressed", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-
-      mocks.unload.mockRejectedValue(new Error("mock unload error"));
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2228,12 +2279,46 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      // confirm the 'select a video' view is not visible
+      expect(screen.queryByTestId("selectVideoListView")).toBe(null);
+
+      // Return to the 'select a video' view
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "folderVideoIcon"
+        )
+      );
+
+      // confirm video is unloaded
+      expect(mocks.unload).toHaveBeenCalledTimes(1);
+
+      // confirm the 'select a video' view is now visible
+      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+    });
+
+    it("Unmounts and remounts the main container to reset the app if there is an issue unloading the video while using the back button", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      const screen = await asyncRender(<App />);
+
+      await startWatchingVideoFromUpperControlBar({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // confirm the main container is mounted
       expect(screen.queryByTestId("mainContainer")).toBeTruthy();
 
-      // Return to home view with the back button to unload the video
+      // Press the back button to unload the current video
+      mocks.unload.mockRejectedValue(new Error("mock unload error"));
       await asyncPressEvent(
         getButtonByChildTestId(
           within(screen.getByTestId("upperControlBar")),
@@ -2242,6 +2327,13 @@ describe("App", () => {
       );
 
       silenceAllErrorLogs();
+
+      // Confirm expected error message is shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        `Sorry, there was an issue removing the current video. Please try again`,
+        3000
+      );
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
@@ -2253,517 +2345,51 @@ describe("App", () => {
         expect(screen.queryByTestId("mainContainer")).toBeTruthy()
       );
     });
-  });
 
-  describe("Viewing the error view", () => {
-    let logErrorMock = mockLogError();
-
-    beforeEach(() => {
-      jest.clearAllMocks();
-      // Silence custom logs for error related tests
-      logErrorMock.mockImplementation(() => {});
-    });
-
-    afterAll(() => {
-      logErrorMock.mockReset();
-    });
-
-    it("Shows a button to open a new video on the error view", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
-
-      const screen = await asyncRender(<App />);
-
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-      const errorView = screen.getByTestId("errorPlayingVideoView");
-
-      const loadViewButton = getButtonByText(
-        within(errorView),
-        `Sorry, there was an issue playing the video.\n\nUnable to play ./fake/file/path.jpeg as a video`
-      );
-
-      expect(loadViewButton).toBeTruthy();
-      expect(
-        within(loadViewButton).queryByTestId("folderVideoIcon")
-      ).toBeTruthy();
-      expect(
-        within(loadViewButton).queryByText("Open a different video")
-      ).toBeTruthy();
-    });
-
-    it("Can start playing a new video from the error page", async () => {
+    it("Unmounts and remounts the main container to reset the app if there is an issue unloading the video while using the 'select a video' button", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-      mockMediaLibrary.singleAsset("./fake/file/path");
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
-      // Go to error page
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path",
-      });
-
-      // Reset mocks before attempting to open a new video
-      mocks.load.mockResolvedValue(undefined);
-      jest.clearAllMocks();
-
-      // Load a new video from the error page
-      const loadViewButton = getButtonByText(
-        within(screen.getByTestId("errorPlayingVideoView")),
-        "Open a different video"
-      );
-      await asyncPressEvent(loadViewButton);
-
-      // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
-
-      // Select the first video option
-      await asyncPressEvent(
-        getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
-          "./fake/file/path"
-        )
-      );
-
-      // Fire callback to start playing the video
-      const fireDidCloseCallback = getInterstitialDidCloseCallback();
-      act(fireDidCloseCallback);
-
-      // confirm video is loaded and starts playing
-      expect(mocks.load).toHaveBeenCalledTimes(1);
-      expect(mocks.play).toHaveBeenCalledTimes(1);
-    });
-
-    it("Opens an interstitial ad when a new video is loaded", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockAdMobInterstitial();
-      mockMediaLibrary.singleAsset("./fake/file/path");
-
-      const screen = await asyncRender(<App />);
-
-      // Go to error page
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path",
-      });
-
-      // Sets a unit ad id
-      expect(AdMobInterstitial.setAdUnitID).toHaveBeenCalled();
-
-      // Requests an ad to show
-      expect(AdMobInterstitial.requestAdAsync).toHaveBeenCalled();
-
-      // Reset mocks before attempting to open a new video
-      mocks.load.mockResolvedValue(undefined);
-      jest.clearAllMocks();
-
-      // Load a new video from the error page
-      const loadViewButton = getButtonByText(
-        within(screen.getByTestId("errorPlayingVideoView")),
-        "Open a different video"
-      );
-      await asyncPressEvent(loadViewButton);
-
-      // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
-
-      // Select the first video option
-      await asyncPressEvent(
-        getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
-          "./fake/file/path"
-        )
-      );
-
-      // Checks if an ad is ready to show
-      expect(AdMobInterstitial.getIsReadyAsync).toHaveBeenCalledTimes(1);
-
-      // Shows an ad
-      expect(AdMobInterstitial.showAdAsync).toHaveBeenCalledTimes(1);
-
-      // loads the next ad
-      expect(AdMobInterstitial.requestAdAsync).toHaveBeenCalledTimes(1);
-    });
-
-    it("Does not open an interstitial ad when the 'load a video' button is press if ads are disabled", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("path/to/file");
-      mockAdMobInterstitial();
-
-      jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
-
-      mockAdsAreDisabled();
-
-      const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
-      expect(homeView).toBeTruthy();
-
-      const loadViewButton = getButtonByText(
-        within(homeView),
-        "Select a video to watch"
-      );
-      expect(loadViewButton).toBeTruthy();
-
-      // Press button to pick a video
-      await asyncPressEvent(loadViewButton);
-
-      // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
-
-      // Select the first video option
-      await asyncPressEvent(
-        getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
-          "path/to/file"
-        )
-      );
-
-      // Does not shows an ad
-      expect(AdMobInterstitial.showAdAsync).not.toHaveBeenCalledTimes(1);
-      // confirm the video starts playing
-      expect(mocks.play).toHaveBeenCalledTimes(1);
-    });
-
-    it("Disables all lower bar controls while on the error view", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
-
-      const screen = await asyncRender(<App />);
-
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-
-      // Confirm the view we are on
-      expect(screen.getByTestId("errorPlayingVideoView")).toBeTruthy();
-
-      // Confirm all buttons are disabled
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
-      expect(lowerControlBar).toBeTruthy();
-
-      const playButton = getButtonByChildTestId(
-        within(lowerControlBar),
-        "playIcon"
-      );
-      expect(buttonProps(playButton).disabled).toBeTruthy();
-
-      const playerTypeButton = getButtonByChildTestId(
-        within(lowerControlBar),
-        "screenDesktopIcon"
-      );
-      expect(buttonProps(playerTypeButton).disabled).toBeTruthy();
-
-      const screenStretchIcon = getButtonByChildTestId(
-        within(lowerControlBar),
-        "screenNormalIcon"
-      );
-      expect(buttonProps(screenStretchIcon).disabled).toBeTruthy();
-
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
-      expect(timeBar.props.disabled).toBeTruthy();
-    });
-
-    it("Disables all side bar controls while on the error view", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
-
-      const screen = await asyncRender(<App />);
-
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-
-      // Confirm the view we are on
-      expect(screen.getByTestId("errorPlayingVideoView")).toBeTruthy();
-
-      // Confirm buttons are disabled
-      const sideBarLeft = screen.getByTestId("sidebarLeft");
-      expect(sideBarLeft).toBeTruthy();
-
-      const replaySidebarButton = getButtonByChildTestId(
-        within(sideBarLeft),
-        "replay10Icon"
-      );
-      expect(buttonProps(replaySidebarButton).disabled).toBeTruthy();
-
-      const sideBarRight = screen.getByTestId("sidebarRight");
-      expect(sideBarRight).toBeTruthy();
-      const forwardSidebarButton = getButtonByChildTestId(
-        within(sideBarRight),
-        "forward10Icon"
-      );
-      expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
-    });
-
-    it("Shows the expected icons on the upper control bar while playing a video", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
-
-      const screen = await asyncRender(<App />);
-
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-
-      // Confirm the view we are on
-      expect(screen.getByTestId("errorPlayingVideoView")).toBeTruthy();
-
-      // Confirm the expected icons on on the upper control bar
-      expect(
-        getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
-          "iosArrowBackIcon"
-        )
-      ).toBeTruthy();
-      expect(
-        getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
-          "folderVideoIcon"
-        )
-      ).toBeTruthy();
-
-      expect(
-        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
-      ).toHaveLength(2);
-    });
-
-    it("Can start playing a new video from the error page using the upper control bar", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-      mockMediaLibrary.singleAsset("./fake/file/path");
-
-      const screen = await asyncRender(<App />);
-
-      // Go to error page
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path",
-      });
-
-      // Reset mocks before attempting to open a new video
-      jest.clearAllMocks();
-      mocks.load.mockResolvedValue(undefined);
-
-      // return to home view
-      await asyncPressEvent(
-        getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
-          "iosArrowBackIcon"
-        )
-      );
-
-      // Start watching a new video from the upper control bar
       await startWatchingVideoFromUpperControlBar({
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
-        mockVideoFilepath: "./fake/file/path",
-      });
-    });
-
-    it("Returns to the error page when attempting to open a video but there is an issue loading a new video", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
-
-      mocks.load.mockRejectedValue("fail to load");
-
-      const screen = await asyncRender(<App />);
-
-      // Go to error page
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
-      // Load a new video from the error page
-      const loadViewButton = getButtonByText(
-        within(screen.getByTestId("errorPlayingVideoView")),
-        "Open a different video"
-      );
-      await asyncPressEvent(loadViewButton);
+      // confirm the 'select a video' view is not visible
+      expect(screen.queryByTestId("selectVideoListView")).toBe(null);
 
-      // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
-
-      // Select the first video option
-      await asyncPressEvent(
-        getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
-          "./fake/file/path.jpeg"
-        )
-      );
-
-      // Stay on the error page due to another error
-      expect(screen.getByTestId("errorPlayingVideoView")).toBeTruthy();
-    });
-
-    it("Shows an ad when opening a video after the first attempt to open a video results in error, even if there is no delay between the two attempts to open the video", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback, showAdAsync } =
-        mockAdMobInterstitial();
-      mockMediaLibrary.multipleAssets([
-        {
-          uri: "./fake/file/path.jpeg",
-          filename: `path.jpeg`,
-          duration: 30,
-          modificationTime: new Date("2020-09-01"),
-        },
-        {
-          uri: "path/to/file.mp4",
-          filename: `file.mp4`,
-          duration: 30,
-          modificationTime: new Date("2020-09-01"),
-        },
-      ]);
-
-      const screen = await asyncRender(<App />);
-
-      // Go to error page
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: `path.jpeg`,
-      });
-
-      // Reset mocks before attempting to open a new video
-      mocks.load.mockResolvedValue(undefined);
-      jest.clearAllMocks();
-
-      // Load a new video from the error page
-      const loadViewButton = getButtonByText(
-        within(screen.getByTestId("errorPlayingVideoView")),
-        "Open a different video"
-      );
-      await asyncPressEvent(loadViewButton);
-
-      // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
-
-      // Select the first video option
-      await asyncPressEvent(
-        getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
-          `file.mp4`
-        )
-      );
-
-      // Fire callback to start playing the video
-      const fireDidCloseCallback = getInterstitialDidCloseCallback();
-      act(fireDidCloseCallback);
-
-      // confirm video is loaded and starts playing
-      expect(mocks.load).toHaveBeenCalledTimes(1);
-      expect(mocks.play).toHaveBeenCalledTimes(1);
-
-      // confirm ads are shown
-      expect(showAdAsync).toHaveBeenCalledTimes(1);
-    });
-
-    it("Clears the error and returns to the home view when the back button is pressed after an error occurs", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
-
-      const screen = await asyncRender(<App />);
-
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-
-      // confirm the home view is not visible
-      expect(screen.queryByTestId("homeView")).toBe(null);
-
-      // Return to home view with the back button
+      // Press the 'select a video' button to unload the current video
+      mocks.unload.mockRejectedValue(new Error("mock unload error"));
       await asyncPressEvent(
         getButtonByChildTestId(
           within(screen.getByTestId("upperControlBar")),
-          "iosArrowBackIcon"
+          "folderVideoIcon"
         )
       );
 
-      // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeTruthy();
-    });
+      silenceAllErrorLogs();
 
-    it("Clears the error and returns to the home view when the hardware back button is pressed after an error occurs", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      const getMockBackHandlerCallback = mockBackHandlerCallback();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
+      // Confirm expected error message is shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        `Sorry, there was an issue removing the current video. Please try again`,
+        3000
+      );
 
-      const screen = await asyncRender(<App />);
+      // confirm the main container is unmounted
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+      );
 
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-
-      // confirm the home view is not visible
-      expect(screen.queryByTestId("homeView")).toBe(null);
-
-      // fire the event for the hardware back button
-      const backHandlerCallback = getMockBackHandlerCallback();
-
-      await act(async () => backHandlerCallback());
-
-      // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeTruthy();
-    });
-
-    it("Shows a banner ad on the error view", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
-
-      const screen = await asyncRender(<App />);
-
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-
-      // Confirm the current view
-      expect(screen.getByTestId("errorPlayingVideoView"));
-
-      // Check ad banner is visible
-      expect(screen.queryByTestId("bannerAd")).toBeTruthy();
-    });
-
-    it("Hide the banner ad on the error view if ads are disabled", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      mockMediaLibrary.singleAsset("./fake/file/path.jpeg");
-
-      mockAdsAreDisabled();
-
-      const screen = await asyncRender(<App />);
-
-      await goToErrorViewAfterFailToLoadFromHomePage({
-        screen,
-        videoPlayerMocks: mocks,
-        mockVideoFilepath: "./fake/file/path.jpeg",
-      });
-
-      // Confirm the current view
-      expect(screen.getByTestId("errorPlayingVideoView"));
-
-      // Check ad banner is not visible
-      expect(screen.queryByTestId("bannerAd")).not.toBeTruthy();
+      // confirm the main container is mounted again
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).toBeTruthy()
+      );
     });
   });
 
@@ -2998,6 +2624,102 @@ describe("App", () => {
 
       // Confirm play was called
       expect(mocks.pause).toHaveBeenCalledTimes(1);
+    });
+
+    it("Shows an error message and remounts the app when there is an issue playing the video", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      // Press the pause button
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "pauseIcon"
+        )
+      );
+
+      // Mock an error when pressing the play button
+      mocks.play.mockRejectedValue(new Error("unable to play"));
+
+      // Press the play button
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "playIcon"
+        )
+      );
+
+      // Confirm expected error message is shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        "Sorry, there was an issue trying to start the video. Please try again",
+        3000
+      );
+
+      silenceAllErrorLogs();
+
+      // confirm the main container is unmounted
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+      );
+
+      // confirm the main container is mounted again
+      expect(await screen.findByTestId("mainContainer")).toBeTruthy();
+    });
+
+    it("Shows an error message and remounts the app when there is an issue pausing the video", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      // Mock an error when pressing the pause button
+      mocks.pause.mockRejectedValue(new Error("unable to pause"));
+
+      // Press the pause button
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("lowerControlBar")),
+          "pauseIcon"
+        )
+      );
+
+      // Confirm expected error message is shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        "Sorry, there was an issue trying to pause the video. Please try again",
+        3000
+      );
+
+      silenceAllErrorLogs();
+
+      // confirm the main container is unmounted
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+      );
+
+      // confirm the main container is mounted again
+      expect(await screen.findByTestId("mainContainer")).toBeTruthy();
     });
 
     it("Can swap between video player modes and save the selected value", async () => {
@@ -3433,6 +3155,8 @@ describe("App", () => {
           "pauseIcon"
         )
       );
+      // Reset mock as pausing will have called setPosition
+      mocks.setPosition.mockClear();
 
       const lowerControlBar = screen.getByTestId("lowerControlBar");
       const props = getTimeBarProps(
@@ -3650,6 +3374,175 @@ describe("App", () => {
 
       // Does not start playing the video again
       expect(mocks.play).not.toHaveBeenCalled();
+    });
+
+    it("Shows an error message and remounts the app if there is an issue pausing the video while seeking", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const props = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      );
+
+      const onSeekStart = props.onSlidingStart;
+
+      // start seeking for the new video position
+      mocks.pause.mockRejectedValue(new Error("unable to pause"));
+      await act(async () => onSeekStart(10_000));
+
+      // Confirm expected error message is shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        "Sorry, there was an issue trying to pause the video. Please try again",
+        3000
+      );
+
+      silenceAllErrorLogs();
+
+      // confirm the main container is unmounted
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+      );
+
+      // confirm the main container is mounted again
+      expect(await screen.findByTestId("mainContainer")).toBeTruthy();
+    });
+
+    it("Shows an error message and remounts the app if there is an issue setting the position of the video while seeking", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 1_000_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 1_000_000 },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      // Reset mock as pausing will have called setPosition
+      mocks.setPosition.mockClear();
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+
+      const onSeekStart = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      ).onSlidingStart;
+
+      // start seeking for the new video position
+      await act(async () => onSeekStart(10_000));
+
+      // Finish seeking and end on the last position
+      mocks.setPosition.mockRejectedValue(
+        new Error("unable to set videos position")
+      );
+      const onSeekComplete = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      ).onSlidingComplete;
+
+      await act(async () => onSeekComplete(20_000));
+
+      // Confirm expected error message is shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        "Sorry, there was an issue trying to update the video position. Please try again",
+        3000
+      );
+
+      silenceAllErrorLogs();
+
+      // confirm the main container is unmounted
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+      );
+
+      // confirm the main container is mounted again
+      expect(await screen.findByTestId("mainContainer")).toBeTruthy();
+    });
+
+    it("Shows an error message and remounts the app if there is an issue playing the video after seeking", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      mocks.getStatus.mockImplementation(async () => ({
+        primaryStatus: { positionMillis: 0, durationMillis: 1_000_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 1_000_000 },
+      }));
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      // Reset mock as pausing will have called setPosition
+      mocks.setPosition.mockClear();
+
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const props = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      );
+
+      // start seeking for the new video position
+      const onSeekStart = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      ).onSlidingStart;
+
+      await act(async () => onSeekStart(10_000));
+
+      // Finish seeking
+      const onSeekComplete = getTimeBarProps(
+        within(lowerControlBar).getByTestId("timeBar")
+      ).onSlidingComplete;
+      mocks.play.mockRejectedValue(new Error("unable to play video"));
+      await act(async () => onSeekComplete(20_000));
+
+      // Confirm expected error message is shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        "Sorry, there was an issue trying to start the video. Please try again",
+        3000
+      );
+
+      silenceAllErrorLogs();
+
+      // confirm the main container is unmounted
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+      );
+
+      // confirm the main container is mounted again
+      expect(await screen.findByTestId("mainContainer")).toBeTruthy();
     });
   });
 
@@ -3902,13 +3795,11 @@ describe("App", () => {
       );
       await asyncPressEvent(forwardSidebarButton);
 
-      await waitForExpect(async () => {
-        expect(mocks.setPosition).toHaveBeenCalledWith(10_000);
-        expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
-          10_000
-        );
-        expect(within(lowerControlBar).getByText("00:10")).toBeTruthy();
-      });
+      expect(await within(lowerControlBar).findByText("00:10")).toBeTruthy();
+      expect(mocks.setPosition).toHaveBeenCalledWith(10_000);
+      expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+        10_000
+      );
 
       // Move the position back by 10 seconds
       const replaySidebarButton = getButtonByChildTestId(
@@ -3916,225 +3807,13 @@ describe("App", () => {
         "replay10Icon"
       );
       await asyncPressEvent(replaySidebarButton);
-      await waitForExpect(async () => {
-        expect(mocks.setPosition).toHaveBeenCalledWith(0);
-        expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
-          0
-        );
-        expect(within(lowerControlBar).getByText("00:00")).toBeTruthy();
-      });
+
+      expect(await within(lowerControlBar).findByText("00:00")).toBeTruthy();
+      expect(mocks.setPosition).toHaveBeenCalledWith(0);
+      expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+        0
+      );
     }, 10_000);
-
-    it("starts playing the video again when using the side bar forward button and the video was playing", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-      mockMediaLibrary.singleAsset("path/to/file.mp4");
-
-      // This status should never actually happen
-      // Fake status to stop position from being updated by time passing
-      // This ensures the sidebar buttons are what is controlling the current position
-      mocks.getStatus.mockResolvedValue({
-        primaryStatus: {
-          durationMillis: 100_000,
-        },
-        secondaryStatus: {},
-      });
-
-      const screen = await asyncRender(<App />);
-
-      // Play the video and confirm the correct functions are called
-      await startWatchingVideoFromHomeView({
-        screen,
-        videoPlayerMocks: mocks,
-        getInterstitialDidCloseCallback,
-        mockVideoFilepath: "path/to/file.mp4",
-      });
-
-      mocks.play.mockClear();
-
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
-
-      silenceAllErrorLogs();
-
-      // Move the position forward by 10 seconds
-      const forwardSidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarRight")),
-        "forward10Icon"
-      );
-      await asyncPressEvent(forwardSidebarButton);
-
-      await waitForExpect(async () =>
-        expect(within(lowerControlBar).getByText("00:10")).toBeTruthy()
-      );
-
-      // Confirm the video starts playing again
-      await waitForExpect(async () => {
-        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
-        expect(mocks.play).toHaveBeenCalledTimes(1);
-      });
-    });
-
-    it("starts playing the video again when using the side bar replay button and the video was playing", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-      mockMediaLibrary.singleAsset("path/to/file.mp4");
-
-      // This status should never actually happen
-      // Fake status to stop position from being updated by time passing
-      // This ensures the sidebar buttons are what is controlling the current position
-      mocks.getStatus.mockResolvedValue({
-        primaryStatus: {
-          durationMillis: 100_000,
-        },
-        secondaryStatus: {},
-      });
-
-      const screen = await asyncRender(<App />);
-
-      // Play the video and confirm the correct functions are called
-      await startWatchingVideoFromHomeView({
-        screen,
-        videoPlayerMocks: mocks,
-        getInterstitialDidCloseCallback,
-        mockVideoFilepath: "path/to/file.mp4",
-      });
-
-      mocks.play.mockClear();
-
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
-
-      silenceAllErrorLogs();
-
-      // Move the position back by 10 seconds
-      const replaySidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarLeft")),
-        "replay10Icon"
-      );
-      await asyncPressEvent(replaySidebarButton);
-
-      await waitForExpect(async () =>
-        expect(within(lowerControlBar).getByText("00:00")).toBeTruthy()
-      );
-
-      // Confirm the video starts playing again
-      await waitForExpect(async () => {
-        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
-        expect(mocks.play).toHaveBeenCalledTimes(1);
-      });
-    });
-
-    it("does not start playing the video again when using the side bar forward button and the video was paused", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-      mockMediaLibrary.singleAsset("path/to/file.mp4");
-
-      // This status should never actually happen
-      // Fake status to stop position from being updated by time passing
-      // This ensures the sidebar buttons are what is controlling the current position
-      mocks.getStatus.mockResolvedValue({
-        primaryStatus: {
-          durationMillis: 100_000,
-        },
-        secondaryStatus: {},
-      });
-      const screen = await asyncRender(<App />);
-
-      // Play the video and confirm the correct functions are called
-      await startWatchingVideoFromHomeView({
-        screen,
-        videoPlayerMocks: mocks,
-        getInterstitialDidCloseCallback,
-        mockVideoFilepath: "path/to/file.mp4",
-      });
-
-      // Pause the video
-      await asyncPressEvent(
-        getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
-          "pauseIcon"
-        )
-      );
-
-      mocks.play.mockClear();
-
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
-
-      silenceAllErrorLogs();
-
-      // Move the position forward by 10 seconds
-      const forwardSidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarRight")),
-        "forward10Icon"
-      );
-      await asyncPressEvent(forwardSidebarButton);
-
-      await waitForExpect(async () =>
-        expect(within(lowerControlBar).getByText("00:10")).toBeTruthy()
-      );
-
-      // Confirm the video does not start playing again
-      await waitForExpect(async () => {
-        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
-        expect(mocks.play).not.toHaveBeenCalled();
-      });
-    });
-
-    it("does not start playing the video again when using the side bar replay button if the video was paused", async () => {
-      const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
-      mockMediaLibrary.singleAsset("path/to/file.mp4");
-
-      // This status should never actually happen
-      // Fake status to stop position from being updated by time passing
-      // This ensures the sidebar buttons are what is controlling the current position
-      mocks.getStatus.mockResolvedValue({
-        primaryStatus: {
-          durationMillis: 100_000,
-        },
-        secondaryStatus: {},
-      });
-
-      const screen = await asyncRender(<App />);
-
-      // Play the video and confirm the correct functions are called
-      await startWatchingVideoFromHomeView({
-        screen,
-        videoPlayerMocks: mocks,
-        getInterstitialDidCloseCallback,
-        mockVideoFilepath: "path/to/file.mp4",
-      });
-
-      // Pause the video
-      await asyncPressEvent(
-        getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
-          "pauseIcon"
-        )
-      );
-
-      mocks.play.mockClear();
-
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
-
-      silenceAllErrorLogs();
-
-      // Move the position back by 10 seconds
-      const replaySidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarLeft")),
-        "replay10Icon"
-      );
-      await asyncPressEvent(replaySidebarButton);
-
-      await waitForExpect(async () =>
-        expect(within(lowerControlBar).getByText("00:00")).toBeTruthy()
-      );
-
-      // Confirm the video does not start playing again
-      await waitForExpect(async () => {
-        expect(mocks.setPosition).toHaveBeenCalledTimes(1);
-        expect(mocks.play).not.toHaveBeenCalled();
-      });
-    });
 
     it("can not set a position less than 0", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
@@ -4228,6 +3907,102 @@ describe("App", () => {
         expect(mocks.setPosition).toHaveBeenCalledTimes(1);
         expect(mocks.setPosition).toHaveBeenCalledWith(5_000);
       });
+    });
+
+    it("Shows an error message and remounts the app when there is an issue updating the video position with the forward sidebar button", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 100_000 },
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      silenceAllErrorLogs();
+
+      // Move the position forward by 10 seconds
+      mocks.setPosition.mockRejectedValue(new Error("unable to set position"));
+      const forwardSidebarButton = getButtonByChildTestId(
+        within(screen.getByTestId("sidebarRight")),
+        "forward10Icon"
+      );
+      await asyncPressEvent(forwardSidebarButton);
+
+      // Confirm expected error message is shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        "Sorry, there was an issue trying to update the video position. Please try again",
+        3000
+      );
+
+      silenceAllErrorLogs();
+
+      // confirm the main container is unmounted
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+      );
+
+      // confirm the main container is mounted again
+      expect(await screen.findByTestId("mainContainer")).toBeTruthy();
+    });
+
+    it("Shows an error message and remounts the app when there is an issue updating the video position with the replay sidebar button", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: { positionMillis: 50_000, durationMillis: 100_000 },
+        secondaryStatus: { positionMillis: 50_000, durationMillis: 100_000 },
+      });
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      silenceAllErrorLogs();
+
+      // Move the position forward by 10 seconds
+      mocks.setPosition.mockRejectedValue(new Error("unable to set position"));
+      const replaySidebarButton = getButtonByChildTestId(
+        within(screen.getByTestId("sidebarLeft")),
+        "replay10Icon"
+      );
+      await asyncPressEvent(replaySidebarButton);
+
+      // Confirm expected error message is shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        "Sorry, there was an issue trying to update the video position. Please try again",
+        3000
+      );
+
+      silenceAllErrorLogs();
+
+      // confirm the main container is unmounted
+      await waitForExpect(() =>
+        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+      );
+
+      // confirm the main container is mounted again
+      expect(await screen.findByTestId("mainContainer")).toBeTruthy();
     });
   });
 

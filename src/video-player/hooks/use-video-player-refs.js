@@ -1,5 +1,4 @@
-import { useRef, useMemo } from "react";
-import { delay } from "../../delay";
+import { useMemo, useRef } from "react";
 
 /**
  * A mockable wrapper for video player functions exposed by references
