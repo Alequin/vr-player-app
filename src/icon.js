@@ -57,7 +57,6 @@ const ICON_OPTIONS = {
   googlePlay: customIcon(Entypo, "google-play"),
   forward: customIcon(MaterialIcons, "forward-10"),
   replay: customIcon(MaterialIcons, "replay-10"),
-  video: customIcon(Entypo, "video"),
   sortOrder: customIcon(FontAwesome, "sort-amount-asc"),
   shieldKey: customIcon(MaterialCommunityIcons, "shield-key"),
   refresh: customIcon(Feather, "refresh-ccw", {

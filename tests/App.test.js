@@ -40,6 +40,7 @@ import { mockBackHandlerCallback } from "./mocks/mock-back-handler-callback";
 import { mockLogError } from "./mocks/mock-logger";
 import { mockMediaLibrary } from "./mocks/mock-media-library";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
+import { mockVideoThumbnails } from "./mocks/mock-video-thumbnails";
 import { goToErrorViewAfterFailToLoadFromHomePage } from "./scenarios/go-to-error-view-after-fail-to-load-from-home-page";
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 import { startWatchingVideoFromUpperControlBar } from "./scenarios/start-watching-video-from-the upper-control-bar";
@@ -463,7 +464,7 @@ describe("App", () => {
       expect(screen.queryByTestId("loadingIndicatorView")).not.toBeTruthy();
     });
 
-    it("Shows a list of videos to watch on the 'select a video' view", async () => {
+    it.only("Shows a list of videos to watch on the 'select a video' view", async () => {
       mockUseVideoPlayerRefs();
 
       const { mockGetAssetsAsync } = mockMediaLibrary.multipleAssets([
@@ -484,6 +485,21 @@ describe("App", () => {
           filename: `file-long.mp4`,
           duration: 7800, // 2 hours 10 minutes
           modificationTime: new Date("2020-07-23"),
+        },
+      ]);
+
+      mockVideoThumbnails([
+        {
+          videoUri: `path/to/file-short.mp4`,
+          thumbnailUri: `path/to/file-short-thumbnail.jpg`,
+        },
+        {
+          videoUri: `path/to/file-mid.mp4`,
+          thumbnailUri: `path/to/file-mid-thumbnail.jpg`,
+        },
+        {
+          videoUri: `path/to/file-long.mp4`,
+          thumbnailUri: `path/to/file-long-thumbnail.jpg`,
         },
       ]);
 
@@ -518,9 +534,15 @@ describe("App", () => {
       );
 
       expect(shortVideoButton).toBeTruthy();
-      expect(within(shortVideoButton).queryByTestId("videoIcon")).toBeTruthy();
       expect(within(shortVideoButton).queryByText("00:30")).toBeTruthy();
       expect(within(shortVideoButton).queryByText("Sept 1 2020")).toBeTruthy();
+      const shortVideoThumbnail = within(selectVideoView).queryByTestId(
+        "file-short.mp4Thumbnail"
+      );
+      expect(shortVideoThumbnail).toBeTruthy();
+      expect(shortVideoThumbnail.props.source).toEqual({
+        uri: `path/to/file-short-thumbnail.jpg`,
+      });
 
       // Confirm the mid videos button is visible
       const midVideoButton = getButtonByText(
@@ -529,9 +551,15 @@ describe("App", () => {
       );
 
       expect(midVideoButton).toBeTruthy();
-      expect(within(midVideoButton).queryByTestId("videoIcon")).toBeTruthy();
       expect(within(midVideoButton).queryByText("10:30")).toBeTruthy();
       expect(within(midVideoButton).queryByText("Aug 15 2020")).toBeTruthy();
+      const midVideoThumbnail = within(selectVideoView).queryByTestId(
+        "file-mid.mp4Thumbnail"
+      );
+      expect(midVideoThumbnail).toBeTruthy();
+      expect(midVideoThumbnail.props.source).toEqual({
+        uri: `path/to/file-mid-thumbnail.jpg`,
+      });
 
       // Confirm the long videos button is visible
       const longVideoButton = getButtonByText(
@@ -540,9 +568,15 @@ describe("App", () => {
       );
 
       expect(longVideoButton).toBeTruthy();
-      expect(within(longVideoButton).queryByTestId("videoIcon")).toBeTruthy();
       expect(within(longVideoButton).queryByText("02:10:00")).toBeTruthy();
       expect(within(longVideoButton).queryByText("Jul 23 2020")).toBeTruthy();
+      const longVideoThumbnail = within(selectVideoView).queryByTestId(
+        "file-long.mp4Thumbnail"
+      );
+      expect(longVideoThumbnail).toBeTruthy();
+      expect(longVideoThumbnail.props.source).toEqual({
+        uri: `path/to/file-long-thumbnail.jpg`,
+      });
     });
 
     it("Shows the 'no video options' view when there are no videos on the device", async () => {

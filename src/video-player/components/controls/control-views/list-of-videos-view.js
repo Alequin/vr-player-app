@@ -1,7 +1,7 @@
-import React from "react";
-import { FlatList, View } from "react-native";
+import * as VideoThumbnails from "expo-video-thumbnails";
+import React, { useEffect, useState } from "react";
+import { FlatList, Image, View } from "react-native";
 import { Button } from "../../../../button";
-import { Icon } from "../../../../icon";
 import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
 import { secondsToMilliseconds } from "../../../../minutes-to-milliseconds";
 import {
@@ -41,6 +41,8 @@ const VideoButton = ({
 }) => {
   const durationInMilliseconds = secondsToMilliseconds(durationInSeconds);
 
+  const thumbnailUri = useVideoThumbnail(uri, durationInSeconds * 1000);
+
   return (
     <View
       testID="videoButton"
@@ -49,45 +51,61 @@ const VideoButton = ({
       <Button
         onPress={() => onSelectVideo({ uri, filename })}
         style={{
-          width: "95%",
+          width: "97.5%",
           borderWidth: 1,
           borderColor: "gray",
           backgroundColor: "#ffffff17",
           borderRadius: 10,
           padding: 10,
-          marginBottom: 20,
+          marginBottom: 10,
+          flexDirection: "row",
         }}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-        >
-          <Icon name="video" size={25} color="white" style={{ margin: 10 }} />
-          <ControlViewText numberOfLines={1} style={{ flex: 1 }}>
-            {filename}
-          </ControlViewText>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-around",
-            alignItems: "center",
-          }}
-        >
-          <ControlViewText>
-            {isAtLeastAnHour(durationInMilliseconds)
-              ? millisecondsToTime(durationInMilliseconds)
-              : millisecondsToTimeWithoutHours(durationInMilliseconds)}
-          </ControlViewText>
-          <ControlViewText>
-            {videoCreationDate(new Date(modificationTime))}
-          </ControlViewText>
+        {thumbnailUri && (
+          <Image
+            source={{ uri: thumbnailUri }}
+            style={{ flex: 25 }}
+            testID={`${filename}Thumbnail`}
+          />
+        )}
+        <View style={{ flex: 75, marginLeft: 10 }}>
+          <ControlViewText numberOfLines={1}>{filename}</ControlViewText>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-around",
+              alignItems: "center",
+            }}
+          >
+            <ControlViewText>
+              {isAtLeastAnHour(durationInMilliseconds)
+                ? millisecondsToTime(durationInMilliseconds)
+                : millisecondsToTimeWithoutHours(durationInMilliseconds)}
+            </ControlViewText>
+            <ControlViewText>
+              {videoCreationDate(new Date(modificationTime))}
+            </ControlViewText>
+          </View>
         </View>
       </Button>
     </View>
   );
+};
+
+const useVideoThumbnail = (videoUri, videoDuration) => {
+  const [thumbnailUri, setThumbnailUri] = useState(null);
+
+  useEffect(() => {
+    let hasUnmounted = false;
+    VideoThumbnails.getThumbnailAsync(videoUri, {
+      time: videoDuration / 2,
+    }).then(({ uri }) => {
+      if (!hasUnmounted) setThumbnailUri(uri);
+    });
+    return () => (hasUnmounted = true);
+  }, []);
+
+  return thumbnailUri;
 };
 
 const MONTHS = [
