@@ -73,7 +73,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
             onBackEvent();
             showControls();
           }}
-          disabled={shouldShowHomeView}
+          disabled={shouldShowHomeView || shouldShowRequestPermissionsView}
         />
         {shouldShowSelectVideoView && (
           <Button
@@ -115,6 +115,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
               goToSelectVideoView();
               showControls();
             }}
+            disabled={shouldShowRequestPermissionsView}
           />
         )}
       </ControlBar>

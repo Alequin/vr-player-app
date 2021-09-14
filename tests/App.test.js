@@ -76,9 +76,8 @@ describe("App", () => {
     enableAllErrorLogs();
   });
 
-  describe("First opening the app", () => {
+  describe("Requesting permission to access media files", () => {
     it("Checks if the user has given permission to use the media library and requests they give permission if they have not", async () => {
-      mockUseVideoPlayerRefs();
       const { mockRequestPermissionsAsync } =
         mockMediaLibrary.undeterminedPermissions();
 
@@ -106,7 +105,6 @@ describe("App", () => {
     });
 
     it("Directs the user to update permissions from the mobile settings page if permissions cannot be requested again within the app", async () => {
-      mockUseVideoPlayerRefs();
       const { mockRequestPermissionsAsync } =
         mockMediaLibrary.rejectedPermissions();
 
@@ -134,7 +132,6 @@ describe("App", () => {
     });
 
     it("Checks the media library permissions given by the user when the app state changes from 'background' to 'active'", async () => {
-      mockUseVideoPlayerRefs();
       const { mockGetPermissionsAsync } =
         mockMediaLibrary.undeterminedPermissions();
       const updateAppState = mockAppState.mockAppStateUpdate();
@@ -164,6 +161,78 @@ describe("App", () => {
       expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(2);
     });
 
+    it("Disables all controls while on the 'request permissions' view", async () => {
+      mockMediaLibrary.undeterminedPermissions();
+      const screen = await asyncRender(<App />);
+
+      // Confirm a button is shown asking the user to give permission
+      expect(
+        getButtonByText(
+          screen,
+          `You will need to grant the app permission to view media files\n\nbefore you can select videos to watch.`
+        )
+      ).toBeTruthy();
+
+      // Confirm all buttons are disabled
+      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      expect(lowerControlBar).toBeTruthy();
+
+      const playButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "playIcon"
+      );
+
+      expect(buttonProps(playButton).disabled).toBeTruthy();
+
+      const playerTypeButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "screenDesktopIcon"
+      );
+      expect(buttonProps(playerTypeButton).disabled).toBeTruthy();
+
+      const screenStretchButton = getButtonByChildTestId(
+        within(lowerControlBar),
+        "screenNormalIcon"
+      );
+      expect(buttonProps(screenStretchButton).disabled).toBeTruthy();
+
+      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      expect(timeBar.props.disabled).toBeTruthy();
+
+      // Confirm sidebar buttons are disabled
+      const sideBarLeft = screen.getByTestId("sidebarLeft");
+      expect(sideBarLeft).toBeTruthy();
+
+      expect(
+        buttonProps(getButtonByChildTestId(within(sideBarLeft), "replay10Icon"))
+          .disabled
+      ).toBeTruthy();
+
+      const sideBarRight = screen.getByTestId("sidebarRight");
+      expect(sideBarRight).toBeTruthy();
+      const forwardSidebarButton = getButtonByChildTestId(
+        within(sideBarRight),
+        "forward10Icon"
+      );
+      expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
+
+      // Confirm upper control bar buttons are disables
+      const upperControlBar = screen.getByTestId("upperControlBar");
+      expect(
+        buttonProps(
+          getButtonByChildTestId(within(upperControlBar), "iosArrowBackIcon")
+        ).disabled
+      ).toBeTruthy();
+
+      expect(
+        buttonProps(
+          getButtonByChildTestId(within(upperControlBar), "folderVideoIcon")
+        ).disabled
+      ).toBeTruthy();
+    });
+  });
+
+  describe("First opening the app", () => {
     it("Requests a list of the videos on the phone", async () => {
       mockUseVideoPlayerRefs();
 
