@@ -1,7 +1,9 @@
 import * as VideoThumbnails from "expo-video-thumbnails";
+
 import React, { useEffect, useState } from "react";
 import { FlatList, Image, View } from "react-native";
 import { Button } from "../../../../button";
+import { Icon } from "../../../../icon";
 import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
 import { secondsToMilliseconds } from "../../../../minutes-to-milliseconds";
 import {
@@ -61,12 +63,18 @@ const VideoButton = ({
           flexDirection: "row",
         }}
       >
-        {thumbnailUri && (
+        {thumbnailUri ? (
           <Image
             source={{ uri: thumbnailUri }}
             style={{ flex: 25 }}
             testID={`${filename}Thumbnail`}
           />
+        ) : (
+          <View
+            style={{ flex: 25, justifyContent: "center", alignItems: "center" }}
+          >
+            <Icon name="video" color="white" size={36} />
+          </View>
         )}
         <View style={{ flex: 75, marginLeft: 10 }}>
           <ControlViewText numberOfLines={1}>{filename}</ControlViewText>
@@ -99,9 +107,11 @@ const useVideoThumbnail = (videoUri, videoDuration) => {
     let hasUnmounted = false;
     VideoThumbnails.getThumbnailAsync(videoUri, {
       time: videoDuration / 2,
-    }).then(({ uri }) => {
-      if (!hasUnmounted) setThumbnailUri(uri);
-    });
+    })
+      .then(({ uri }) => {
+        if (!hasUnmounted) setThumbnailUri(uri);
+      })
+      .catch(doNothing); // Default thumbnail is used in case of error so do nothing
     return () => (hasUnmounted = true);
   }, []);
 
@@ -132,3 +142,5 @@ const videoCreationDate = (fileModificationDateObject) => {
   if (currentYear === year) return `${month} ${date}`;
   return `${month} ${date} ${year}`;
 };
+
+const doNothing = () => {};

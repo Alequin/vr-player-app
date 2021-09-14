@@ -1,5 +1,5 @@
 import * as MediaLibrary from "expo-media-library";
-import { isError } from "lodash";
+import isError from "lodash/isError";
 import orderBy from "lodash/orderBy";
 import { useEffect, useMemo, useState } from "react";
 import { useCallback } from "react/cjs/react.development";

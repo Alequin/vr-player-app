@@ -2,8 +2,8 @@ jest.genMockFromModule("expo-video-thumbnails");
 
 import * as VideoThumbnails from "expo-video-thumbnails";
 
-export const mockVideoThumbnails = (thumbnailsToLoad) => {
-  return {
+export const mockVideoThumbnails = {
+  ableToLoadThumbnails: (thumbnailsToLoad) => ({
     getThumbnailAsync: jest
       .spyOn(VideoThumbnails, "getThumbnailAsync")
       .mockImplementation(async (videoUriForThumbnail) => {
@@ -13,5 +13,10 @@ export const mockVideoThumbnails = (thumbnailsToLoad) => {
           ).thumbnailUri,
         };
       }),
-  };
+  }),
+  failToLoadThumbnails: () => ({
+    getThumbnailAsync: jest
+      .spyOn(VideoThumbnails, "getThumbnailAsync")
+      .mockRejectedValue(new Error("unable to load thumbnail")),
+  }),
 };

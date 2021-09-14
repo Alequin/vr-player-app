@@ -464,7 +464,7 @@ describe("App", () => {
       expect(screen.queryByTestId("loadingIndicatorView")).not.toBeTruthy();
     });
 
-    it.only("Shows a list of videos to watch on the 'select a video' view", async () => {
+    it("Shows a list of videos to watch on the 'select a video' view", async () => {
       mockUseVideoPlayerRefs();
 
       const { mockGetAssetsAsync } = mockMediaLibrary.multipleAssets([
@@ -488,7 +488,7 @@ describe("App", () => {
         },
       ]);
 
-      mockVideoThumbnails([
+      mockVideoThumbnails.ableToLoadThumbnails([
         {
           videoUri: `path/to/file-short.mp4`,
           thumbnailUri: `path/to/file-short-thumbnail.jpg`,
@@ -577,6 +577,54 @@ describe("App", () => {
       expect(longVideoThumbnail.props.source).toEqual({
         uri: `path/to/file-long-thumbnail.jpg`,
       });
+    });
+
+    it("Shows a list of videos with the default thumbnail when there are issues loading thumbnails on the 'select a video' view", async () => {
+      mockUseVideoPlayerRefs();
+
+      const { mockGetAssetsAsync } = mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01"),
+        },
+      ]);
+
+      mockVideoThumbnails.failToLoadThumbnails();
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      const selectVideoView = screen.getByTestId("selectVideoListView");
+      expect(selectVideoView).toBeTruthy();
+
+      // Confirm the video files are requested
+      expect(mockGetAssetsAsync).toHaveBeenCalledTimes(1);
+      expect(mockGetAssetsAsync).toHaveBeenCalledWith({
+        mediaType: MediaLibrary.MediaType.video,
+        first: 100000,
+      });
+
+      // Confirm the short videos button is visible with the default icon
+      const shortVideoButton = getButtonByText(
+        within(selectVideoView),
+        `file-short.mp4`
+      );
+
+      expect(shortVideoButton).toBeTruthy();
+      expect(within(selectVideoView).queryByTestId("videoIcon")).toBeTruthy();
     });
 
     it("Shows the 'no video options' view when there are no videos on the device", async () => {
