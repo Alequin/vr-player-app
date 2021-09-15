@@ -1,7 +1,6 @@
 import * as VideoThumbnails from "expo-video-thumbnails";
 import React, { useEffect, useState } from "react";
-import { useMemo } from "react";
-import { FlatList, Image, useWindowDimensions, View } from "react-native";
+import { Dimensions, FlatList, Image, View } from "react-native";
 import { Button } from "../../../../button";
 import { Icon } from "../../../../icon";
 import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
@@ -11,18 +10,17 @@ import {
 } from "../../utils";
 import { ControlViewText } from "./control-view-text";
 
-export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
-  const window = useWindowDimensions();
-  // Only check column count once as if it changes it will cause an error
-  const columnCount = useMemo(() => (window.width > 480 ? 2 : 1), []);
+const windowWidth = Dimensions.get("window").width;
+const COLUMN_COUNT = windowWidth > 480 ? 2 : 1;
 
+export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
   return (
     <FlatList
       testID="selectVideoListView"
       style={{ width: "100%" }}
       data={videoOptions}
       keyExtractor={({ uri }) => uri}
-      numColumns={columnCount}
+      numColumns={COLUMN_COUNT}
       renderItem={({ item }) => (
         <VideoButton
           uri={item.uri}
@@ -31,7 +29,7 @@ export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
           duration={item.duration}
           modificationTime={item.modificationTime}
           onSelectVideo={onSelectVideo}
-          columnCount={columnCount}
+          columnCount={COLUMN_COUNT}
         />
       )}
     />
