@@ -13,13 +13,12 @@
     "preset": "jest-expo"
   },
   "dependencies": {
-    "@expo/vector-icons": "^12.0.0",
-    "@react-native-async-storage/async-storage": "^1.15.5",
-    "@react-native-community/masked-view": "0.1.10",
-    "@react-native-community/slider": "3.0.3",
-    "expo": "~42.0.1",
+    "@expo/vector-icons": "^12.0.5",
+    "@react-native-async-storage/async-storage": "^1.15.8",
+    "@react-native-community/masked-view": "0.1.11",
+    "@react-native-community/slider": "4.1.6",
+    "expo": "~42.0.3",
     "expo-ads-admob": "~10.1.2",
-    "expo-asset": "~8.3.2",
     "expo-av": "~9.2.3",
     "expo-linking": "~2.3.1",
     "expo-media-library": "~12.1.2",
@@ -29,16 +28,15 @@
     "react": "16.13.1",
     "react-dom": "16.13.1",
     "react-native": "https://github.com/expo/react-native/archive/sdk-42.0.0.tar.gz",
-    "react-native-gesture-handler": "~1.10.2",
-    "react-native-reanimated": "~2.2.0",
+    "react-native-gesture-handler": "~1.10.3",
+    "react-native-reanimated": "~2.2.2",
     "react-native-safe-area-context": "3.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",
-    "@testing-library/jest-native": "^4.0.1",
+    "@testing-library/jest-native": "^4.0.2",
     "@testing-library/react-native": "^7.2.0",
     "jest-expo": "~41.0.0-beta.0",
-    "react-native-web": "~0.13.12",
     "wait-for-expect": "^3.0.2"
   },
   "private": true
