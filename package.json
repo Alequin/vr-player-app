@@ -4,7 +4,7 @@
     "refresh-node-modules": "rm -rf node_modules && rm yarn.lock && yarn install",
     "start": "expo start -c",
     "eject": "expo eject",
-    "test": "jest",
+    "test": "jest --runInBand --forceExit",
     "build-android-apk": "expo build:android -t apk",
     "build-android-bundle": "expo build:android -t app-bundle",
     "bundle-visualizer": "npx react-native-bundle-visualizer"

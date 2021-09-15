@@ -4,7 +4,6 @@ import { FlatList, Image, useWindowDimensions, View } from "react-native";
 import { Button } from "../../../../button";
 import { Icon } from "../../../../icon";
 import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
-import { secondsToMilliseconds } from "../../../../minutes-to-milliseconds";
 import {
   millisecondsToTime,
   millisecondsToTimeWithoutHours,
@@ -25,8 +24,9 @@ export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
       renderItem={({ item }) => (
         <VideoButton
           uri={item.uri}
+          thumbnail={item.thumbnail}
           filename={item.filename}
-          durationInSeconds={item.duration}
+          duration={item.duration}
           modificationTime={item.modificationTime}
           onSelectVideo={onSelectVideo}
           columnCount={columnCount}
@@ -39,16 +39,13 @@ export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
 
 const VideoButton = ({
   uri,
+  thumbnail,
   filename,
-  durationInSeconds,
+  duration,
   modificationTime,
   onSelectVideo,
   columnCount,
 }) => {
-  const durationInMilliseconds = secondsToMilliseconds(durationInSeconds);
-
-  const thumbnailUri = useVideoThumbnail(uri, durationInSeconds * 1000);
-
   return (
     <View
       testID="videoButton"
@@ -71,9 +68,9 @@ const VideoButton = ({
           flexDirection: "row",
         }}
       >
-        {thumbnailUri ? (
+        {thumbnail ? (
           <Image
-            source={{ uri: thumbnailUri }}
+            source={{ uri: thumbnail }}
             style={{ flex: 25 }}
             testID={`${filename}Thumbnail`}
           />
@@ -94,9 +91,9 @@ const VideoButton = ({
             }}
           >
             <ControlViewText>
-              {isAtLeastAnHour(durationInMilliseconds)
-                ? millisecondsToTime(durationInMilliseconds)
-                : millisecondsToTimeWithoutHours(durationInMilliseconds)}
+              {isAtLeastAnHour(duration)
+                ? millisecondsToTime(duration)
+                : millisecondsToTimeWithoutHours(duration)}
             </ControlViewText>
             <ControlViewText>
               {videoCreationDate(new Date(modificationTime))}

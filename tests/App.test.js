@@ -2410,9 +2410,7 @@ describe("App", () => {
       );
 
       // confirm the main container is mounted again
-      await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).toBeTruthy()
-      );
+      expect(await screen.findByTestId("mainContainer")).toBeTruthy();
     });
 
     it("Unmounts and remounts the main container to reset the app if there is an issue unloading the video while using the 'select a video' button", async () => {
@@ -2456,9 +2454,7 @@ describe("App", () => {
       );
 
       // confirm the main container is mounted again
-      await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).toBeTruthy()
-      );
+      expect(await screen.findByTestId("mainContainer")).toBeTruthy();
     });
   });
 
