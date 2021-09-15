@@ -1,5 +1,6 @@
 import * as VideoThumbnails from "expo-video-thumbnails";
 import React, { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { FlatList, Image, useWindowDimensions, View } from "react-native";
 import { Button } from "../../../../button";
 import { Icon } from "../../../../icon";
@@ -12,7 +13,8 @@ import { ControlViewText } from "./control-view-text";
 
 export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
   const window = useWindowDimensions();
-  const columnCount = window.width > 480 ? 2 : 1;
+  // Only check column count once as if it changes it will cause an error
+  const columnCount = useMemo(() => (window.width > 480 ? 2 : 1), []);
 
   return (
     <FlatList
@@ -32,7 +34,6 @@ export const ListOfVideosView = ({ videoOptions, onSelectVideo }) => {
           columnCount={columnCount}
         />
       )}
-      item
     />
   );
 };
