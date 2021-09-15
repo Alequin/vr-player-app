@@ -203,9 +203,14 @@ export const Controls = ({ videoPlayer, zIndex }) => {
         }
         videoPlayerMode={videoPlayer.videoPlayerMode}
         videoResizeMode={videoPlayer.videoResizeMode}
-        onPressPlay={async () =>
-          videoPlayer.isPlaying ? videoPlayer.pause() : videoPlayer.play()
-        }
+        onPressPlay={async () => {
+          if (!videoPlayer.isPlaying) return await videoPlayer.play();
+
+          await videoPlayer.pause();
+          await videoPlayer.setPosition(
+            videoPlayer.currentVideoPositionInMillis
+          );
+        }}
         onSeekVideoPositionStart={async (newPosition) => {
           setShouldUseManualPosition(true);
 

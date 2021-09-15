@@ -2646,6 +2646,7 @@ describe("App", () => {
       });
 
       // Press the pause button
+      mocks.setPosition.mockClear();
       await asyncPressEvent(
         getButtonByChildTestId(
           within(screen.getByTestId("lowerControlBar")),
@@ -2655,6 +2656,8 @@ describe("App", () => {
 
       // Confirm pause was called
       expect(mocks.pause).toHaveBeenCalledTimes(1);
+      // Confirm position is set to sync video players
+      expect(mocks.setPosition).toHaveBeenCalledTimes(1);
     });
 
     it("Can start playing a video after pausing it", async () => {

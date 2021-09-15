@@ -53,14 +53,13 @@ export const usePairedVideosPlayers = () => {
         return { error };
       }
     }
-  }, [hasVideo, videoPlayer.play, setPosition, currentVideoPositionInMillis]);
+  }, [hasVideo, videoPlayer.play]);
 
   const pause = useCallback(async () => {
     if (hasVideo) {
       try {
         setIsPlaying(false);
         await videoPlayer.pause();
-        setPosition(currentVideoPositionInMillis);
         return { error: null };
       } catch (error) {
         logError(error);
@@ -68,7 +67,7 @@ export const usePairedVideosPlayers = () => {
         return { error };
       }
     }
-  }, [hasVideo, videoPlayer.pause, currentVideoPositionInMillis, setPosition]);
+  }, [hasVideo, videoPlayer.pause]);
 
   const setPosition = useCallback(
     async (position) => {
