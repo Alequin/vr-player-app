@@ -3100,27 +3100,17 @@ describe("App", () => {
 
       silenceAllErrorLogs();
 
-      await waitForExpect(() => {
-        expect(timeBar.props.value).toBeGreaterThan(1000);
-        expect(within(lowerControlBar).getByText("00:01"));
-      });
-      await waitForExpect(() => {
-        expect(timeBar.props.value).toBeLessThan(2000);
-      });
+      expect(await within(lowerControlBar).findByText("00:01"));
+      expect(timeBar.props.value).toBeGreaterThan(1000);
+      expect(timeBar.props.value).toBeLessThan(2000);
 
-      await waitForExpect(() => {
-        expect(timeBar.props.value).toBeGreaterThan(2000);
-        expect(within(lowerControlBar).getByText("00:02"));
-      });
-      await waitForExpect(() => {
-        expect(timeBar.props.value).toBeLessThan(3000);
-      });
+      expect(await within(lowerControlBar).findByText("00:02"));
+      expect(timeBar.props.value).toBeGreaterThan(2000);
+      expect(timeBar.props.value).toBeLessThan(3000);
 
-      await waitForExpect(() => {
-        expect(timeBar.props.value).toBeGreaterThan(3000);
-        expect(within(lowerControlBar).getByText("00:03"));
-      });
-      await waitForExpect(() => expect(timeBar.props.value).toBeLessThan(4000));
+      expect(await within(lowerControlBar).findByText("00:03"));
+      expect(timeBar.props.value).toBeGreaterThan(3000);
+      expect(timeBar.props.value).toBeLessThan(4000);
     });
 
     it("shows the hour time units if the video duration is at least an hour long", async () => {
@@ -3189,9 +3179,9 @@ describe("App", () => {
 
       // Confirm the correct time is shown
       silenceAllErrorLogs();
-      await waitForExpect(() => {
-        expect(within(lowerControlBar).getByText("9999:00:00")).toBeTruthy();
-      });
+      expect(
+        await within(lowerControlBar).findByText("9999:00:00")
+      ).toBeTruthy();
     });
   });
 
