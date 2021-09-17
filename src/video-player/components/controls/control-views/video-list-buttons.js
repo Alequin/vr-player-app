@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { useEffect } from "react/cjs/react.development";
 import { Button } from "../../../../button";
 import { Icon } from "../../../../icon";
 import { isAtLeastAnHour } from "../../../../is-at-least-an-hour";
+import { videoThumbnail } from "../../../video-thumbnail";
 import {
   millisecondsToTime,
   millisecondsToTimeWithoutHours,
@@ -13,10 +13,23 @@ import { Thumbnail } from "./thumbnail";
 
 export const VideoButton = ({
   video,
-  video: { thumbnail, filename, duration, modificationTime },
+  video: {
+    uri,
+    thumbnail: cachedThumbnail,
+    filename,
+    duration,
+    modificationTime,
+  },
   onSelectVideo,
   columnCount,
 }) => {
+  const [thumbnail, setThumbnail] = useState(null);
+  useEffect(() => {
+    if (!cachedThumbnail) videoThumbnail(uri, duration).then(setThumbnail);
+  }, [cachedThumbnail]);
+
+  const thumbnailToUse = cachedThumbnail || thumbnail;
+
   return (
     <View
       testID="videoButton"
@@ -38,7 +51,7 @@ export const VideoButton = ({
       >
         <Thumbnail
           testID={`${filename}Thumbnail`}
-          thumbnail={thumbnail}
+          thumbnail={thumbnailToUse}
           style={{ flex: 25 }}
         />
         <View style={{ flex: 75, marginLeft: 10 }}>

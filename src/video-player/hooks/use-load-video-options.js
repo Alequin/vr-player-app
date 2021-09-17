@@ -8,13 +8,14 @@ import { useAppState } from "./use-app-state";
 
 export const useLoadVideoOptions = (hasPermission, videoSortInstructions) => {
   const { isAppActive } = useAppState();
-  const [videoOptions, setVideoOptions] = useState([]);
+  const [videoOptions, setVideoOptions] = useState(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!hasPermission || !isAppActive) return;
 
     let hasUnmounted = false;
+    setVideoOptions(null);
     getRawVideoAssets()
       .then(async (nextVideoOptions) => {
         if (hasUnmounted) return;
