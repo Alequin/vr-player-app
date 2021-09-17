@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
-import { StyleSheet, ToastAndroid, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Controls } from "./components/controls/controls";
 import { DualVideoView } from "./components/dual-video-view";
 import { VideoPlayerMask as ScreenMask } from "./components/screen-mask";
 import { usePairedVideosPlayers } from "./hooks/use-paired-video-players";
+import { showErrorMessage } from "./show-error-message";
 
 /*
   Layers / z index values
@@ -40,9 +41,6 @@ export const VideoPlayer = ({ resetApp }) => {
     </View>
   );
 };
-
-const showErrorMessage = (message) =>
-  ToastAndroid.show(`Sorry, ${message}. Please try again`, 3000);
 
 const styles = StyleSheet.create({
   container: {

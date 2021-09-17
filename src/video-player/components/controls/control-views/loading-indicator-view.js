@@ -7,7 +7,7 @@ export const LoadingIndicatorView = () => {
       testID="loadingIndicatorView"
       size="large"
       color="#00ff00"
-      style={{ height: "100%" }}
+      style={{ flex: 1 }}
     />
   );
 };

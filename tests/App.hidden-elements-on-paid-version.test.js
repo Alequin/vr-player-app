@@ -58,7 +58,7 @@ describe("Paid version of the app ", () => {
   describe("Opening a video from the home view", () => {
     it("Does not open an interstitial ad when the 'load a video' button is press if the app is paid for", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockAdMobInterstitial();
       mockMediaLibrary.singleAsset("path/to/file");
 
       const screen = await asyncRender(<App />);
@@ -69,7 +69,6 @@ describe("Paid version of the app ", () => {
       await startWatchingVideoFromHomeView({
         screen,
         videoPlayerMocks: mocks,
-        getInterstitialDidCloseCallback,
         mockVideoFilepath: "path/to/file",
       });
 
@@ -87,7 +86,7 @@ describe("Paid version of the app ", () => {
   describe("Opening a video from the upper control bar", () => {
     it("Does not show an interstitial ad when opening a video if the app is paid for", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
-      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockAdMobInterstitial();
       mockMediaLibrary.singleAsset("path/to/file");
 
       const screen = await asyncRender(<App />);
@@ -95,7 +94,6 @@ describe("Paid version of the app ", () => {
       await startWatchingVideoFromUpperControlBar({
         screen,
         videoPlayerMocks: mocks,
-        getInterstitialDidCloseCallback,
         mockVideoFilepath: "path/to/file",
       });
 

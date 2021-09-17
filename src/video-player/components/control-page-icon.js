@@ -1,11 +1,11 @@
 import React from "react";
 import { Icon } from "../../icon";
 
-export const ControlPageIcon = (props) => (
+export const ControlPageIcon = ({ style, size, ...otherProps }) => (
   <Icon
     color="white"
-    {...props}
-    size={props.size || 26}
-    style={{ paddingHorizontal: 15, ...props.style }}
+    size={size || 26}
+    style={[{ paddingHorizontal: 15 }, style]}
+    {...otherProps}
   />
 );

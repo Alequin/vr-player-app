@@ -6,8 +6,7 @@ import { logError } from "../../logger";
 import { checkIfAdsAreDisabled } from "../ads-disable-time";
 import { hasEnoughTimePastToShowInterstitialAd } from "./has-enough-time-past-to-show-interstitial-ad";
 
-export const useShowInterstitialAd = () => {
-  const [isAdVisible, setIsAdVisible] = useState(false);
+export const useShowInterstitialAd = ({ onCloseAd }) => {
   const [lastTimeAdWasShows, setLastTimeAdWasShown] = useState(0);
 
   useEffect(() => {
@@ -30,9 +29,9 @@ export const useShowInterstitialAd = () => {
   }, []);
 
   useEffect(() => {
-    AdMobInterstitial.addEventListener("interstitialDidClose", () =>
-      setIsAdVisible(false)
-    );
+    AdMobInterstitial.addEventListener("interstitialDidClose", () => {
+      onCloseAd();
+    });
 
     AdMobInterstitial.addEventListener(
       "interstitialDidFailToLoad",
@@ -52,7 +51,7 @@ export const useShowInterstitialAd = () => {
     );
 
     return () => AdMobInterstitial.removeAllListeners();
-  }, []);
+  }, [onCloseAd]);
 
   return {
     showInterstitialAd: useCallback(async () => {
@@ -61,19 +60,21 @@ export const useShowInterstitialAd = () => {
         (await checkIfAdsAreDisabled()) ||
         !hasEnoughTimePastToShowInterstitialAd(lastTimeAdWasShows)
       ) {
+        await onCloseAd();
         return;
       }
 
       try {
         const hasAdReadyToShow = await AdMobInterstitial.getIsReadyAsync();
+
         if (hasAdReadyToShow) {
           await AdMobInterstitial.showAdAsync();
           setLastTimeAdWasShown(Date.now());
-          setIsAdVisible(true);
         }
       } catch (error) {
         // Swallow error. A failure to show an ad should not interrupt the user
         logError(error);
+        await onCloseAd();
       }
 
       try {
@@ -82,7 +83,6 @@ export const useShowInterstitialAd = () => {
         // Swallow error. A failure to request the next ad should not interrupt the user
         logError(error);
       }
-    }, [lastTimeAdWasShows]),
-    isInterstitialAdVisible: isAdVisible,
+    }, [lastTimeAdWasShows, onCloseAd]),
   };
 };

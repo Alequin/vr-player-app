@@ -41,6 +41,7 @@ import { mockLogError } from "./mocks/mock-logger";
 import { mockMediaLibrary } from "./mocks/mock-media-library";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
 import { mockVideoThumbnails } from "./mocks/mock-video-thumbnails";
+import { addMultipleVideosToAPlaylist } from "./scenarios/add-multiple-videos-to-a-playlist";
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 import { startWatchingVideoFromUpperControlBar } from "./scenarios/start-watching-video-from-the upper-control-bar";
 import {
@@ -66,6 +67,12 @@ describe("App", () => {
       .spyOn(asyncStorage.adsDisabledTime, "load")
       .mockResolvedValue(undefined);
     jest.clearAllMocks();
+    jest
+      .spyOn(
+        hasEnoughTimePastToShowInterstitialAd,
+        "hasEnoughTimePastToShowInterstitialAd"
+      )
+      .mockRestore();
 
     mockMediaLibrary.grantedPermission();
     jest.spyOn(ToastAndroid, "show").mockImplementation(() => {});
@@ -161,7 +168,7 @@ describe("App", () => {
       expect(mockGetPermissionsAsync).toHaveBeenCalledTimes(2);
     });
 
-    it("Disables all controls while on the 'request permissions' view", async () => {
+    it("Disables / hides all controls while on the 'request permissions' view", async () => {
       mockMediaLibrary.undeterminedPermissions();
       const screen = await asyncRender(<App />);
 
@@ -174,7 +181,7 @@ describe("App", () => {
       ).toBeTruthy();
 
       // Confirm all buttons are disabled
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       expect(lowerControlBar).toBeTruthy();
 
       const playButton = getButtonByChildTestId(
@@ -196,28 +203,18 @@ describe("App", () => {
       );
       expect(buttonProps(screenStretchButton).disabled).toBeTruthy();
 
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      const timeBar = within(lowerControlBar).queryByTestId("timeBar");
       expect(timeBar.props.disabled).toBeTruthy();
 
-      // Confirm sidebar buttons are disabled
-      const sideBarLeft = screen.getByTestId("sidebarLeft");
-      expect(sideBarLeft).toBeTruthy();
+      // Confirm sidebar buttons are hidden
+      const sideBarLeft = screen.queryByTestId("sidebarLeft");
+      expect(sideBarLeft).toBe(null);
 
-      expect(
-        buttonProps(getButtonByChildTestId(within(sideBarLeft), "replay10Icon"))
-          .disabled
-      ).toBeTruthy();
-
-      const sideBarRight = screen.getByTestId("sidebarRight");
-      expect(sideBarRight).toBeTruthy();
-      const forwardSidebarButton = getButtonByChildTestId(
-        within(sideBarRight),
-        "forward10Icon"
-      );
-      expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
+      const sideBarRight = screen.queryByTestId("sidebarRight");
+      expect(sideBarRight).toBe(null);
 
       // Confirm upper control bar buttons are disables
-      const upperControlBar = screen.getByTestId("upperControlBar");
+      const upperControlBar = screen.queryByTestId("upperControlBar");
       expect(
         buttonProps(
           getButtonByChildTestId(within(upperControlBar), "iosArrowBackIcon")
@@ -281,7 +278,7 @@ describe("App", () => {
 
     it("Shows a button to load a video", async () => {
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -291,29 +288,29 @@ describe("App", () => {
 
       expect(loadViewButton).toBeTruthy();
       expect(
-        within(loadViewButton).getByTestId("folderVideoIcon")
+        within(loadViewButton).queryByTestId("folderVideoIcon")
       ).toBeTruthy();
     });
 
     it("Shows a button to view the disable ads view", async () => {
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const disableAdsButton = getButtonByText(within(homeView), "Disable ads");
 
       expect(disableAdsButton).toBeTruthy();
-      expect(within(disableAdsButton).getByTestId("cancelIcon")).toBeTruthy();
+      expect(within(disableAdsButton).queryByTestId("cancelIcon")).toBeTruthy();
     });
 
     it("Disables all lower bar controls while on the home page", async () => {
       const screen = await asyncRender(<App />);
 
       // Confirm the view we are on
-      expect(screen.getByTestId("homeView")).toBeTruthy();
+      expect(screen.queryByTestId("homeView")).toBeTruthy();
 
       // Confirm all buttons are disabled
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       expect(lowerControlBar).toBeTruthy();
 
       const playButton = getButtonByChildTestId(
@@ -335,56 +332,45 @@ describe("App", () => {
       );
       expect(buttonProps(screenStretchButton).disabled).toBeTruthy();
 
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      const timeBar = within(lowerControlBar).queryByTestId("timeBar");
       expect(timeBar.props.disabled).toBeTruthy();
     });
 
-    it("Disables all side bar controls while on the home page", async () => {
+    it("Hides all side bar controls while on the home page", async () => {
       const screen = await asyncRender(<App />);
 
       // Confirm the view we are on
-      expect(screen.getByTestId("homeView")).toBeTruthy();
+      expect(screen.queryByTestId("homeView")).toBeTruthy();
 
-      // Confirm buttons are disabled
-      const sideBarLeft = screen.getByTestId("sidebarLeft");
-      expect(sideBarLeft).toBeTruthy();
+      // Confirm buttons are hidden
+      const sideBarLeft = screen.queryByTestId("sidebarLeft");
+      expect(sideBarLeft).toBe(null);
 
-      const replaySidebarButton = getButtonByChildTestId(
-        within(sideBarLeft),
-        "replay10Icon"
-      );
-      expect(buttonProps(replaySidebarButton).disabled).toBeTruthy();
-
-      const sideBarRight = screen.getByTestId("sidebarRight");
-      expect(sideBarRight).toBeTruthy();
-      const forwardSidebarButton = getButtonByChildTestId(
-        within(sideBarRight),
-        "forward10Icon"
-      );
-      expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
+      const sideBarRight = screen.queryByTestId("sidebarRight");
+      expect(sideBarRight).toBe(null);
     });
 
     it("Shows the expected icons on the upper control bar while on the home view", async () => {
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       // Confirm the expected icons on on the upper control bar
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "iosArrowBackIcon"
         )
       ).toBeTruthy();
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "folderVideoIcon"
         )
       ).toBeTruthy();
 
       expect(
-        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
+        within(screen.queryByTestId("upperControlBar")).getAllByRole("button")
       ).toHaveLength(2);
     });
 
@@ -392,9 +378,9 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       // Confirm the view we are on
-      expect(screen.getByTestId("homeView")).toBeTruthy();
+      expect(screen.queryByTestId("homeView")).toBeTruthy();
 
-      const upperControlBar = screen.getByTestId("upperControlBar");
+      const upperControlBar = screen.queryByTestId("upperControlBar");
       expect(upperControlBar).toBeTruthy();
 
       const backButton = getButtonByChildTestId(
@@ -410,7 +396,7 @@ describe("App", () => {
 
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "folderVideoIcon"
         )
       ).toBeTruthy();
@@ -420,7 +406,7 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       // Confirm the current view
-      expect(screen.getByTestId("homeView"));
+      expect(screen.queryByTestId("homeView"));
 
       // Check ad banner is visible
       expect(screen.queryByTestId("bannerAd")).toBeTruthy();
@@ -431,10 +417,10 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       // Confirm the current view
-      expect(screen.getByTestId("homeView"));
+      expect(screen.queryByTestId("homeView"));
 
       // Check ad banner is not visible
-      expect(screen.queryByTestId("bannerAd")).not.toBeTruthy();
+      expect(screen.queryByTestId("bannerAd")).toBe(null);
     });
   });
 
@@ -444,7 +430,7 @@ describe("App", () => {
       mockMediaLibrary.singleAsset("file");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -457,7 +443,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Opens the 'select a video' view when the button on the upper control bar is pressed", async () => {
@@ -465,19 +451,19 @@ describe("App", () => {
       mockMediaLibrary.singleAsset("file");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       // Press button to pick a video
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "folderVideoIcon"
         )
       );
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Opens the 'select a video' view and shows a loading indicator while loading the video file names", async (done) => {
@@ -488,7 +474,7 @@ describe("App", () => {
       mockGetAssetsAsync.mockImplementation(async () => await delay(60_000));
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -501,7 +487,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm the loading indicator on the 'select a video' view is shown
-      expect(screen.getByTestId("loadingIndicatorView")).toBeTruthy();
+      expect(screen.queryByTestId("loadingIndicatorView")).toBeTruthy();
 
       done();
     });
@@ -511,7 +497,7 @@ describe("App", () => {
       mockMediaLibrary.multipleAssets([]);
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -530,7 +516,7 @@ describe("App", () => {
       silenceAllErrorLogs();
       expect(await screen.findByTestId("noVideoOptionsView")).toBeTruthy();
       enableAllErrorLogs();
-      expect(screen.queryByTestId("loadingIndicatorView")).not.toBeTruthy();
+      expect(screen.queryByTestId("loadingIndicatorView")).toBe(null);
     });
 
     it("Shows a list of videos to watch on the 'select a video' view", async () => {
@@ -541,19 +527,19 @@ describe("App", () => {
           uri: `path/to/file-short.mp4`,
           filename: `file-short.mp4`,
           duration: 30,
-          modificationTime: new Date("2020-09-01"),
+          modificationTime: new Date("2020-09-01").getTime(),
         },
         {
           uri: `path/to/file-mid.mp4`,
           filename: `file-mid.mp4`,
           duration: 630, // 10 minutes 30 seconds
-          modificationTime: new Date("2020-08-15"),
+          modificationTime: new Date("2020-08-15").getTime(),
         },
         {
           uri: `path/to/file-long.mp4`,
           filename: `file-long.mp4`,
           duration: 7800, // 2 hours 10 minutes
-          modificationTime: new Date("2020-07-23"),
+          modificationTime: new Date("2020-07-23").getTime(),
         },
       ]);
 
@@ -573,7 +559,7 @@ describe("App", () => {
       ]);
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -586,7 +572,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      const selectVideoView = screen.getByTestId("selectVideoListView");
+      const selectVideoView = screen.queryByTestId("selectVideoListView");
       expect(selectVideoView).toBeTruthy();
 
       // Confirm the video files are requested
@@ -656,14 +642,14 @@ describe("App", () => {
           uri: `path/to/file-short.mp4`,
           filename: `file-short.mp4`,
           duration: 30,
-          modificationTime: new Date("2020-09-01"),
+          modificationTime: new Date("2020-09-01").getTime(),
         },
       ]);
 
       mockVideoThumbnails.failToLoadThumbnails();
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -676,7 +662,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      const selectVideoView = screen.getByTestId("selectVideoListView");
+      const selectVideoView = screen.queryByTestId("selectVideoListView");
       expect(selectVideoView).toBeTruthy();
 
       // Confirm the video files are requested
@@ -702,7 +688,7 @@ describe("App", () => {
       mockMediaLibrary.multipleAssets([]);
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -742,7 +728,7 @@ describe("App", () => {
       mockMediaLibrary.multipleAssets([]);
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -795,7 +781,7 @@ describe("App", () => {
       mockMediaLibrary.failToLoadAssets();
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -835,7 +821,7 @@ describe("App", () => {
       mockMediaLibrary.failToLoadAssets();
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -879,7 +865,7 @@ describe("App", () => {
       mockMediaLibrary.singleAsset("file");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -892,31 +878,37 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
       // Confirm the expected icons on on the upper control bar
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "iosArrowBackIcon"
         )
       ).toBeTruthy();
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "sortAmountAscIcon"
         )
       ).toBeTruthy();
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
+          "playlistAddIcon"
+        )
+      ).toBeTruthy();
+      expect(
+        getButtonByChildTestId(
+          within(screen.queryByTestId("upperControlBar")),
           "refreshIcon"
         )
       ).toBeTruthy();
 
       expect(
-        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
-      ).toHaveLength(3);
+        within(screen.queryByTestId("upperControlBar")).getAllByRole("button")
+      ).toHaveLength(4);
     });
 
     it("Disables all lower bar controls while on the select a video view", async () => {
@@ -924,7 +916,7 @@ describe("App", () => {
       mockMediaLibrary.singleAsset("file");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -937,10 +929,10 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
       // Confirm all buttons are disabled
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       expect(lowerControlBar).toBeTruthy();
 
       const playButton = getButtonByChildTestId(
@@ -962,16 +954,16 @@ describe("App", () => {
       );
       expect(buttonProps(screenStretchButton).disabled).toBeTruthy();
 
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      const timeBar = within(lowerControlBar).queryByTestId("timeBar");
       expect(timeBar.props.disabled).toBeTruthy();
     });
 
-    it("Disables all side bar controls while on the select a video view", async () => {
+    it("Hides all side bar controls while on the select a video view", async () => {
       mockUseVideoPlayerRefs();
       mockMediaLibrary.singleAsset("file");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -984,25 +976,14 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
-      // Confirm buttons are disabled
-      const sideBarLeft = screen.getByTestId("sidebarLeft");
-      expect(sideBarLeft).toBeTruthy();
+      // Confirm buttons are hidden
+      const sideBarLeft = screen.queryByTestId("sidebarLeft");
+      expect(sideBarLeft).toBe(null);
 
-      const replaySidebarButton = getButtonByChildTestId(
-        within(sideBarLeft),
-        "replay10Icon"
-      );
-      expect(buttonProps(replaySidebarButton).disabled).toBeTruthy();
-
-      const sideBarRight = screen.getByTestId("sidebarRight");
-      expect(sideBarRight).toBeTruthy();
-      const forwardSidebarButton = getButtonByChildTestId(
-        within(sideBarRight),
-        "forward10Icon"
-      );
-      expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
+      const sideBarRight = screen.queryByTestId("sidebarRight");
+      expect(sideBarRight).toBe(null);
     });
 
     describe("It shows the correct shorthand for each month", () => {
@@ -1034,7 +1015,7 @@ describe("App", () => {
           ]);
 
           const screen = await asyncRender(<App />);
-          const homeView = screen.getByTestId("homeView");
+          const homeView = screen.queryByTestId("homeView");
           expect(homeView).toBeTruthy();
 
           const loadViewButton = getButtonByText(
@@ -1047,7 +1028,7 @@ describe("App", () => {
           await asyncPressEvent(loadViewButton);
 
           // Confirm we are taken to the "select a video" page
-          const selectVideoView = screen.getByTestId("selectVideoListView");
+          const selectVideoView = screen.queryByTestId("selectVideoListView");
           expect(selectVideoView).toBeTruthy();
 
           expect(
@@ -1076,7 +1057,7 @@ describe("App", () => {
       ]);
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -1089,7 +1070,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      const selectVideoView = screen.getByTestId("selectVideoListView");
+      const selectVideoView = screen.queryByTestId("selectVideoListView");
       expect(selectVideoView).toBeTruthy();
 
       expect(
@@ -1105,7 +1086,7 @@ describe("App", () => {
       mockMediaLibrary.singleAsset("path/to/file");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       // Play the video and confirm the correct functions are called
@@ -1123,7 +1104,7 @@ describe("App", () => {
       mockMediaLibrary.singleAsset("path/to/file");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       // Play the video and confirm the correct functions are called
@@ -1140,12 +1121,12 @@ describe("App", () => {
       mockMediaLibrary.singleAsset("path/to/file#1.mp4");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       // Play the video and confirm the correct functions are called
       const loadViewButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Select a video to watch"
       );
       expect(loadViewButton).toBeDefined();
@@ -1154,18 +1135,24 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           "path/to/file#1.mp4"
         )
       );
 
       expect(mocks.load).toHaveBeenCalledWith(
-        { filename: "path/to/file#1.mp4", uri: "path/to/file%231.mp4" },
+        {
+          filename: "path/to/file#1.mp4",
+          uri: "path/to/file%231.mp4",
+          duration: 10000,
+          filename: "path/to/file#1.mp4",
+          modificationTime: 1609459200000,
+        },
         {
           primaryOptions: {
             isLooping: true,
@@ -1184,7 +1171,7 @@ describe("App", () => {
         mockMediaLibrary.singleAsset("path/to/file#1.mp4");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -1197,7 +1184,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
       // Confirm permissions where checked
       expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1);
@@ -1205,7 +1192,7 @@ describe("App", () => {
       // Confirm a video button is shown
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           "path/to/file#1.mp4"
         )
       ).toBeTruthy();
@@ -1219,25 +1206,25 @@ describe("App", () => {
           uri: `path/to/file-mid.mp4`,
           filename: `file-mid.mp4`,
           duration: 7800,
-          modificationTime: new Date("2020-08-15"),
+          modificationTime: new Date("2020-08-15").getTime(),
         },
         {
           uri: `path/to/file-newest.mp4`,
           filename: `file-newest.mp4`,
           duration: 30,
-          modificationTime: new Date("2020-09-01"),
+          modificationTime: new Date("2020-09-01").getTime(),
         },
 
         {
           uri: `path/to/file-oldest.mp4`,
           filename: `file-oldest.mp4`,
           duration: 630,
-          modificationTime: new Date("2020-07-23"),
+          modificationTime: new Date("2020-07-23").getTime(),
         },
       ]);
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -1250,20 +1237,20 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      const selectVideoView = screen.getByTestId("selectVideoListView");
+      const selectVideoView = screen.queryByTestId("selectVideoListView");
       expect(selectVideoView).toBeTruthy();
 
       // Confirm the sort button is available and defaults to "Newest to oldest"
       expect(
         getButtonByText(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "Newest to oldest"
         )
       ).toBeTruthy();
 
       // Confirm the initial order is "Newest to oldest"
       const sortedByNewestToOldest = within(
-        screen.getByTestId("selectVideoListView")
+        screen.queryByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1279,20 +1266,20 @@ describe("App", () => {
       // Press the button to change the order to "Oldest to newest"
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "Newest to oldest"
         )
       );
       expect(
         getButtonByText(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "Oldest to newest"
         )
       ).toBeTruthy();
 
       // Confirm the new order is "Oldest to newest"
       const sortedByOldestToNewest = within(
-        screen.getByTestId("selectVideoListView")
+        screen.queryByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1308,17 +1295,20 @@ describe("App", () => {
       // Press the button to change the order to "A to Z"
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "Oldest to newest"
         )
       );
       expect(
-        getButtonByText(within(screen.getByTestId("upperControlBar")), "A to Z")
+        getButtonByText(
+          within(screen.queryByTestId("upperControlBar")),
+          "A to Z"
+        )
       ).toBeTruthy();
 
       // Confirm the new order is "A to Z"
       const sortedByAToZ = within(
-        screen.getByTestId("selectVideoListView")
+        screen.queryByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(within(sortedByAToZ[0]).queryByText(`file-mid.mp4`)).toBeTruthy();
@@ -1331,15 +1321,21 @@ describe("App", () => {
 
       // Press the button to change the order to "Z to A"
       await asyncPressEvent(
-        getButtonByText(within(screen.getByTestId("upperControlBar")), "A to Z")
+        getButtonByText(
+          within(screen.queryByTestId("upperControlBar")),
+          "A to Z"
+        )
       );
       expect(
-        getButtonByText(within(screen.getByTestId("upperControlBar")), "Z to A")
+        getButtonByText(
+          within(screen.queryByTestId("upperControlBar")),
+          "Z to A"
+        )
       ).toBeTruthy();
 
       // Confirm the new order is "Z to A"
       const sortedByZToA = within(
-        screen.getByTestId("selectVideoListView")
+        screen.queryByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1352,18 +1348,21 @@ describe("App", () => {
 
       // Press the button to change the order to "Longest to shortest"
       await asyncPressEvent(
-        getButtonByText(within(screen.getByTestId("upperControlBar")), "Z to A")
+        getButtonByText(
+          within(screen.queryByTestId("upperControlBar")),
+          "Z to A"
+        )
       );
       expect(
         getButtonByText(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "Longest to shortest"
         )
       ).toBeTruthy();
 
       // Confirm the new order is "Longest to shortest"
       const sortedByLongestToShortest = within(
-        screen.getByTestId("selectVideoListView")
+        screen.queryByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1379,20 +1378,20 @@ describe("App", () => {
       // Press the button to change the order to "Shortest to longest"
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "Longest to shortest"
         )
       );
       expect(
         getButtonByText(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "Shortest to longest"
         )
       ).toBeTruthy();
 
       // Confirm the new order is "Shortest to longest"
       const sortedByShortestToLongest = within(
-        screen.getByTestId("selectVideoListView")
+        screen.queryByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1408,20 +1407,20 @@ describe("App", () => {
       // Press the button to change the order back to the initial "Newest to oldest"
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "Shortest to longest"
         )
       );
       expect(
         getButtonByText(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "Newest to oldest"
         )
       ).toBeTruthy();
 
       // Confirm the new order is "Newest to oldest"
       const sortedByNewestToOldestAgain = within(
-        screen.getByTestId("selectVideoListView")
+        screen.queryByTestId("selectVideoListView")
       ).queryAllByTestId("videoButton");
 
       expect(
@@ -1445,7 +1444,7 @@ describe("App", () => {
       jest.spyOn(asyncStorage.videoSortOrder, "save");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -1458,7 +1457,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      const selectVideoView = screen.getByTestId("selectVideoListView");
+      const selectVideoView = screen.queryByTestId("selectVideoListView");
       expect(selectVideoView).toBeTruthy();
 
       // Confirm the sort order was loaded
@@ -1466,12 +1465,18 @@ describe("App", () => {
 
       // Confirm the sort button is available and defaults to the saved sort order
       expect(
-        getButtonByText(within(screen.getByTestId("upperControlBar")), "Z to A")
+        getButtonByText(
+          within(screen.queryByTestId("upperControlBar")),
+          "Z to A"
+        )
       ).toBeTruthy();
 
       // Update the sort order
       await asyncPressEvent(
-        getButtonByText(within(screen.getByTestId("upperControlBar")), "Z to A")
+        getButtonByText(
+          within(screen.queryByTestId("upperControlBar")),
+          "Z to A"
+        )
       );
 
       // Confirm the new sort order was saved
@@ -1488,24 +1493,24 @@ describe("App", () => {
             uri: `path/to/file-short.mp4`,
             filename: `file-short.mp4`,
             duration: 30,
-            modificationTime: new Date("2020-09-01"),
+            modificationTime: new Date("2020-09-01").getTime(),
           },
           {
             uri: `path/to/file-mid.mp4`,
             filename: `file-mid.mp4`,
             duration: 630, // 10 minutes 30 seconds
-            modificationTime: new Date("2020-08-15"),
+            modificationTime: new Date("2020-08-15").getTime(),
           },
           {
             uri: `path/to/file-long.mp4`,
             filename: `file-long.mp4`,
             duration: 7800, // 2 hours 10 minutes
-            modificationTime: new Date("2020-07-23"),
+            modificationTime: new Date("2020-07-23").getTime(),
           },
         ]);
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -1518,7 +1523,7 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
       // Confirm the video files are requested
       expect(firstMockGetAssetsAsync).toHaveBeenCalledTimes(1);
@@ -1526,19 +1531,19 @@ describe("App", () => {
       // Confirm the expected video options are visible
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           `file-short.mp4`
         )
       ).toBeTruthy();
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           `file-mid.mp4`
         )
       ).toBeTruthy();
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           `file-long.mp4`
         )
       ).toBeTruthy();
@@ -1550,26 +1555,26 @@ describe("App", () => {
             uri: `path/to/new-file-short.mp4`,
             filename: `new-file-short.mp4`,
             duration: 30,
-            modificationTime: new Date("2020-09-01"),
+            modificationTime: new Date("2020-09-01").getTime(),
           },
           {
             uri: `path/to/new-file-mid.mp4`,
             filename: `new-file-mid.mp4`,
             duration: 630, // 10 minutes 30 seconds
-            modificationTime: new Date("2020-08-15"),
+            modificationTime: new Date("2020-08-15").getTime(),
           },
           {
             uri: `path/to/new-file-long.mp4`,
             filename: `new-file-long.mp4`,
             duration: 7800, // 2 hours 10 minutes
-            modificationTime: new Date("2020-07-23"),
+            modificationTime: new Date("2020-07-23").getTime(),
           },
         ]);
 
       // Reload the video options
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "refreshIcon"
         )
       );
@@ -1580,19 +1585,19 @@ describe("App", () => {
       // Confirm the video options have updated
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           `new-file-short.mp4`
         )
       ).toBeTruthy();
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           `new-file-mid.mp4`
         )
       ).toBeTruthy();
       expect(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           `new-file-long.mp4`
         )
       ).toBeTruthy();
@@ -1608,7 +1613,7 @@ describe("App", () => {
       jest.spyOn(AdMobInterstitial, "getIsReadyAsync").mockResolvedValue(true);
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -1627,12 +1632,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           "path/to/file"
         )
       );
@@ -1656,7 +1661,7 @@ describe("App", () => {
       mockAdsAreDisabled();
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const loadViewButton = getButtonByText(
@@ -1669,12 +1674,12 @@ describe("App", () => {
       await asyncPressEvent(loadViewButton);
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           "path/to/file"
         )
       );
@@ -1689,7 +1694,7 @@ describe("App", () => {
       mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       // Play the video and confirm the correct functions are called
@@ -1706,52 +1711,6 @@ describe("App", () => {
         silenceAllErrorLogs();
       });
 
-      it("catches the error and still allows the video to play when there is an issue setting the interstitial unit id", async () => {
-        const { mocks } = mockUseVideoPlayerRefs();
-        const { setAdUnitID, getInterstitialDidCloseCallback } =
-          mockAdMobInterstitial();
-        mockMediaLibrary.singleAsset("path/to/file");
-
-        setAdUnitID.mockRejectedValue("fake setAdUnitID error");
-
-        const screen = await asyncRender(<App />);
-        const homeView = screen.getByTestId("homeView");
-        expect(homeView).toBeTruthy();
-
-        // an error occurs when setting the unit id on mount
-        expect(logError).toHaveBeenCalledWith("fake setAdUnitID error");
-
-        await startWatchingVideoFromHomeView({
-          screen,
-          videoPlayerMocks: mocks,
-          getInterstitialDidCloseCallback,
-          mockVideoFilepath: "path/to/file",
-        });
-      });
-
-      it("catches the error and still allows the video to play when there is an issue requesting an ad", async () => {
-        const { mocks } = mockUseVideoPlayerRefs();
-        const { requestAdAsync, getInterstitialDidCloseCallback } =
-          mockAdMobInterstitial();
-        mockMediaLibrary.singleAsset("path/to/file.mp4");
-
-        requestAdAsync.mockRejectedValue("fake requestAdAsync error");
-
-        const screen = await asyncRender(<App />);
-        const homeView = screen.getByTestId("homeView");
-        expect(homeView).toBeTruthy();
-
-        // an error occurs when a request for an ad is made on mount
-        expect(logError).toHaveBeenCalledWith("fake requestAdAsync error");
-
-        await startWatchingVideoFromHomeView({
-          screen,
-          videoPlayerMocks: mocks,
-          getInterstitialDidCloseCallback,
-          mockVideoFilepath: "path/to/file.mp4",
-        });
-      });
-
       it("catches the error and still allows the video to play when there is an issue confirming the ad is ready to show", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { getIsReadyAsync, getInterstitialDidCloseCallback } =
@@ -1761,7 +1720,7 @@ describe("App", () => {
         getIsReadyAsync.mockRejectedValue("fake getIsReadyAsync error");
 
         const screen = await asyncRender(<App />);
-        const homeView = screen.getByTestId("homeView");
+        const homeView = screen.queryByTestId("homeView");
         expect(homeView).toBeTruthy();
 
         // No error initially
@@ -1770,7 +1729,6 @@ describe("App", () => {
         await startWatchingVideoFromHomeView({
           screen,
           videoPlayerMocks: mocks,
-          getInterstitialDidCloseCallback,
           mockVideoFilepath: "path/to/file.mp4",
         });
 
@@ -1787,7 +1745,7 @@ describe("App", () => {
         showAdAsync.mockRejectedValue("fake showAdAsync error");
 
         const screen = await asyncRender(<App />);
-        const homeView = screen.getByTestId("homeView");
+        const homeView = screen.queryByTestId("homeView");
         expect(homeView).toBeTruthy();
 
         // No error initially
@@ -1796,7 +1754,6 @@ describe("App", () => {
         await startWatchingVideoFromHomeView({
           screen,
           videoPlayerMocks: mocks,
-          getInterstitialDidCloseCallback,
           mockVideoFilepath: "path/to/file",
         });
 
@@ -1815,7 +1772,7 @@ describe("App", () => {
         requestAdAsync.mockResolvedValue();
 
         const screen = await asyncRender(<App />);
-        const homeView = screen.getByTestId("homeView");
+        const homeView = screen.queryByTestId("homeView");
         expect(homeView).toBeTruthy();
 
         // No error initially
@@ -1835,17 +1792,26 @@ describe("App", () => {
         // Return to 'select a video' view
         await asyncPressEvent(
           getButtonByChildTestId(
-            within(screen.getByTestId("upperControlBar")),
+            within(screen.queryByTestId("upperControlBar")),
             "iosArrowBackIcon"
           )
         );
+
         // Return to home view
         await asyncPressEvent(
           getButtonByChildTestId(
-            within(screen.getByTestId("upperControlBar")),
+            within(screen.queryByTestId("upperControlBar")),
             "iosArrowBackIcon"
           )
         );
+
+        // Fake enough time has passed so more ads can be requested
+        jest
+          .spyOn(
+            hasEnoughTimePastToShowInterstitialAd,
+            "hasEnoughTimePastToShowInterstitialAd"
+          )
+          .mockReturnValue(true);
 
         // View video again without issues
         logError.mockClear();
@@ -1882,18 +1848,18 @@ describe("App", () => {
         // Pick a new video
         await asyncPressEvent(
           getButtonByText(
-            within(screen.getByTestId("homeView")),
+            within(screen.queryByTestId("homeView")),
             "Select a video to watch"
           )
         );
 
         // Confirm we are taken to the "select a video" page
-        expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+        expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
         // Select the first video option
         await asyncPressEvent(
           getButtonByText(
-            within(screen.getByTestId("selectVideoListView")),
+            within(screen.queryByTestId("selectVideoListView")),
             "./fake/file/path.jpeg"
           )
         );
@@ -1909,7 +1875,7 @@ describe("App", () => {
 
         // confirm the main container is unmounted
         await waitForExpect(() =>
-          expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+          expect(screen.queryByTestId("mainContainer")).toBe(null)
         );
 
         // confirm the main container is mounted again
@@ -1923,7 +1889,7 @@ describe("App", () => {
   describe("Opening the disable ads view from the home view", () => {
     it("Opens the disable ads view when the 'disable ads' button is pressed", async () => {
       const screen = await asyncRender(<App />);
-      const homeView = screen.getByTestId("homeView");
+      const homeView = screen.queryByTestId("homeView");
       expect(homeView).toBeTruthy();
 
       const disableAdsButton = getButtonByText(within(homeView), "Disable ads");
@@ -1933,7 +1899,7 @@ describe("App", () => {
       await asyncPressEvent(disableAdsButton);
 
       // Confirm disable ad view is shown
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
     });
   });
 
@@ -1993,6 +1959,7 @@ describe("App", () => {
     it("Does not open a second interstitial ad if another one was opened recently", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
 
       const screen = await asyncRender(<App />);
 
@@ -2000,6 +1967,7 @@ describe("App", () => {
         screen,
         videoPlayerMocks: mocks,
         getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
       });
 
       // Shows an ad
@@ -2008,7 +1976,7 @@ describe("App", () => {
       // Press button to pick another video
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "folderVideoIcon"
         )
       );
@@ -2034,7 +2002,7 @@ describe("App", () => {
       // Shows an ad
       expect(AdMobInterstitial.showAdAsync).toHaveBeenCalledTimes(1);
 
-      const mock = jest
+      jest
         .spyOn(
           hasEnoughTimePastToShowInterstitialAd,
           "hasEnoughTimePastToShowInterstitialAd"
@@ -2044,18 +2012,18 @@ describe("App", () => {
       // Press button to pick another video
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "folderVideoIcon"
         )
       );
 
       // Confirm we are taken to the "select a video" page
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
       // Select the first video option
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("selectVideoListView")),
+          within(screen.queryByTestId("selectVideoListView")),
           "path/to/file"
         )
       );
@@ -2077,52 +2045,9 @@ describe("App", () => {
         logErrorMock.mockReset();
       });
 
-      it("catches the error and still allows the video to play when there is an issue setting the interstitial unit id", async () => {
-        const { mocks } = mockUseVideoPlayerRefs();
-        const { getInterstitialDidCloseCallback, setAdUnitID } =
-          mockAdMobInterstitial();
-        mockMediaLibrary.singleAsset("path/to/file");
-
-        setAdUnitID.mockRejectedValue("fake setAdUnitID error");
-
-        const screen = await asyncRender(<App />);
-
-        // an error occurs when setting the unit id on mount
-        expect(logError).toHaveBeenCalledWith("fake setAdUnitID error");
-
-        await startWatchingVideoFromUpperControlBar({
-          screen,
-          videoPlayerMocks: mocks,
-          getInterstitialDidCloseCallback,
-          mockVideoFilepath: "path/to/file",
-        });
-      });
-
-      it("catches the error and still allows the video to play when there is an issue requesting an ad", async () => {
-        const { mocks } = mockUseVideoPlayerRefs();
-        const { getInterstitialDidCloseCallback, requestAdAsync } =
-          mockAdMobInterstitial();
-        mockMediaLibrary.singleAsset("path/to/file");
-
-        requestAdAsync.mockRejectedValue("fake requestAdAsync error");
-
-        const screen = await asyncRender(<App />);
-
-        // an error occurs when a request for an ad is made on mount
-        expect(logError).toHaveBeenCalledWith("fake requestAdAsync error");
-
-        await startWatchingVideoFromUpperControlBar({
-          screen,
-          videoPlayerMocks: mocks,
-          getInterstitialDidCloseCallback,
-          mockVideoFilepath: "path/to/file",
-        });
-      });
-
       it("catches the error and still allows the video to play when there is an issue confirming the ad is ready to show", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        const { getIsReadyAsync, getInterstitialDidCloseCallback } =
-          mockAdMobInterstitial();
+        const { getIsReadyAsync } = mockAdMobInterstitial();
         mockMediaLibrary.singleAsset("path/to/file");
 
         getIsReadyAsync.mockRejectedValue("fake getIsReadyAsync error");
@@ -2132,7 +2057,6 @@ describe("App", () => {
         await startWatchingVideoFromUpperControlBar({
           screen,
           videoPlayerMocks: mocks,
-          getInterstitialDidCloseCallback,
           mockVideoFilepath: "path/to/file",
         });
 
@@ -2142,8 +2066,7 @@ describe("App", () => {
 
       it("catches the error and still allows the video to play when there is an issue showing the ad", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
-        const { showAdAsync, getInterstitialDidCloseCallback } =
-          mockAdMobInterstitial();
+        const { showAdAsync } = mockAdMobInterstitial();
         mockMediaLibrary.singleAsset("path/to/file");
 
         showAdAsync.mockRejectedValue("fake showAdAsync error");
@@ -2153,7 +2076,6 @@ describe("App", () => {
         await startWatchingVideoFromUpperControlBar({
           screen,
           videoPlayerMocks: mocks,
-          getInterstitialDidCloseCallback,
           mockVideoFilepath: "path/to/file",
         });
 
@@ -2190,17 +2112,25 @@ describe("App", () => {
         // Return to 'select a video' view
         await asyncPressEvent(
           getButtonByChildTestId(
-            within(screen.getByTestId("upperControlBar")),
+            within(screen.queryByTestId("upperControlBar")),
             "iosArrowBackIcon"
           )
         );
         // Return to home view
         await asyncPressEvent(
           getButtonByChildTestId(
-            within(screen.getByTestId("upperControlBar")),
+            within(screen.queryByTestId("upperControlBar")),
             "iosArrowBackIcon"
           )
         );
+
+        // Fake enough time has passed so more ads can be requested
+        jest
+          .spyOn(
+            hasEnoughTimePastToShowInterstitialAd,
+            "hasEnoughTimePastToShowInterstitialAd"
+          )
+          .mockReturnValue(true);
 
         // View video again without issues
         logError.mockClear();
@@ -2237,18 +2167,18 @@ describe("App", () => {
         // Pick a new video
         await asyncPressEvent(
           getButtonByChildTestId(
-            within(screen.getByTestId("upperControlBar")),
+            within(screen.queryByTestId("upperControlBar")),
             "folderVideoIcon"
           )
         );
 
         // Confirm we are taken to the "select a video" page
-        expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+        expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
 
         // Select the first video option
         await asyncPressEvent(
           getButtonByText(
-            within(screen.getByTestId("selectVideoListView")),
+            within(screen.queryByTestId("selectVideoListView")),
             "path/to/file"
           )
         );
@@ -2264,7 +2194,7 @@ describe("App", () => {
 
         // confirm the main container is unmounted
         await waitForExpect(() =>
-          expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+          expect(screen.queryByTestId("mainContainer")).toBe(null)
         );
 
         // confirm the main container is mounted again
@@ -2296,7 +2226,7 @@ describe("App", () => {
       // Return to the 'select a video' view
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "iosArrowBackIcon"
         )
       );
@@ -2305,7 +2235,7 @@ describe("App", () => {
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
       // confirm the 'select a video' view is now visible
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Is able to unload a video and return to the 'select a video' view when the hardware back button is pressed", async () => {
@@ -2334,7 +2264,7 @@ describe("App", () => {
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
       // confirm the 'select a video' view is now visible
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Is able to unload a video and return to the 'select a video' view when the upper control bar 'select a video' button is pressed", async () => {
@@ -2357,7 +2287,7 @@ describe("App", () => {
       // Return to the 'select a video' view
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "folderVideoIcon"
         )
       );
@@ -2366,7 +2296,7 @@ describe("App", () => {
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
       // confirm the 'select a video' view is now visible
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Unmounts and remounts the main container to reset the app if there is an issue unloading the video while using the back button", async () => {
@@ -2390,7 +2320,7 @@ describe("App", () => {
       mocks.unload.mockRejectedValue(new Error("mock unload error"));
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "iosArrowBackIcon"
         )
       );
@@ -2406,7 +2336,7 @@ describe("App", () => {
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        expect(screen.queryByTestId("mainContainer")).toBe(null)
       );
 
       // confirm the main container is mounted again
@@ -2434,7 +2364,7 @@ describe("App", () => {
       mocks.unload.mockRejectedValue(new Error("mock unload error"));
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "folderVideoIcon"
         )
       );
@@ -2450,7 +2380,7 @@ describe("App", () => {
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        expect(screen.queryByTestId("mainContainer")).toBe(null)
       );
 
       // confirm the main container is mounted again
@@ -2475,7 +2405,7 @@ describe("App", () => {
       });
 
       // Confirm all buttons are enabled
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       expect(lowerControlBar).toBeTruthy();
 
       const pauseButton = getButtonByChildTestId(
@@ -2496,7 +2426,7 @@ describe("App", () => {
       );
       expect(buttonProps(screenStretchButton).disabled).toBeFalsy();
 
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      const timeBar = within(lowerControlBar).queryByTestId("timeBar");
       expect(timeBar.props.disabled).toBeFalsy();
     });
 
@@ -2516,7 +2446,7 @@ describe("App", () => {
       });
 
       // Confirm buttons are enabled
-      const sideBarLeft = screen.getByTestId("sidebarLeft");
+      const sideBarLeft = screen.queryByTestId("sidebarLeft");
       expect(sideBarLeft).toBeTruthy();
 
       const replaySidebarButton = getButtonByChildTestId(
@@ -2525,7 +2455,7 @@ describe("App", () => {
       );
       expect(buttonProps(replaySidebarButton).disabled).toBeFalsy();
 
-      const sideBarRight = screen.getByTestId("sidebarRight");
+      const sideBarRight = screen.queryByTestId("sidebarRight");
       expect(sideBarRight).toBeTruthy();
       const forwardSidebarButton = getButtonByChildTestId(
         within(sideBarRight),
@@ -2552,19 +2482,19 @@ describe("App", () => {
       // Confirm the expected icons on on the upper control bar
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "iosArrowBackIcon"
         )
       ).toBeTruthy();
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "folderVideoIcon"
         )
       ).toBeTruthy();
 
       expect(
-        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
+        within(screen.queryByTestId("upperControlBar")).getAllByRole("button")
       ).toHaveLength(2);
     });
 
@@ -2586,7 +2516,7 @@ describe("App", () => {
       // Return to home view with the back button
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "iosArrowBackIcon"
         )
       );
@@ -2595,7 +2525,7 @@ describe("App", () => {
       expect(mocks.unload).toHaveBeenCalledTimes(1);
 
       // confirm the select video view is now visible
-      expect(screen.getByTestId("selectVideoListView")).toBeTruthy();
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
     });
 
     it("Can start playing a new video while watching a video using the upper control bar", async () => {
@@ -2645,7 +2575,7 @@ describe("App", () => {
       mocks.setPosition.mockClear();
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "pauseIcon"
         )
       );
@@ -2674,7 +2604,7 @@ describe("App", () => {
       // Press the pause button
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "pauseIcon"
         )
       );
@@ -2685,7 +2615,7 @@ describe("App", () => {
       // Press the play button
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "playIcon"
         )
       );
@@ -2712,7 +2642,7 @@ describe("App", () => {
       // Press the pause button
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "pauseIcon"
         )
       );
@@ -2723,7 +2653,7 @@ describe("App", () => {
       // Press the play button
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "playIcon"
         )
       );
@@ -2739,7 +2669,7 @@ describe("App", () => {
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        expect(screen.queryByTestId("mainContainer")).toBe(null)
       );
 
       // confirm the main container is mounted again
@@ -2767,7 +2697,7 @@ describe("App", () => {
       // Press the pause button
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "pauseIcon"
         )
       );
@@ -2783,7 +2713,7 @@ describe("App", () => {
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        expect(screen.queryByTestId("mainContainer")).toBe(null)
       );
 
       // confirm the main container is mounted again
@@ -2809,16 +2739,16 @@ describe("App", () => {
 
       // Confirm the video player starts with two players showing
       expect(
-        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
+        videoPlayerProps(screen.queryByTestId("leftVideoPlayer")).style.width
       ).toBe("50%");
       expect(
-        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).style.width
+        videoPlayerProps(screen.queryByTestId("rightVideoPlayer")).style.width
       ).toBe("50%");
 
       // Switch to using one video player
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "screenDesktopIcon"
         )
       );
@@ -2831,16 +2761,16 @@ describe("App", () => {
 
       // Confirm video player is showing one player
       expect(
-        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
+        videoPlayerProps(screen.queryByTestId("leftVideoPlayer")).style.width
       ).toBe("100%");
       expect(
-        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).style.width
+        videoPlayerProps(screen.queryByTestId("rightVideoPlayer")).style.width
       ).toBe("0%");
 
       // Switch to using two video players
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "vrHeadsetIcon"
         )
       );
@@ -2853,10 +2783,10 @@ describe("App", () => {
 
       // Confirm the video player is showing two players again
       expect(
-        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
+        videoPlayerProps(screen.queryByTestId("leftVideoPlayer")).style.width
       ).toBe("50%");
       expect(
-        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).style.width
+        videoPlayerProps(screen.queryByTestId("rightVideoPlayer")).style.width
       ).toBe("50%");
     });
 
@@ -2881,10 +2811,10 @@ describe("App", () => {
 
       // Confirm video player is showing one player
       expect(
-        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).style.width
+        videoPlayerProps(screen.queryByTestId("leftVideoPlayer")).style.width
       ).toBe("100%");
       expect(
-        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).style.width
+        videoPlayerProps(screen.queryByTestId("rightVideoPlayer")).style.width
       ).toBe("0%");
     });
 
@@ -2907,16 +2837,16 @@ describe("App", () => {
 
       // Confirm the video player uses the resizeMode cover as default
       expect(
-        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("leftVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
       expect(
-        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("rightVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
 
       // Change to the next resize mode
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "screenNormalIcon"
         )
       );
@@ -2929,16 +2859,16 @@ describe("App", () => {
 
       // Confirm the video player resizeMode has updated to contain
       expect(
-        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("leftVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_CONTAIN);
       expect(
-        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("rightVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_CONTAIN);
 
       // Change to the next resize mode
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "fitScreenIcon"
         )
       );
@@ -2951,16 +2881,16 @@ describe("App", () => {
 
       // Confirm the video player resizeMode has updated to stretch
       expect(
-        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("leftVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_STRETCH);
       expect(
-        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("rightVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_STRETCH);
 
       // Change to the next resize mode
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "stretchToPageIcon"
         )
       );
@@ -2973,10 +2903,10 @@ describe("App", () => {
 
       // Confirm the video player resizeMode returns to the default of cover
       expect(
-        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("leftVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
       expect(
-        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("rightVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_COVER);
     });
 
@@ -3001,10 +2931,10 @@ describe("App", () => {
 
       // Confirm the video player uses the resizeMode contain
       expect(
-        videoPlayerProps(screen.getByTestId("leftVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("leftVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_CONTAIN);
       expect(
-        videoPlayerProps(screen.getByTestId("rightVideoPlayer")).resizeMode
+        videoPlayerProps(screen.queryByTestId("rightVideoPlayer")).resizeMode
       ).toBe(RESIZE_MODES.RESIZE_MODE_CONTAIN);
     });
 
@@ -3035,8 +2965,8 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
+      const timeBar = within(lowerControlBar).queryByTestId("timeBar");
 
       expect(timeBar.props.minimumValue).toBe(0);
       expect(timeBar.props.maximumValue).toBe(expectedDuration);
@@ -3057,8 +2987,8 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
+      const timeBar = within(lowerControlBar).queryByTestId("timeBar");
       expect(timeBar.props.value).toBe(0);
     });
 
@@ -3094,8 +3024,8 @@ describe("App", () => {
         getInterstitialDidCloseCallback,
         mockVideoFilepath: "path/to/file.mp4",
       });
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
+      const timeBar = within(lowerControlBar).queryByTestId("timeBar");
       expect(timeBar.props.value).toBe(0);
 
       silenceAllErrorLogs();
@@ -3140,7 +3070,7 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
 
       // Confirm the correct time is shown
       expect(within(lowerControlBar).getByText("00:00:00")).toBeTruthy();
@@ -3175,7 +3105,7 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
 
       // Confirm the correct time is shown
       silenceAllErrorLogs();
@@ -3209,16 +3139,16 @@ describe("App", () => {
       // Pause the video to ensure the position is controlled by the timebar
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "pauseIcon"
         )
       );
       // Reset mock as pausing will have called setPosition
       mocks.setPosition.mockClear();
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       const props = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       );
 
       const onSeekStart = props.onSlidingStart;
@@ -3282,9 +3212,9 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       const props = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       );
 
       const onSeekStart = props.onSlidingStart;
@@ -3322,14 +3252,14 @@ describe("App", () => {
       // Pause the video
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "pauseIcon"
         )
       );
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       const props = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       );
 
       const onSeekStart = props.onSlidingStart;
@@ -3364,17 +3294,17 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
 
       const onSeekStart = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       ).onSlidingStart;
 
       // start seeking for the new video position
       await act(async () => onSeekStart(10_000));
 
       const onSeekComplete = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       ).onSlidingComplete;
 
       // Finish seeking and end on the last position
@@ -3408,22 +3338,22 @@ describe("App", () => {
       // Pause the video
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("lowerControlBar")),
+          within(screen.queryByTestId("lowerControlBar")),
           "pauseIcon"
         )
       );
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
 
       const onSeekStart = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       ).onSlidingStart;
 
       // start seeking for the new video position
       await act(async () => onSeekStart(10_000));
 
       const onSeekComplete = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       ).onSlidingComplete;
 
       // Finish seeking and end on the last position
@@ -3454,9 +3384,9 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       const props = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       );
 
       const onSeekStart = props.onSlidingStart;
@@ -3476,7 +3406,7 @@ describe("App", () => {
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        expect(screen.queryByTestId("mainContainer")).toBe(null)
       );
 
       // confirm the main container is mounted again
@@ -3506,10 +3436,10 @@ describe("App", () => {
       // Reset mock as pausing will have called setPosition
       mocks.setPosition.mockClear();
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
 
       const onSeekStart = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       ).onSlidingStart;
 
       // start seeking for the new video position
@@ -3520,7 +3450,7 @@ describe("App", () => {
         new Error("unable to set videos position")
       );
       const onSeekComplete = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       ).onSlidingComplete;
 
       await act(async () => onSeekComplete(20_000));
@@ -3536,7 +3466,7 @@ describe("App", () => {
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        expect(screen.queryByTestId("mainContainer")).toBe(null)
       );
 
       // confirm the main container is mounted again
@@ -3566,21 +3496,21 @@ describe("App", () => {
       // Reset mock as pausing will have called setPosition
       mocks.setPosition.mockClear();
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       const props = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       );
 
       // start seeking for the new video position
       const onSeekStart = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       ).onSlidingStart;
 
       await act(async () => onSeekStart(10_000));
 
       // Finish seeking
       const onSeekComplete = getTimeBarProps(
-        within(lowerControlBar).getByTestId("timeBar")
+        within(lowerControlBar).queryByTestId("timeBar")
       ).onSlidingComplete;
       mocks.play.mockRejectedValue(new Error("unable to play video"));
       await act(async () => onSeekComplete(20_000));
@@ -3596,7 +3526,7 @@ describe("App", () => {
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        expect(screen.queryByTestId("mainContainer")).toBe(null)
       );
 
       // confirm the main container is mounted again
@@ -3837,38 +3767,38 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
 
       silenceAllErrorLogs();
 
       // Confirm the start position is 0
-      expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+      expect(within(lowerControlBar).queryByTestId("timeBar").props.value).toBe(
         0
       );
 
       // Move the position forward by 10 seconds
       const forwardSidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarRight")),
+        within(screen.queryByTestId("sidebarRight")),
         "forward10Icon"
       );
       await asyncPressEvent(forwardSidebarButton);
 
       expect(await within(lowerControlBar).findByText("00:10")).toBeTruthy();
       expect(mocks.setPosition).toHaveBeenCalledWith(10_000);
-      expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+      expect(within(lowerControlBar).queryByTestId("timeBar").props.value).toBe(
         10_000
       );
 
       // Move the position back by 10 seconds
       const replaySidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarLeft")),
+        within(screen.queryByTestId("sidebarLeft")),
         "replay10Icon"
       );
       await asyncPressEvent(replaySidebarButton);
 
       expect(await within(lowerControlBar).findByText("00:00")).toBeTruthy();
       expect(mocks.setPosition).toHaveBeenCalledWith(0);
-      expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+      expect(within(lowerControlBar).queryByTestId("timeBar").props.value).toBe(
         0
       );
     }, 10_000);
@@ -3898,18 +3828,18 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
 
       silenceAllErrorLogs();
 
       // Confirm the start position is 0
-      expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+      expect(within(lowerControlBar).queryByTestId("timeBar").props.value).toBe(
         0
       );
 
       // Move the position back by 10 seconds
       const replaySidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarLeft")),
+        within(screen.queryByTestId("sidebarLeft")),
         "replay10Icon"
       );
       await asyncPressEvent(replaySidebarButton);
@@ -3945,18 +3875,18 @@ describe("App", () => {
         mockVideoFilepath: "path/to/file.mp4",
       });
 
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
 
       silenceAllErrorLogs();
 
       // Confirm the start position is 0
-      expect(within(lowerControlBar).getByTestId("timeBar").props.value).toBe(
+      expect(within(lowerControlBar).queryByTestId("timeBar").props.value).toBe(
         0
       );
 
       // Move the position forward by 10 seconds
       const forwardSidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarRight")),
+        within(screen.queryByTestId("sidebarRight")),
         "forward10Icon"
       );
       await asyncPressEvent(forwardSidebarButton);
@@ -3992,7 +3922,7 @@ describe("App", () => {
       // Move the position forward by 10 seconds
       mocks.setPosition.mockRejectedValue(new Error("unable to set position"));
       const forwardSidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarRight")),
+        within(screen.queryByTestId("sidebarRight")),
         "forward10Icon"
       );
       await asyncPressEvent(forwardSidebarButton);
@@ -4008,7 +3938,7 @@ describe("App", () => {
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        expect(screen.queryByTestId("mainContainer")).toBe(null)
       );
 
       // confirm the main container is mounted again
@@ -4040,7 +3970,7 @@ describe("App", () => {
       // Move the position forward by 10 seconds
       mocks.setPosition.mockRejectedValue(new Error("unable to set position"));
       const replaySidebarButton = getButtonByChildTestId(
-        within(screen.getByTestId("sidebarLeft")),
+        within(screen.queryByTestId("sidebarLeft")),
         "replay10Icon"
       );
       await asyncPressEvent(replaySidebarButton);
@@ -4056,7 +3986,7 @@ describe("App", () => {
 
       // confirm the main container is unmounted
       await waitForExpect(() =>
-        expect(screen.queryByTestId("mainContainer")).not.toBeTruthy()
+        expect(screen.queryByTestId("mainContainer")).toBe(null)
       );
 
       // confirm the main container is mounted again
@@ -4069,7 +3999,7 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
@@ -4077,16 +4007,16 @@ describe("App", () => {
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
 
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       const disableAsRewardButton = getButtonByText(
-        within(screen.getByTestId("disableAdsView")),
+        within(screen.queryByTestId("disableAdsView")),
         "Watch a short ad and disable all other ads for 20 minutes"
       );
       expect(disableAsRewardButton).toBeTruthy();
 
       const buyTheAppButton = getButtonByText(
-        within(screen.getByTestId("disableAdsView")),
+        within(screen.queryByTestId("disableAdsView")),
         "Buy the ad-free version of the app"
       );
       expect(buyTheAppButton).toBeTruthy();
@@ -4098,17 +4028,17 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       await asyncPressEvent(disableAdsButton);
 
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       const disableAsRewardButton = getButtonByText(
-        within(screen.getByTestId("disableAdsView")),
+        within(screen.queryByTestId("disableAdsView")),
         "Ads are already disabled. Add more time by watching another short ad"
       );
       expect(disableAsRewardButton).toBeTruthy();
@@ -4120,17 +4050,17 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       await asyncPressEvent(disableAdsButton);
 
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       expect(
-        within(screen.getByTestId("disableAdsView")).getByText(
+        within(screen.queryByTestId("disableAdsView")).getByText(
           /^Ads are disabled for \d\d:\d\d$/
         )
       ).toBeTruthy();
@@ -4140,7 +4070,7 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
@@ -4148,24 +4078,24 @@ describe("App", () => {
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
 
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Confirm the expected icons on on the upper control bar
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "iosArrowBackIcon"
         )
       ).toBeTruthy();
       expect(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "folderVideoIcon"
         )
       ).toBeTruthy();
 
       expect(
-        within(screen.getByTestId("upperControlBar")).getAllByRole("button")
+        within(screen.queryByTestId("upperControlBar")).getAllByRole("button")
       ).toHaveLength(2);
     });
 
@@ -4173,7 +4103,7 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
@@ -4181,10 +4111,10 @@ describe("App", () => {
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
       // Confirm the view we are on
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Confirm all buttons are disabled
-      const lowerControlBar = screen.getByTestId("lowerControlBar");
+      const lowerControlBar = screen.queryByTestId("lowerControlBar");
       expect(lowerControlBar).toBeTruthy();
 
       const playButton = getButtonByChildTestId(
@@ -4206,15 +4136,15 @@ describe("App", () => {
       );
       expect(buttonProps(screenStretchButton).disabled).toBeTruthy();
 
-      const timeBar = within(lowerControlBar).getByTestId("timeBar");
+      const timeBar = within(lowerControlBar).queryByTestId("timeBar");
       expect(timeBar.props.disabled).toBeTruthy();
     });
 
-    it("Disables all side bar controls while on the disable ads view", async () => {
+    it("Hides all side bar controls while on the disable ads view", async () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
@@ -4222,32 +4152,21 @@ describe("App", () => {
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
       // Confirm the view we are on
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
-      // Confirm buttons are disabled
-      const sideBarLeft = screen.getByTestId("sidebarLeft");
-      expect(sideBarLeft).toBeTruthy();
+      // Confirm buttons are hidden
+      const sideBarLeft = screen.queryByTestId("sidebarLeft");
+      expect(sideBarLeft).toBe(null);
 
-      const replaySidebarButton = getButtonByChildTestId(
-        within(sideBarLeft),
-        "replay10Icon"
-      );
-      expect(buttonProps(replaySidebarButton).disabled).toBeTruthy();
-
-      const sideBarRight = screen.getByTestId("sidebarRight");
-      expect(sideBarRight).toBeTruthy();
-      const forwardSidebarButton = getButtonByChildTestId(
-        within(sideBarRight),
-        "forward10Icon"
-      );
-      expect(buttonProps(forwardSidebarButton).disabled).toBeTruthy();
+      const sideBarRight = screen.queryByTestId("sidebarRight");
+      expect(sideBarRight).toBe(null);
     });
 
     it("Shows a banner ad on the disable ads view", async () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
@@ -4256,7 +4175,7 @@ describe("App", () => {
       await asyncPressEvent(disableAdsButton);
 
       // Confirm the current view
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Check ad banner is visible
       expect(screen.queryByTestId("bannerAd")).toBeTruthy();
@@ -4268,7 +4187,7 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
@@ -4277,17 +4196,17 @@ describe("App", () => {
       await asyncPressEvent(disableAdsButton);
 
       // Confirm the current view
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Check ad banner is not visible
-      expect(screen.queryByTestId("bannerAd")).not.toBeTruthy();
+      expect(screen.queryByTestId("bannerAd")).toBe(null);
     });
 
     it("returns to the home view when the back button is pressed after viewing the disable ads view", async () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
@@ -4295,18 +4214,18 @@ describe("App", () => {
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
       // Confirm the view we are on
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Return to home view with the back button
       await asyncPressEvent(
         getButtonByChildTestId(
-          within(screen.getByTestId("upperControlBar")),
+          within(screen.queryByTestId("upperControlBar")),
           "iosArrowBackIcon"
         )
       );
 
       // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeTruthy();
+      expect(screen.queryByTestId("homeView")).toBeTruthy();
     });
 
     it("returns to the home view when the hardware back button is pressed after viewing the disable ads view", async () => {
@@ -4314,7 +4233,7 @@ describe("App", () => {
       const getMockBackHandlerCallback = mockBackHandlerCallback();
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
@@ -4322,14 +4241,14 @@ describe("App", () => {
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
       // Confirm the view we are on
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // fire the event for the hardware back button
       const backHandlerCallback = getMockBackHandlerCallback();
       await act(async () => backHandlerCallback());
 
       // confirm the home view is now visible
-      expect(screen.getByTestId("homeView")).toBeTruthy();
+      expect(screen.queryByTestId("homeView")).toBeTruthy();
     });
   });
 
@@ -4340,14 +4259,14 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       expect(mockRewardAds.setAdUnitID).toHaveBeenCalledTimes(1);
     });
@@ -4358,19 +4277,19 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Press the button to views ads and disable other ads
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("disableAdsView")),
+          within(screen.queryByTestId("disableAdsView")),
           "Watch a short ad and disable all other ads for 20 minutes"
         )
       );
@@ -4389,19 +4308,19 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Press the button to views ads and disable other ads
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("disableAdsView")),
+          within(screen.queryByTestId("disableAdsView")),
           "Watch a short ad and disable all other ads for 20 minutes"
         )
       );
@@ -4420,19 +4339,19 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Press the button to views ads and disable other ads
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("disableAdsView")),
+          within(screen.queryByTestId("disableAdsView")),
           "Watch a short ad and disable all other ads for 20 minutes"
         )
       );
@@ -4443,8 +4362,8 @@ describe("App", () => {
 
       // Check the disable message is shown
       expect(
-        within(screen.getByTestId("disableAdsView")).queryByTestId("bannerAd")
-      ).not.toBeTruthy();
+        within(screen.queryByTestId("disableAdsView")).queryByTestId("bannerAd")
+      ).toBe(null);
     });
 
     it("Stops showing the banner ad after ads are disabled", async () => {
@@ -4455,22 +4374,22 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // confirm the ad banner is visible before disabling ads
-      expect(screen.getByTestId("bannerAd")).toBeTruthy();
+      expect(screen.queryByTestId("bannerAd")).toBeTruthy();
 
       // Press the button to views ads and disable other ads
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("disableAdsView")),
+          within(screen.queryByTestId("disableAdsView")),
           "Watch a short ad and disable all other ads for 20 minutes"
         )
       );
@@ -4480,7 +4399,7 @@ describe("App", () => {
       await act(async () => earnRewardCallback());
 
       // Check ad banner is not visible
-      expect(screen.queryByTestId("bannerAd")).not.toBeTruthy();
+      expect(screen.queryByTestId("bannerAd")).toBe(null);
     });
 
     it("shows an error alert if the reward ad fails to load", async () => {
@@ -4494,19 +4413,19 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Press the button to views ads and disable other ads
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("disableAdsView")),
+          within(screen.queryByTestId("disableAdsView")),
           "Watch a short ad and disable all other ads for 20 minutes"
         )
       );
@@ -4535,19 +4454,19 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Press the button to views ads and disable other ads
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("disableAdsView")),
+          within(screen.queryByTestId("disableAdsView")),
           "Watch a short ad and disable all other ads for 20 minutes"
         )
       );
@@ -4574,19 +4493,19 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Press the button to views ads and disable other ads
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("disableAdsView")),
+          within(screen.queryByTestId("disableAdsView")),
           "Watch a short ad and disable all other ads for 20 minutes"
         )
       );
@@ -4622,19 +4541,19 @@ describe("App", () => {
       const screen = await asyncRender(<App />);
 
       const disableAdsButton = getButtonByText(
-        within(screen.getByTestId("homeView")),
+        within(screen.queryByTestId("homeView")),
         "Disable ads"
       );
       expect(disableAdsButton).toBeTruthy();
 
       // Visit the disable ads view
       await asyncPressEvent(disableAdsButton);
-      expect(screen.getByTestId("disableAdsView")).toBeTruthy();
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
 
       // Press the button to views ads and disable other ads
       await asyncPressEvent(
         getButtonByText(
-          within(screen.getByTestId("disableAdsView")),
+          within(screen.queryByTestId("disableAdsView")),
           "Ads are already disabled. Add more time by watching another short ad"
         )
       );
@@ -4651,6 +4570,755 @@ describe("App", () => {
       expect(Alert.alert.mock.calls[0][1]).toBe(
         `Sorry, we had trouble loading an advert to show.\n\nAds are already disabled but more time can be added next time an advert can be shown.\n\nTry again later`
       );
+    });
+  });
+
+  describe("Can create a playlist of videos", () => {
+    it("Starts making a playlist after pressing the button on the upper control bar", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("file");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
+
+      // Press the button to start making a playlist
+      expect(screen.queryByTestId("upperControlBar")).toBeTruthy();
+      const playlistButton = getButtonByChildTestId(
+        within(screen.getByTestId("upperControlBar")),
+        "playlistAddIcon"
+      );
+      expect(playlistButton).toBeTruthy();
+      await asyncPressEvent(playlistButton);
+
+      // Confirm the playlist view is visible
+      expect(screen.queryByTestId("playlistVideoListView"));
+      expect(
+        getButtonByText(
+          within(screen.getByTestId("playlistVideoListView")),
+          "Start Playlist"
+        )
+      ).toBeTruthy();
+    });
+
+    it("Disables the 'start playlist' button while no videos are in the playlist", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.singleAsset("file");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
+
+      // Press the button to start making a playlist
+      expect(screen.queryByTestId("upperControlBar")).toBeTruthy();
+      const playlistButton = getButtonByChildTestId(
+        within(screen.getByTestId("upperControlBar")),
+        "playlistAddIcon"
+      );
+      expect(playlistButton).toBeTruthy();
+      await asyncPressEvent(playlistButton);
+
+      // Confirm the start playlist button is disabled
+      expect(
+        buttonProps(
+          getButtonByText(
+            within(screen.getByTestId("playlistVideoListView")),
+            "Start Playlist"
+          )
+        ).disabled
+      ).toBe(true);
+    });
+
+    it("Allows videos to be added to the playlist", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15").getTime(),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the "select a video" page
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
+
+      // Confirm videos can be added to a playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`, `file-mid.mp4`, `file-long.mp4`],
+      });
+    });
+
+    it("Shows a warning message if the same video is added to the playlist twice", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are on the "select a video" page
+      expect(screen.queryByTestId("selectVideoListView")).toBeTruthy();
+
+      // Press the button to start making a playlist
+      const playlistButton = getButtonByChildTestId(
+        within(screen.getByTestId("upperControlBar")),
+        "playlistAddIcon"
+      );
+      expect(playlistButton).toBeTruthy();
+      await asyncPressEvent(playlistButton);
+
+      // Confirm the playlist view is visible
+      expect(screen.queryByTestId("playlistVideoListView"));
+
+      // Select videos to add to the playlist
+      const videoFileNames = [`file-short.mp4`, `file-short.mp4`];
+      const videoButtons = videoFileNames.map((filename) =>
+        getButtonByText(
+          within(screen.getByTestId("selectVideoListView")),
+          filename
+        )
+      );
+
+      for (const button of videoButtons) expect(button).toBeTruthy();
+      for (const button of videoButtons) await asyncPressEvent(button);
+
+      // Confirm the warning message was shown
+      expect(ToastAndroid.show).toHaveBeenCalledTimes(1);
+      expect(ToastAndroid.show).toHaveBeenCalledWith(
+        "file-short.mp4 is already in the playlist",
+        3000
+      );
+    });
+
+    it("Enables the 'start playlist' button after videos have been added to the playlist", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Add video to the playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`],
+      });
+
+      // Confirm the start playlist button is enabled
+      expect(
+        buttonProps(
+          getButtonByText(
+            within(screen.getByTestId("playlistVideoListView")),
+            "Start Playlist"
+          )
+        ).disabled
+      ).toBe(false);
+    });
+
+    it("Allows videos to be removed from the playlist", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Add video to the playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`],
+      });
+
+      // Remove the video from the playlist
+      const removeFromPlaylistButton = getButtonByChildTestId(
+        within(screen.queryByTestId("playlistVideoListView")),
+        "binIcon"
+      );
+      expect(removeFromPlaylistButton).toBeTruthy();
+      await asyncPressEvent(removeFromPlaylistButton);
+
+      // Confirm the playlist is empty again
+      expect(
+        within(screen.queryByTestId("playlistVideoListView")).queryByText(
+          "file-short.mp4"
+        )
+      ).toBe(null);
+    });
+
+    it("Allows the order of videos in a playlist to be changed", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15").getTime(),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Add video to the playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`, `file-mid.mp4`, `file-long.mp4`],
+      });
+
+      // Confirm the order of the videos in the playlist
+      const playlistVideos = within(
+        screen.getByTestId("playlistVideoListView")
+      ).queryAllByTestId("playlistVideoButton");
+      expect(playlistVideos).toHaveLength(3);
+      expect(within(playlistVideos[0]).queryByText("file-short.mp4"));
+      expect(within(playlistVideos[1]).queryByText("file-mid.mp4"));
+      expect(within(playlistVideos[2]).queryByText("file-long.mp4"));
+
+      // Move the second position to the first position
+      await asyncPressEvent(
+        getButtonByChildTestId(within(playlistVideos[1]), "priorityHighIcon")
+      );
+
+      const playlistVideosAfterPriorityUp = within(
+        screen.getByTestId("playlistVideoListView")
+      ).queryAllByTestId("playlistVideoButton");
+      expect(
+        within(playlistVideosAfterPriorityUp[0]).queryByText("file-mid.mp4")
+      ).toBeTruthy();
+      expect(
+        within(playlistVideosAfterPriorityUp[1]).queryByText("file-short.mp4")
+      ).toBeTruthy();
+
+      // Move the second position to the third position
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(playlistVideosAfterPriorityUp[1]),
+          "priorityLowIcon"
+        )
+      );
+
+      const playlistVideosAfterPriorityDown = within(
+        screen.getByTestId("playlistVideoListView")
+      ).queryAllByTestId("playlistVideoButton");
+      expect(
+        within(playlistVideosAfterPriorityDown[1]).queryByText("file-long.mp4")
+      ).toBeTruthy();
+      expect(
+        within(playlistVideosAfterPriorityDown[2]).queryByText("file-short.mp4")
+      ).toBeTruthy();
+    });
+
+    it("Disables the increase priority button for the top video in a playlist", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15").getTime(),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm videos can be added to a playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`, `file-mid.mp4`, `file-long.mp4`],
+      });
+
+      const playlistVideos = within(
+        screen.getByTestId("playlistVideoListView")
+      ).queryAllByTestId("playlistVideoButton");
+      const priorityUpButton = getButtonByChildTestId(
+        within(playlistVideos[0]),
+        "priorityHighIcon"
+      );
+      const priorityDownButton = getButtonByChildTestId(
+        within(playlistVideos[0]),
+        "priorityLowIcon"
+      );
+      expect(priorityUpButton).toBeTruthy();
+      expect(priorityDownButton).toBeTruthy();
+      expect(buttonProps(priorityUpButton).disabled).toBe(true);
+      expect(buttonProps(priorityDownButton).disabled).toBe(false);
+    });
+
+    it("Disables the decrease priority button for the bottom video in a playlist", async () => {
+      mockUseVideoPlayerRefs();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15").getTime(),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm videos can be added to a playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`, `file-mid.mp4`, `file-long.mp4`],
+      });
+
+      const playlistVideos = within(
+        screen.getByTestId("playlistVideoListView")
+      ).queryAllByTestId("playlistVideoButton");
+      const priorityUpButton = getButtonByChildTestId(
+        within(playlistVideos[2]),
+        "priorityHighIcon"
+      );
+      const priorityDownButton = getButtonByChildTestId(
+        within(playlistVideos[2]),
+        "priorityLowIcon"
+      );
+      expect(priorityUpButton).toBeTruthy();
+      expect(priorityDownButton).toBeTruthy();
+      expect(buttonProps(priorityUpButton).disabled).toBe(false);
+      expect(buttonProps(priorityDownButton).disabled).toBe(true);
+    });
+
+    it("Can start playing the playlist after videos have been added", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15").getTime(),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm videos can be added to a playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`, `file-mid.mp4`, `file-long.mp4`],
+      });
+
+      // Press the start playlist button
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("playlistVideoListView")),
+          "Start Playlist"
+        )
+      );
+
+      // Fire the callback to close the ad
+      const fireDidCloseCallback = getInterstitialDidCloseCallback();
+      act(fireDidCloseCallback);
+
+      // Confirm the first video is loaded and starts to play
+      expect(mocks.load).toHaveBeenCalledTimes(1);
+      expect(mocks.load).toHaveBeenCalledWith(
+        {
+          filename: "file-short.mp4",
+          uri: `path/to/file-short.mp4`,
+          duration: 30000,
+          modificationTime: 1598918400000,
+        },
+        {
+          primaryOptions: {
+            isLooping: false,
+          },
+          secondaryOptions: {
+            isMuted: true,
+            isLooping: false,
+          },
+        }
+      );
+      expect(mocks.getStatus).toHaveBeenCalledTimes(1);
+
+      expect(mocks.play).toHaveBeenCalledTimes(1);
+    });
+
+    it("Starts playing the next video after the previous has finished", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15").getTime(),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm videos can be added to a playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`, `file-mid.mp4`, `file-long.mp4`],
+      });
+
+      // Press the start playlist button
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("playlistVideoListView")),
+          "Start Playlist"
+        )
+      );
+
+      // Fire the callback to close the ad
+      const fireDidCloseCallback = getInterstitialDidCloseCallback();
+      act(fireDidCloseCallback);
+
+      // Confirm the first video is loaded and starts to play
+      expect(mocks.load).toHaveBeenCalledTimes(1);
+      expect(mocks.play).toHaveBeenCalledTimes(1);
+
+      // Fake the video reaching the end
+      mocks.getStatus.mockResolvedValueOnce({
+        primaryStatus: { positionMillis: 1000, durationMillis: 1000 },
+        secondaryStatus: { positionMillis: 1000, durationMillis: 1000 },
+      });
+      // Return to normal after identifying the end has been reached
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: { positionMillis: 0, durationMillis: 1000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 1000 },
+      });
+
+      // Confirm the next video is loaded and starts to play
+      silenceAllErrorLogs();
+      await waitForExpect(() => expect(mocks.load).toHaveBeenCalledTimes(2));
+      enableAllErrorLogs();
+      expect(mocks.load).toHaveBeenCalledWith(
+        {
+          filename: "file-mid.mp4",
+          uri: `path/to/file-mid.mp4`,
+          duration: 630000,
+          modificationTime: 1597449600000,
+        },
+        {
+          primaryOptions: {
+            isLooping: false,
+          },
+          secondaryOptions: {
+            isMuted: true,
+            isLooping: false,
+          },
+        }
+      );
+      expect(mocks.play).toHaveBeenCalledTimes(2);
+    });
+
+    it("Only shows an ad for the first video in the playlist", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback, showAdAsync } =
+        mockAdMobInterstitial();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15").getTime(),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm videos can be added to a playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`, `file-mid.mp4`, `file-long.mp4`],
+      });
+
+      // Press the start playlist button
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("playlistVideoListView")),
+          "Start Playlist"
+        )
+      );
+
+      // Confirm the ad is shown
+      expect(showAdAsync).toHaveBeenCalledTimes(1);
+
+      // Fire the callback to close the ad
+      const fireDidCloseCallback = getInterstitialDidCloseCallback();
+      act(fireDidCloseCallback);
+
+      // Confirm the first video is loaded and starts to play
+      expect(mocks.load).toHaveBeenCalledTimes(1);
+      expect(mocks.play).toHaveBeenCalledTimes(1);
+
+      // Fake the video reaching the end
+      mocks.getStatus.mockResolvedValueOnce({
+        primaryStatus: { positionMillis: 1000, durationMillis: 1000 },
+        secondaryStatus: { positionMillis: 1000, durationMillis: 1000 },
+      });
+      // Return to normal after identifying the end has been reached
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: { positionMillis: 0, durationMillis: 1000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 1000 },
+      });
+
+      // Confirm the next video is loaded and starts to play
+      silenceAllErrorLogs();
+      await waitForExpect(() => expect(mocks.load).toHaveBeenCalledTimes(2));
+      enableAllErrorLogs();
+      expect(mocks.load).toHaveBeenCalledWith(
+        {
+          filename: "file-mid.mp4",
+          uri: `path/to/file-mid.mp4`,
+          duration: 630000,
+          modificationTime: 1597449600000,
+        },
+        {
+          primaryOptions: {
+            isLooping: false,
+          },
+          secondaryOptions: {
+            isMuted: true,
+            isLooping: false,
+          },
+        }
+      );
+      expect(mocks.play).toHaveBeenCalledTimes(2);
+
+      // Confirm the ad is now shown again
+      expect(showAdAsync).toHaveBeenCalledTimes(1);
     });
   });
 });

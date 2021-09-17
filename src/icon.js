@@ -60,6 +60,12 @@ const ICON_OPTIONS = {
   video: customIcon(Entypo, "video"),
   sortOrder: customIcon(FontAwesome, "sort-amount-asc"),
   shieldKey: customIcon(MaterialCommunityIcons, "shield-key"),
+  playlist: customIcon(MaterialIcons, "playlist-add"),
+  priorityUp: customIcon(MaterialCommunityIcons, "priority-high"),
+  priorityDown: customIcon(MaterialCommunityIcons, "priority-low"),
+  bin: customIcon(Ionicons, "ios-trash-bin-outline", {
+    testIdOverride: "bin",
+  }),
   refresh: customIcon(Feather, "refresh-ccw", {
     testIdOverride: "refresh",
   }),

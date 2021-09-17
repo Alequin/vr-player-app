@@ -44,7 +44,7 @@ export const mockMediaLibrary = {
             {
               uri: filePath,
               filename: filePath,
-              durationInMinutes: 10,
+              duration: 10,
               modificationTime: new Date("2021-01-01").getTime(),
             },
           ],

@@ -1,6 +1,5 @@
 import * as MediaLibrary from "expo-media-library";
 import isEmpty from "lodash/isEmpty";
-import isError from "lodash/isError";
 import orderBy from "lodash/orderBy";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { secondsToMilliseconds } from "../../minutes-to-milliseconds";
@@ -9,16 +8,25 @@ import { useAppState } from "./use-app-state";
 
 export const useLoadVideoOptions = (hasPermission, videoSortInstructions) => {
   const { isAppActive } = useAppState();
-  const [videoOptions, setVideoOptions] = useState(null);
+  const [videoOptions, setVideoOptions] = useState([]);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!hasPermission || !isAppActive) return;
 
     let hasUnmounted = false;
-    getRawVideoAssets().then(async (nextVideoOptions) => {
-      if (hasUnmounted) return;
-      setVideoOptions(nextVideoOptions);
-    });
+    getRawVideoAssets()
+      .then(async (nextVideoOptions) => {
+        if (hasUnmounted) return;
+        setError(false);
+        setVideoOptions(nextVideoOptions);
+      })
+      .catch(() => {
+        if (hasUnmounted) return;
+        setError(true);
+        setVideoOptions([]);
+      });
+
     return () => (hasUnmounted = true);
   }, [hasPermission, isAppActive]);
 
@@ -60,28 +68,32 @@ export const useLoadVideoOptions = (hasPermission, videoSortInstructions) => {
 
   return {
     videoOptions: orderedVideoOptions,
-    didLoadingVideoOptionsError: isError(videoOptions),
-    reloadVideoOptions: useCallback(async () => {
+    didLoadingVideoOptionsError: error,
+    reloadVideoOptions: useCallback(() => {
       setVideoOptions(null);
-      setVideoOptions(await getRawVideoAssets());
+      getRawVideoAssets()
+        .then((nextVideoOptions) => {
+          setVideoOptions(nextVideoOptions);
+          setError(false);
+        })
+        .catch(() => {
+          setError(true);
+          setVideoOptions([]);
+        });
     }, []),
   };
 };
 
 const getRawVideoAssets = async () => {
-  try {
-    const rawVideos = await MediaLibrary.getAssetsAsync({
-      mediaType: MediaLibrary.MediaType.video,
-      first: 100000,
-    });
+  const rawVideos = await MediaLibrary.getAssetsAsync({
+    mediaType: MediaLibrary.MediaType.video,
+    first: 100000,
+  });
 
-    return rawVideos.assets.map((asset) => ({
-      ...asset,
-      duration: secondsToMilliseconds(asset.duration),
-      // Fix loading issues with uri's that include '#'
-      uri: asset.uri.replace("#", "%23"),
-    }));
-  } catch {
-    return new Error("unable to load video options");
-  }
+  return rawVideos.assets.map((asset) => ({
+    ...asset,
+    duration: secondsToMilliseconds(asset.duration),
+    // Fix loading issues with uri's that include '#'
+    uri: asset.uri.replace("#", "%23"),
+  }));
 };

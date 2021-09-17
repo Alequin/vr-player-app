@@ -9,7 +9,7 @@ export const startWatchingVideoFromUpperControlBar = async ({
   screen,
   videoPlayerMocks,
   getInterstitialDidCloseCallback,
-  mockVideoFilepath = "path/to/file",
+  mockVideoFilepath,
 }) => {
   videoPlayerMocks.load.mockClear();
   videoPlayerMocks.play.mockClear();
@@ -44,7 +44,12 @@ export const startWatchingVideoFromUpperControlBar = async ({
   // confirm video is loaded and starts playing
   expect(videoPlayerMocks.load).toHaveBeenCalledTimes(1);
   expect(videoPlayerMocks.load).toHaveBeenCalledWith(
-    { filename: mockVideoFilepath, uri: mockVideoFilepath },
+    {
+      filename: mockVideoFilepath,
+      uri: mockVideoFilepath,
+      duration: 10000,
+      modificationTime: 1609459200000,
+    },
     {
       primaryOptions: {
         isLooping: true,

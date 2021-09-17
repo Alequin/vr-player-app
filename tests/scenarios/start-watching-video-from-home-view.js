@@ -32,14 +32,21 @@ export const startWatchingVideoFromHomeView = async ({
   expect(selectVideoButton).toBeTruthy();
   await asyncPressEvent(selectVideoButton);
 
-  // Fire callback to start playing the video
-  const fireDidCloseCallback = getInterstitialDidCloseCallback();
-  act(fireDidCloseCallback);
+  if (getInterstitialDidCloseCallback) {
+    // Fire callback to start playing the video
+    const fireDidCloseCallback = getInterstitialDidCloseCallback();
+    act(fireDidCloseCallback);
+  }
 
   // confirm video is loaded and starts playing
   expect(videoPlayerMocks.load).toHaveBeenCalledTimes(1);
   expect(videoPlayerMocks.load).toHaveBeenCalledWith(
-    { filename: mockVideoFilepath, uri: mockVideoFilepath },
+    {
+      filename: mockVideoFilepath,
+      uri: mockVideoFilepath,
+      duration: 10000,
+      modificationTime: 1609459200000,
+    },
     {
       primaryOptions: {
         isLooping: true,
