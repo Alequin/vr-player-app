@@ -911,6 +911,55 @@ describe("App", () => {
       ).toHaveLength(4);
     });
 
+    it("Disables the expected upper control bar buttons while on the 'no video options' view", async () => {
+      mockUseVideoPlayerRefs();
+
+      mockMediaLibrary.multipleAssets([]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm we are taken to the 'no video options' page
+      silenceAllErrorLogs();
+      const noVideoOptionsView = await screen.findByTestId(
+        "noVideoOptionsView"
+      );
+      enableAllErrorLogs();
+      expect(noVideoOptionsView).toBeTruthy();
+
+      const upperControlBar = screen.queryByTestId("upperControlBar");
+      expect(
+        buttonProps(
+          getButtonByChildTestId(within(upperControlBar), "iosArrowBackIcon")
+        ).disabled
+      ).toBe(false);
+      expect(
+        buttonProps(
+          getButtonByChildTestId(within(upperControlBar), "sortAmountAscIcon")
+        ).disabled
+      ).toBe(true);
+      expect(
+        buttonProps(
+          getButtonByChildTestId(within(upperControlBar), "playlistAddIcon")
+        ).disabled
+      ).toBe(true);
+      expect(
+        buttonProps(
+          getButtonByChildTestId(within(upperControlBar), "refreshIcon")
+        ).disabled
+      ).toBe(false);
+    });
+
     it("Disables all lower bar controls while on the select a video view", async () => {
       mockUseVideoPlayerRefs();
       mockMediaLibrary.singleAsset("file");

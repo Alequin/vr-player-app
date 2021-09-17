@@ -99,6 +99,7 @@ export const Controls = ({ videoPlayer, zIndex }) => {
               <ControlBarIconButton
                 name="playlist"
                 onPress={videoPlayer.toggleIsPlaylistActive}
+                disabled={didLoadingVideoOptionsError || isEmpty(videoOptions)}
               />
               <ControlBarIconButton
                 name="refresh"
