@@ -160,13 +160,13 @@ export const Controls = ({ videoPlayer, zIndex }) => {
               onPressReloadVideoOptions={reloadVideoOptions}
               didLoadingVideoOptionsError={didLoadingVideoOptionsError}
               isPlaylistActive={videoPlayer.isPlaylistActive}
-              loadVideoSource={videoPlayer.loadVideoSource}
               videosInPlaylist={videoPlayer.videosInPlaylist}
               addVideoToPlaylist={videoPlayer.addVideoToPlaylist}
               removeVideoFromPlaylist={videoPlayer.removeVideoFromPlaylist}
               moveVideoPositionUp={videoPlayer.moveVideoPositionUp}
               moveVideoPositionDown={videoPlayer.moveVideoPositionDown}
-              loadNextPlaylistVideo={videoPlayer.loadNextPlaylistVideo}
+              startVideo={videoPlayer.startVideo}
+              startPlaylist={videoPlayer.startPlaylist}
             />
           )}
           {!areAdsDisabled && !videoPlayer.hasVideo && <AdBanner />}

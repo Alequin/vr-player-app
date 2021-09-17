@@ -32,7 +32,6 @@ export const usePairedVideosPlayers = () => {
   const { videoResizeMode, toggleResizeMode } = usePlayerResizeMode();
 
   const playlist = useVideosInPlaylist();
-  const [isLoading, setIsLoading] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState(false);
@@ -45,7 +44,6 @@ export const usePairedVideosPlayers = () => {
   const play = useCallback(async () => {
     if (hasVideo) {
       try {
-        setIsLoading(false);
         setIsPlaying(true);
         await videoPlayer.play();
         return { error: null };
@@ -126,7 +124,6 @@ export const usePairedVideosPlayers = () => {
             isLooping: !playlist.isPlaylistActive,
           },
         });
-        setIsLoading(true);
 
         const {
           primaryStatus: { durationMillis },
@@ -139,13 +136,39 @@ export const usePairedVideosPlayers = () => {
         setError(`unable to load ${newFileObject.filename}`);
       }
     },
-    [unloadVideo, videoPlayer.load, playlist.isPlaylistActive]
+    [
+      unloadVideo,
+      videoPlayer.load,
+      playlist.isPlaylistActive,
+      videoPlayer.getStatus,
+    ]
   );
 
-  const loadNextPlaylistVideo = useCallback(async () => {
-    const nextVideo = playlist.nextVideo();
-    if (nextVideo) await loadVideoSource(nextVideo);
-  }, [loadVideoSource, playlist.nextVideo]);
+  const [hasFinishedShowingAd, setHasFinishedShowingAd] = useState(false);
+  const { showInterstitialAd } = useShowInterstitialAd({
+    onCloseAd: () => setHasFinishedShowingAd(true),
+  });
+
+  useEffect(() => {
+    if (hasFinishedShowingAd) {
+      play();
+      setHasFinishedShowingAd(false);
+    }
+  }, [hasFinishedShowingAd, play]);
+
+  const startVideo = useCallback(
+    async (videoToPlay) => {
+      await loadVideoSource(videoToPlay);
+      await showInterstitialAd();
+    },
+    [loadVideoSource, showInterstitialAd]
+  );
+
+  const startPlaylist = useCallback(async () => {
+    const videoToPlay = playlist.getFirstVideo();
+    if (videoToPlay) await loadVideoSource(videoToPlay);
+    await showInterstitialAd();
+  }, [loadVideoSource, playlist.getFirstVideo, showInterstitialAd]);
 
   useEffect(() => {
     if (isPlaying && hasVideo) {
@@ -179,7 +202,11 @@ export const usePairedVideosPlayers = () => {
             const hasVideoEnded =
               primaryStatus.positionMillis >= primaryStatus.durationMillis;
             if (playlist.isPlaylistActive && hasVideoEnded) {
-              await loadNextPlaylistVideo();
+              const nextVideo = playlist.toNextVideo();
+              if (nextVideo) {
+                await loadVideoSource(nextVideo);
+                await play();
+              }
             }
           });
       }, 25);
@@ -192,16 +219,10 @@ export const usePairedVideosPlayers = () => {
     setPosition,
     play,
     playlist.isPlaylistActive,
-    loadNextPlaylistVideo,
+    loadVideoSource,
+    playlist.toNextVideo,
+    play,
   ]);
-
-  const { showInterstitialAd } = useShowInterstitialAd({
-    onCloseAd: play,
-  });
-
-  useEffect(() => {
-    if (hasVideo) showInterstitialAd();
-  }, [hasVideo]);
 
   return {
     hasVideo,
@@ -222,8 +243,8 @@ export const usePairedVideosPlayers = () => {
     unloadVideo,
     toggleVideoPlayerMode,
     toggleResizeMode,
-    loadVideoSource,
-    loadNextPlaylistVideo,
+    startVideo,
+    startPlaylist,
   };
 };
 
@@ -310,10 +331,11 @@ const useVideosInPlaylist = () => {
         ),
       []
     ),
-    nextVideo: useCallback(() => {
-      const [videoToPlay, ...otherVideos] = videosInPlaylist;
-      setVideosInPlaylist(otherVideos);
-      return videoToPlay;
+    getFirstVideo: useCallback(() => videosInPlaylist[0], [videosInPlaylist]),
+    toNextVideo: useCallback(() => {
+      const [_videoToDrop, ...otherVideos] = videosInPlaylist;
+      setVideosInPlaylist(otherVideos || []);
+      return otherVideos[0];
     }, [videosInPlaylist]),
   };
 };

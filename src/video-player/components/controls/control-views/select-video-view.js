@@ -17,13 +17,13 @@ export const SelectVideoView = ({
   didLoadingVideoOptionsError,
   onPressReloadVideoOptions,
   isPlaylistActive,
-  loadVideoSource,
+  startVideo,
   videosInPlaylist,
   addVideoToPlaylist,
   removeVideoFromPlaylist,
   moveVideoPositionUp,
   moveVideoPositionDown,
-  loadNextPlaylistVideo,
+  startPlaylist,
 }) => {
   if (useIsLoading(videoOptions)) return <LoadingIndicatorView />;
 
@@ -78,7 +78,7 @@ export const SelectVideoView = ({
           onRemoveVideoFromPlaylist={removeVideoFromPlaylist}
           onMoveVideoPositionUp={moveVideoPositionUp}
           onMoveVideoPositionDown={moveVideoPositionDown}
-          onStartPlaylist={loadNextPlaylistVideo}
+          onStartPlaylist={startPlaylist}
         />
       </View>
     );
@@ -98,7 +98,7 @@ export const SelectVideoView = ({
         }}
         columnCount={COLUMN_COUNT}
         videoOptions={videoOptions}
-        onSelectVideo={loadVideoSource}
+        onSelectVideo={startVideo}
       />
     </View>
   );

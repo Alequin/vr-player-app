@@ -5135,7 +5135,9 @@ describe("App", () => {
       expect(buttonProps(priorityUpButton).disabled).toBe(false);
       expect(buttonProps(priorityDownButton).disabled).toBe(true);
     });
+  });
 
+  describe("Can play videos in a playlist", () => {
     it("Can start playing the playlist after videos have been added", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
@@ -5383,6 +5385,14 @@ describe("App", () => {
         secondaryStatus: { positionMillis: 0, durationMillis: 1000 },
       });
 
+      // Fake enough time has passed so more ads can be requested
+      jest
+        .spyOn(
+          hasEnoughTimePastToShowInterstitialAd,
+          "hasEnoughTimePastToShowInterstitialAd"
+        )
+        .mockReturnValue(true);
+
       // Confirm the next video is loaded and starts to play
       silenceAllErrorLogs();
       await waitForExpect(() => expect(mocks.load).toHaveBeenCalledTimes(2));
@@ -5406,8 +5416,180 @@ describe("App", () => {
       );
       expect(mocks.play).toHaveBeenCalledTimes(2);
 
-      // Confirm the ad is now shown again
+      // Confirm the ad is not shown again
       expect(showAdAsync).toHaveBeenCalledTimes(1);
+    });
+
+    it("Does not remove the video from the playlist if it does not reach the end", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15").getTime(),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm videos are added to a playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`, `file-mid.mp4`, `file-long.mp4`],
+      });
+
+      // Press the start playlist button
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("playlistVideoListView")),
+          "Start Playlist"
+        )
+      );
+
+      // Fire the callback to close the ad
+      const fireDidCloseCallback = getInterstitialDidCloseCallback();
+      act(fireDidCloseCallback);
+
+      // Confirm the first video is loaded and starts to play
+      expect(mocks.load).toHaveBeenCalledTimes(1);
+      expect(mocks.play).toHaveBeenCalledTimes(1);
+
+      // Return to the 'select a video' view
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      );
+
+      // Confirm all the videos are still in the playlist
+      expect(
+        within(screen.getByTestId("playlistVideoListView")).queryAllByTestId(
+          "playlistVideoButton"
+        )
+      ).toHaveLength(3);
+    });
+
+    it("Removes the video from the playlist if it finishes playing", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.multipleAssets([
+        {
+          uri: `path/to/file-short.mp4`,
+          filename: `file-short.mp4`,
+          duration: 30,
+          modificationTime: new Date("2020-09-01").getTime(),
+        },
+        {
+          uri: `path/to/file-mid.mp4`,
+          filename: `file-mid.mp4`,
+          duration: 630, // 10 minutes 30 seconds
+          modificationTime: new Date("2020-08-15").getTime(),
+        },
+        {
+          uri: `path/to/file-long.mp4`,
+          filename: `file-long.mp4`,
+          duration: 7800, // 2 hours 10 minutes
+          modificationTime: new Date("2020-07-23").getTime(),
+        },
+      ]);
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.queryByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Confirm videos are added to a playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: [`file-short.mp4`, `file-mid.mp4`, `file-long.mp4`],
+      });
+
+      // Press the start playlist button
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("playlistVideoListView")),
+          "Start Playlist"
+        )
+      );
+
+      // Fire the callback to close the ad
+      const fireDidCloseCallback = getInterstitialDidCloseCallback();
+      act(fireDidCloseCallback);
+
+      // Confirm the first video is loaded and starts to play
+      expect(mocks.load).toHaveBeenCalledTimes(1);
+      expect(mocks.play).toHaveBeenCalledTimes(1);
+
+      // Fake the video reaching the end
+      mocks.getStatus.mockResolvedValueOnce({
+        primaryStatus: { positionMillis: 1000, durationMillis: 1000 },
+        secondaryStatus: { positionMillis: 1000, durationMillis: 1000 },
+      });
+      // Return to normal after identifying the end has been reached
+      mocks.getStatus.mockResolvedValue({
+        primaryStatus: { positionMillis: 0, durationMillis: 1000 },
+        secondaryStatus: { positionMillis: 0, durationMillis: 1000 },
+      });
+
+      // Confirm the next video is loaded and starts to play
+      silenceAllErrorLogs();
+      await waitForExpect(() => expect(mocks.load).toHaveBeenCalledTimes(2));
+      enableAllErrorLogs();
+      expect(mocks.play).toHaveBeenCalledTimes(2);
+
+      // Return to the 'select a video' view
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      );
+
+      // Confirm the first the videos has been removed
+      const playlistVideos = within(
+        screen.getByTestId("playlistVideoListView")
+      ).queryAllByTestId("playlistVideoButton");
+      expect(playlistVideos).toHaveLength(2);
+      expect(
+        within(playlistVideos[0]).queryByText(`file-mid.mp4`)
+      ).toBeTruthy();
+      expect(
+        within(playlistVideos[1]).queryByText(`file-long.mp4`)
+      ).toBeTruthy();
     });
   });
 });
