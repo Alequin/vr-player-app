@@ -1,7 +1,6 @@
 import { isEmpty } from "lodash";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { FlatList, View } from "react-native";
-import { useEffect } from "react/cjs/react.development";
 import { Button } from "../../../../button";
 import { ControlViewText } from "./control-view-text";
 import { PlaylistButton } from "./video-list-buttons";

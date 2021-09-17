@@ -16,9 +16,15 @@ import { mockAdMobInterstitial } from "./mocks/mock-ad-mob";
 import "./mocks/mock-app-state";
 import { mockMediaLibrary } from "./mocks/mock-media-library";
 import { mockUseVideoPlayerRefs } from "./mocks/mock-use-video-player-refs";
+import { addMultipleVideosToAPlaylist } from "./scenarios/add-multiple-videos-to-a-playlist";
 import { startWatchingVideoFromHomeView } from "./scenarios/start-watching-video-from-home-view";
 import { startWatchingVideoFromUpperControlBar } from "./scenarios/start-watching-video-from-the upper-control-bar";
-import { asyncRender, enableAllErrorLogs, getButtonByText } from "./test-utils";
+import {
+  asyncPressEvent,
+  asyncRender,
+  enableAllErrorLogs,
+  getButtonByText,
+} from "./test-utils";
 
 describe("Paid version of the app ", () => {
   beforeEach(() => {
@@ -105,6 +111,50 @@ describe("Paid version of the app ", () => {
 
       // Shows an ad
       expect(AdMobInterstitial.showAdAsync).not.toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("watching a playlist from the home view", () => {
+    it("Does not open an interstitial ad when starting to watch a playlist if the app is paid for", async () => {
+      mockUseVideoPlayerRefs();
+      mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file");
+
+      const screen = await asyncRender(<App />);
+      const homeView = screen.getByTestId("homeView");
+      expect(homeView).toBeTruthy();
+
+      const loadViewButton = getButtonByText(
+        within(homeView),
+        "Select a video to watch"
+      );
+      expect(loadViewButton).toBeTruthy();
+
+      // Press button to pick a video
+      await asyncPressEvent(loadViewButton);
+
+      // Add videos to a playlist
+      await addMultipleVideosToAPlaylist({
+        screen,
+        videoFileNames: ["path/to/file"],
+      });
+
+      // Press the start playlist button
+      await asyncPressEvent(
+        getButtonByText(
+          within(screen.getByTestId("playlistVideoListView")),
+          "Start Playlist"
+        )
+      );
+
+      // Never sets the unit ad id
+      expect(AdMobInterstitial.setAdUnitID).not.toHaveBeenCalled();
+
+      // Never request an ad
+      expect(AdMobInterstitial.requestAdAsync).not.toHaveBeenCalled();
+
+      // Does not show an ad
+      expect(AdMobInterstitial.showAdAsync).not.toHaveBeenCalled();
     });
   });
 });
