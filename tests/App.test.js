@@ -1711,6 +1711,26 @@ describe("App", () => {
         silenceAllErrorLogs();
       });
 
+      it("allows the video to play when there is no interstitial ad to show", async () => {
+        const { mocks } = mockUseVideoPlayerRefs();
+        const { getIsReadyAsync } = mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+        const screen = await asyncRender(<App />);
+        const homeView = screen.queryByTestId("homeView");
+        expect(homeView).toBeTruthy();
+
+        // Fake that the ad is not ready to show
+        getIsReadyAsync.mockReturnValue(false);
+
+        // Play the video and confirm the correct functions are called
+        await startWatchingVideoFromHomeView({
+          screen,
+          videoPlayerMocks: mocks,
+          mockVideoFilepath: "path/to/file.mp4",
+        });
+      });
+
       it("catches the error and still allows the video to play when there is an issue confirming the ad is ready to show", async () => {
         const { mocks } = mockUseVideoPlayerRefs();
         const { getIsReadyAsync, getInterstitialDidCloseCallback } =
@@ -2043,6 +2063,26 @@ describe("App", () => {
 
       afterAll(() => {
         logErrorMock.mockReset();
+      });
+
+      it("allows the video to play when there is no interstitial ad to show", async () => {
+        const { mocks } = mockUseVideoPlayerRefs();
+        const { getIsReadyAsync } = mockAdMobInterstitial();
+        mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+        const screen = await asyncRender(<App />);
+        const homeView = screen.queryByTestId("homeView");
+        expect(homeView).toBeTruthy();
+
+        // Fake that the ad is not ready to show
+        getIsReadyAsync.mockReturnValue(false);
+
+        // Play the video and confirm the correct functions are called
+        await startWatchingVideoFromUpperControlBar({
+          screen,
+          videoPlayerMocks: mocks,
+          mockVideoFilepath: "path/to/file.mp4",
+        });
       });
 
       it("catches the error and still allows the video to play when there is an issue confirming the ad is ready to show", async () => {

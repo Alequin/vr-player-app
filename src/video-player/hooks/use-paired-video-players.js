@@ -175,6 +175,7 @@ export const usePairedVideosPlayers = () => {
               setCurrentVideoPositionInMillis(primaryStatus.positionMillis);
             }
 
+            // Load next video if the playlist is active and the end is reached
             const hasVideoEnded =
               primaryStatus.positionMillis >= primaryStatus.durationMillis;
             if (playlist.isPlaylistActive && hasVideoEnded) {
@@ -189,7 +190,6 @@ export const usePairedVideosPlayers = () => {
     isPlaying,
     hasVideo,
     setPosition,
-    pause,
     play,
     playlist.isPlaylistActive,
     loadNextPlaylistVideo,

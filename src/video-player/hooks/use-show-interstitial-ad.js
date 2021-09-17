@@ -33,23 +33,6 @@ export const useShowInterstitialAd = ({ onCloseAd }) => {
       onCloseAd();
     });
 
-    AdMobInterstitial.addEventListener(
-      "interstitialDidFailToLoad",
-      (() => {
-        let maxLoadAttemptCount = 5;
-        return async () => {
-          while (maxLoadAttemptCount > 0)
-            try {
-              await AdMobInterstitial.requestAdAsync();
-            } catch (error) {
-              maxLoadAttemptCount--;
-            } finally {
-              maxLoadAttemptCount = 5;
-            }
-        };
-      })()
-    );
-
     return () => AdMobInterstitial.removeAllListeners();
   }, [onCloseAd]);
 
@@ -70,6 +53,8 @@ export const useShowInterstitialAd = ({ onCloseAd }) => {
         if (hasAdReadyToShow) {
           await AdMobInterstitial.showAdAsync();
           setLastTimeAdWasShown(Date.now());
+        } else {
+          await onCloseAd();
         }
       } catch (error) {
         // Swallow error. A failure to show an ad should not interrupt the user
