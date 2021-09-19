@@ -1,5 +1,5 @@
 import { googleMobileAdsAppId, isPayedVersion } from "./secrets.json";
-const version = 1;
+const version = 2;
 
 export default {
   name: "Watch In VR",
@@ -16,7 +16,7 @@ export default {
     package: isPayedVersion
       ? "com.just_for_fun.watch_in_vr"
       : "com.just_for_fun.watch_in_vr_free",
-    permissions: ["WRITE_EXTERNAL_STORAGE"], // Use minimum permissions (https://docs.expo.dev/versions/latest/config/app/#permissions)
+    permissions: ["WRITE_EXTERNAL_STORAGE"],
     versionCode: version,
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",
