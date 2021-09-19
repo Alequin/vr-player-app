@@ -8,6 +8,7 @@ jest.mock("../secrets.json", () => ({
 }));
 jest.mock("expo-linking", () => ({
   openSettings: jest.fn(),
+  openURL: jest.fn(),
 }));
 
 import { act, cleanup, within } from "@testing-library/react-native";
@@ -4153,6 +4154,36 @@ describe("App", () => {
           /^Ads are disabled for \d\d:\d\d$/
         )
       ).toBeTruthy();
+    });
+
+    it("Links to the paid version of the app on google play when the 'by the app' button is pressed", async () => {
+      const screen = await asyncRender(<App />);
+
+      const disableAdsButton = getButtonByText(
+        within(screen.queryByTestId("homeView")),
+        "Disable ads"
+      );
+      expect(disableAdsButton).toBeTruthy();
+
+      // Visit the disable ads view
+      await asyncPressEvent(disableAdsButton);
+
+      expect(screen.queryByTestId("disableAdsView")).toBeTruthy();
+
+      const buyTheAppButton = getButtonByText(
+        within(screen.queryByTestId("disableAdsView")),
+        "Buy the ad-free version of the app"
+      );
+      expect(buyTheAppButton).toBeTruthy();
+
+      // Press the button to buy the app
+      await asyncPressEvent(buyTheAppButton);
+
+      // Confirm the user is linked to the correct page
+      expect(Linking.openURL).toHaveBeenCalledTimes(1);
+      expect(Linking.openURL).toHaveBeenCalledWith(
+        "https://play.google.com/store/apps/details?id=com.just_for_fun.watch_in_vr"
+      );
     });
 
     it("Shows the expected icons on the upper control bar while on the 'disable ads' view", async () => {

@@ -1,4 +1,5 @@
 import { AdMobRewarded } from "expo-ads-admob";
+import * as Linking from "expo-linking";
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, View } from "react-native";
 import { disableAdsRewardId } from "../../../../../secrets.json";
@@ -132,6 +133,11 @@ export const DisableAdsView = ({ onDisableAds }) => {
             width: "40%",
             height: "100%",
           }}
+          onPress={async () =>
+            Linking.openURL(
+              "https://play.google.com/store/apps/details?id=com.just_for_fun.watch_in_vr"
+            )
+          }
         >
           <ControlPageIcon name="googlePlay" />
           <ControlViewText>Buy the ad-free version of the app</ControlViewText>

@@ -1,10 +1,9 @@
-import { AdMobRewarded } from "expo-ads-admob";
 import React from "react";
 import { View } from "react-native";
+import { isPayedVersion } from "../../../../../secrets.json";
 import { Button } from "../../../../button";
 import { ControlPageIcon } from "../../control-page-icon";
 import { ControlViewText } from "./control-view-text";
-import { isPayedVersion } from "../../../../../secrets.json";
 
 export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
   return (
@@ -49,9 +48,4 @@ export const HomeView = ({ onPressSelectVideo, onPressDisableAds }) => {
       </View>
     </View>
   );
-};
-
-const loadRewardAd = async () => {
-  if (!(await AdMobRewarded.getIsReadyAsync()))
-    await AdMobRewarded.requestAdAsync();
 };
