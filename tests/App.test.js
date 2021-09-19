@@ -3720,7 +3720,7 @@ describe("App", () => {
       });
     });
 
-    it("updates the position to resync the videos when the primary video is ahead of the secondary by 100 milliseconds", async () => {
+    it("updates the position to resync the videos when the primary video is ahead of the secondary by 200 milliseconds", async () => {
       const { mocks } = mockUseVideoPlayerRefs();
       const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
       mockMediaLibrary.singleAsset("path/to/file.mp4");

@@ -1,5 +1,5 @@
 export const MAX_IN_SYNC_MILLISECOND_DIFFERENCE = 25;
-export const EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE = 100;
+export const EXTREME_OUT_OF_SYNC_MILLISECOND_DIFFERENCE = 200;
 
 export const arePlayerInSync = (primaryStatus, secondaryStatus) =>
   Math.abs(getPlayersPositionDifference(primaryStatus, secondaryStatus)) <=
