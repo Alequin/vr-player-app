@@ -1,5 +1,6 @@
+import { activateKeepAwake, deactivateKeepAwake } from "expo-keep-awake";
 import isEmpty from "lodash/isEmpty";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Animated, Text, TouchableWithoutFeedback, View } from "react-native";
 import { Icon } from "../../../icon";
 import { isAtLeastAnHour } from "../../../is-at-least-an-hour";
@@ -54,6 +55,13 @@ export const Controls = ({ videoPlayer, zIndex }) => {
   } = useViewToShow(videoPlayer, hasPermission);
 
   const shouldDisableVideoControls = !videoPlayer.hasVideo;
+
+  useEffect(() => {
+    if (videoPlayer.hasVideo) {
+      activateKeepAwake();
+      return () => deactivateKeepAwake();
+    }
+  }, [videoPlayer.hasVideo]);
 
   return (
     <Animated.View

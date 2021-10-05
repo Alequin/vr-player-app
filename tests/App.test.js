@@ -10,6 +10,10 @@ jest.mock("expo-linking", () => ({
   openSettings: jest.fn(),
   openURL: jest.fn(),
 }));
+jest.mock("expo-keep-awake", () => ({
+  activateKeepAwake: jest.fn(),
+  deactivateKeepAwake: jest.fn(),
+}));
 
 import { act, cleanup, within } from "@testing-library/react-native";
 import { AdMobInterstitial } from "expo-ads-admob";
@@ -56,6 +60,7 @@ import {
   silenceAllErrorLogs,
   videoPlayerProps,
 } from "./test-utils";
+import { activateKeepAwake, deactivateKeepAwake } from "expo-keep-awake";
 
 describe("App", () => {
   beforeEach(() => {
@@ -3202,6 +3207,55 @@ describe("App", () => {
       expect(
         await within(lowerControlBar).findByText("9999:00:00")
       ).toBeTruthy();
+    });
+
+    it("Keeps the screen turned on while a video is playing", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      // Confirm the function to keep the screen on has been called
+      expect(activateKeepAwake).toHaveBeenCalledTimes(1);
+    });
+
+    it("Stops the screen from remaining turned on while after a video stops playing", async () => {
+      const { mocks } = mockUseVideoPlayerRefs();
+      const { getInterstitialDidCloseCallback } = mockAdMobInterstitial();
+      mockMediaLibrary.singleAsset("path/to/file.mp4");
+
+      const screen = await asyncRender(<App />);
+
+      // Play the video and confirm the correct functions are called
+      await startWatchingVideoFromHomeView({
+        screen,
+        videoPlayerMocks: mocks,
+        getInterstitialDidCloseCallback,
+        mockVideoFilepath: "path/to/file.mp4",
+      });
+
+      // Confirm the function to keep the screen on has been called
+      expect(activateKeepAwake).toHaveBeenCalledTimes(1);
+
+      // Return to the 'select a video' view
+      await asyncPressEvent(
+        getButtonByChildTestId(
+          within(screen.getByTestId("upperControlBar")),
+          "iosArrowBackIcon"
+        )
+      );
+
+      // Confirm the function to allow the screen to turn on after inactivity has been called
+      expect(deactivateKeepAwake).toHaveBeenCalledTimes(1);
     });
   });
 
